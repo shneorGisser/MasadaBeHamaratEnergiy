@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
 import { mKeys, useComparison, useMeasurementSet, useMeasurementSets, useRuns } from '../api/hooks'
 import type { Comparison, MColumn, MSetView, Run, Study } from '../api/types'
@@ -31,6 +31,10 @@ function Cell({
   const [busy, setBusy] = useState(false)
   const history = view.history.filter((h) => h.row === row && h.quantity === col.key)
 
+  // Enter commits, and the blur that follows (the input is disabled while saving) commits
+  // again before the new view has arrived. Entries are append-only, so a duplicate would be
+  // recorded as a correction: the in-flight/last-sent ref makes commit idempotent.
+  const sent = useRef<{ key: string; inFlight: boolean } | null>(null)
   const commit = async () => {
     const trimmed = text.trim()
     if (trimmed === '') return
@@ -40,11 +44,16 @@ function Cell({
       return
     }
     if (cell && cell.entered_value === v && cell.entered_unit === unit) return
+    const key = `${v}|${unit}`
+    if (sent.current && sent.current.key === key) return
+    sent.current = { key, inFlight: true }
     setBusy(true)
     setErr(null)
     try {
       onSaved(await api.post<MSetView>(`/api/measurement-sets/${setId}/entries`, { row_index: row, quantity: col.key, value: v, unit }))
+      sent.current = { key, inFlight: false }
     } catch (e) {
+      sent.current = null // allow a retry of the same value after a failure
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
