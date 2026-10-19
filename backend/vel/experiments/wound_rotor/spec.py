@@ -148,9 +148,56 @@ def nameplate_fit() -> WoundSpec:
     )
 
 
+def report_2025_fit() -> WoundSpec:
+    """Fitted to the 2025 experiment-4 report (tables 4.4 no-load, 4.5 locked rotor, 4.6 load),
+    stator in Δ at 220–230 V (scripts/fit_wound_rotor_2025.py, docs/lab-data-2025-exp4.md).
+
+    R1 = 33.3 Ω and k are kept; X1 = X2'. Result: X1 = 86.3 Ω, R2' = 69.5 Ω (R2 = 6.37 Ω —
+    the 6.4 Ω measured F1–F2 in experiment 3, if that was one rotor phase), Xm = 991 Ω,
+    R_fe = 2.16 kΩ, P_fw = 6.4 W; currents within ≈ 0.07 A, wattmeter within ≈ 5 W, speeds
+    within ≈ 40 rpm. NOT consistent with the plate: rated torque comes out at ≈ 1100 rpm
+    (plate 1360) and X1 + Xm = 1077 Ω vs 674 Ω from experiment 3."""
+    base = nameplate_fit()
+    k = base.ecm.k
+    return base.model_copy(
+        update={
+            "provenance_note": (
+                "הותאם לדוח 2025 של ניסוי 4 (טבלאות 4.4, 4.5, 4.6), סטטור במשולש ב-220–230 V. "
+                "R2 = 6.37 Ω תואם את 6.4 Ω שנמדדו בניסוי 3; סותר את מהירות השלט (≈1100 במקום 1360 "
+                "סל״ד במומנט נקוב) ואת X1+Xm של ניסוי 3"
+            ),
+            "nameplate": base.nameplate.model_copy(
+                update={"connection": "D", "U_n": 230.0, "I_n": 1.44}
+            ),
+            "ecm": base.ecm.model_copy(
+                update={
+                    "X1": 86.31,
+                    "X2": round(86.31 / k**2, 4),
+                    "R2": round(69.46 / k**2, 4),
+                    "Xm": 990.7,
+                    "R_fe": 2162.0,
+                    "P_fw_n": 6.35,
+                }
+            ),
+            "insulation": base.insulation.model_copy(
+                update={
+                    "U_frame_Mohm": 999,
+                    "V_frame_Mohm": 999,
+                    "W_frame_Mohm": 999,
+                    "rotor_frame_Mohm": 999,
+                }
+            ),
+        }
+    )
+
+
 PRESETS = {
     "nameplate_fit": (
         "מותאם לשלט 0.27 kW / 400 V / 1360 סל״ד ולמדידות ניסוי 3 (לא מאומת)",
         nameplate_fit,
+    ),
+    "report_2025": (
+        "מותאם לדוח 2025 (ריקם, קצר, עומס; משולש 230 V) — סותר את מהירות השלט",
+        report_2025_fit,
     ),
 }

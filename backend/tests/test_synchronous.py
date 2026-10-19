@@ -318,3 +318,31 @@ def test_live_override_of_field(client: TestClient) -> None:
     ).json()
     assert r["status"] == "constraint_violation"
     assert "סנכרון" in r["error"]["message"]
+
+
+# --------------------------------------------------------------------------- G13: 2025 report
+
+IF_2025 = [0.17, 0.24, 0.35, 0.43, 0.5, 0.64, 0.7, 0.82, 0.91]
+EF_2025 = [49.5, 65, 94, 119, 136, 165, 187, 204, 226]
+
+
+def test_G13_2025_occ_is_an_independent_check_of_the_2026_fit() -> None:
+    """Not fitted to these points: the 2025 report's OCC (same machine) against the 2026 fit."""
+    r = execute(
+        "open_circuit",
+        fitted_lab_machine(),
+        templates.generator(1, 1500, "Y", closed=False).model_dump(),
+        {"If_values": IF_2025},
+    )
+    sim = [row["Ef"] for row in r.result["tables"][0]["rows"]]  # type: ignore[index]
+    assert max(abs(a - b) for a, b in zip(sim, EF_2025, strict=True)) < 6.0  # V line
+
+
+def test_G13_report_2025_preset_reproduces_its_short_circuits() -> None:
+    from vel.experiments.synchronous.spec import report_2025_machine
+
+    spec = report_2025_machine()
+    circuits = {f: templates.short_circuit(f, 1.0, 1500, "Y").model_dump() for f in "321"}
+    r = execute("short_circuit", spec, circuits, {"If_values": [0.6, 1.0, 1.6]})
+    rows = r.result["tables"][0]["rows"]  # type: ignore[index]
+    assert [x["Ik3"] for x in rows] == pytest.approx([0.25, 0.44, 0.71], abs=0.03)

@@ -251,3 +251,18 @@ def test_W9_api_journey(client: TestClient) -> None:
     assert sim["input_snapshot"]["case"]["R_ext"] == 3.0
     cmp_ = client.get(f"/api/comparison?run_id={sim['id']}&set_id={sid}").json()
     assert cmp_["summary"]["max_abs_rel_error"] == pytest.approx(0, abs=1e-9)
+
+
+def test_W10_report_2025_preset_reproduces_its_tables() -> None:
+    """Fit regression on the 2025 report (not validation): no-load, locked-rotor, load."""
+    from vel.experiments.wound_rotor.spec import report_2025_fit
+
+    spec = report_2025_fit()
+    assert abs(spec.ecm.R2 - 6.37) < 0.01
+    nl = operating_point(templates.motor(220, 50, "D"), spec)
+    assert nl.readings["A"]["I"] == pytest.approx(0.44, abs=0.07)
+    lr = operating_point(templates.motor(90, 50, "D", locked=True), spec)
+    assert lr.readings["A"]["I"] == pytest.approx(0.78, abs=0.07)
+    for m, n_lab in ((0.3, 1446), (0.6, 1427)):
+        op = operating_point(with_param(templates.motor(230, 50, "D"), "M", "M_load", m), spec)
+        assert op.readings["M"]["n"] == pytest.approx(n_lab, abs=40)

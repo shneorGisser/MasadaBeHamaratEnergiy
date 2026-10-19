@@ -151,3 +151,16 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
   series-field effect although 5/2.8 shows a strong one; 5/2.6 "60 % load" was practically no load; generator speed
   not recorded (2800 rpm inferred).
 - NOT verified: n_max (assumed 3000 rpm); hysteresis not modelled; no-load armature current 13 % low.
+
+## Audit after experiment 6: last year's reports (2026-10-20)
+Command: ruff, mypy, pytest (backend) → all pass; CI green on the previous commit.
+- Found: the 2025 reports of experiments 3 and 4 hold measurements (only 1, 5, 6 had been used; 2 is blank).
+- Experiment 3: the 2025 OCC is an **independent validation** of the 2026 fit (≤ 6 V above If = 0.17 A, test
+  G13). The 2025 short circuits are 1.85× the model in all 16 points with the same fault ratios; one reactance
+  factor 0.5375 fits them within 0.05 A (Xs = 362 Ω) — the value the two "outlier" 2026 Ik(3) points also give.
+  New preset `report_2025`; default unchanged (the plate's 4 A field current supports 674 Ω). docs/lab-data-2025-exp3.md.
+- Experiment 4: new preset `report_2025` (Δ at 230 V) fitted to tables 4.4–4.6 (test W10, fit regression):
+  R2 = 6.37 Ω agrees with the 6.4 Ω F1–F2 of experiment 3, but rated torque falls at ≈ 1100 rpm vs 1360 on the
+  plate; the report's wattmeter column is used inconsistently between tables. docs/lab-data-2025-exp4.md.
+- CI: the D4 commit's run had failed on a real race (run started while a circuit variant was still loading) —
+  the run button is now disabled during the load.

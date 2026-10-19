@@ -159,9 +159,45 @@ def fitted_lab_machine() -> SyncSpec:
     )
 
 
+REPORT_2025_SCALE = 0.5375
+
+
+def report_2025_machine() -> SyncSpec:
+    """The 2026 fit with every reactance (X_l, k_a, X2, X0) × 0.5375, fitted to the 2025 report's
+    short-circuit table (scripts/fit_synchronous_2025.py, docs/lab-data-2025-exp3.md).
+
+    The 2025 OCC agrees with the 2026 fit without any change (independent check); all 16 of
+    the 2025 fault currents are ≈ 1.85× the 2026 model's with the same Ik(2)/Ik(3) and
+    Ik(1)/Ik(3) ratios, so one factor fits them all within 0.05 A. Xs = 362 Ω — which is what
+    the two 2026 Ik(3) points flagged as outliers (If = 1.0, 1.3 A) also give. It conflicts with
+    the plate's 4 A rated field current, which supports Xs ≈ 674 Ω."""
+    base = fitted_lab_machine()
+    e, lam = base.ecm, REPORT_2025_SCALE
+    return base.model_copy(
+        update={
+            "provenance_note": (
+                "כמו ההתאמה ל-2026, עם כל ההיגבים × 0.5375 לפי טבלת הקצרים של דוח 2025 "
+                "(Xs = 362 Ω). אופיין הריקם של 2025 תואם ללא שינוי; סותר את זרם העירור שבשלט"
+            ),
+            "ecm": e.model_copy(
+                update={
+                    "Xl": e.Xl * lam,
+                    "k_a": e.k_a * lam,
+                    "X2": e.X2 * lam,
+                    "X0": e.X0 * lam,
+                }
+            ),
+        }
+    )
+
+
 PRESETS = {
     "lab_2026": (
         "מותאם למדידות שלך (ניסוי 3, 2026) ולשלט 400 V / 0.27 kW (לא מאומת)",
         fitted_lab_machine,
+    ),
+    "report_2025": (
+        "כמו 2026, היגבים לפי קצרי דוח 2025 (Xs = 362 Ω) — סותר את עירור השלט",
+        report_2025_machine,
     ),
 }
