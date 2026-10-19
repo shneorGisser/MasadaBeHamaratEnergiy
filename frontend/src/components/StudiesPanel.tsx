@@ -224,7 +224,7 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
             {t('study.label')}
             <input className="input" name="run-label" value={label} onChange={(e) => setLabel(e.target.value)} />
           </label>
-          <button className="btn primary" style={{ alignSelf: 'end' }} onClick={onRun} disabled={create.isPending} data-testid="run-button">
+          <button className="btn primary" style={{ alignSelf: 'end' }} onClick={onRun} disabled={create.isPending || variantBusy} data-testid="run-button">
             {create.isPending ? t('study.running') : t('study.run')}
           </button>
         </div>
