@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>{{ s.title }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: David, 'David Libre', 'Frank Ruehl CLM', 'Noto Serif Hebrew', serif; font-size: 11pt;
+         line-height: 1.15; color: #111; margin: 0 auto; max-width: 190mm; }
+  p, li { margin: 0 0 8pt; }
+  h1 { font-size: 18pt; margin: 0 0 4pt; }
+  h2 { font-size: 14pt; margin: 16pt 0 6pt; border-bottom: 1px solid #999; padding-bottom: 2pt; }
+  h3 { font-size: 12pt; margin: 10pt 0 4pt; }
+  table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 9.5pt; page-break-inside: auto; }
+  th, td { border: 1px solid #aaa; padding: 2pt 4pt; text-align: center; }
+  th { background: #eee; }
+  td.num { direction: ltr; unicode-bidi: plaintext; font-variant-numeric: tabular-nums; }
+  .src { display: inline-block; font-size: 8.5pt; border: 1px solid; border-radius: 8pt; padding: 0 5pt; }
+  .sim { color: #1f6fb2; } .meas { color: #a2462e; } .theory { color: #4b6b2f; }
+  .warn { background: #fdf3e1; border: 1px solid #ecd09e; padding: 4pt 6pt; margin: 4pt 0 8pt; }
+  .err { background: #fbe7e5; border: 1px solid #e9b7b2; padding: 4pt 6pt; }
+  .meta { color: #555; font-size: 9pt; }
+  .formula { font-family: 'Cambria Math', 'Times New Roman', serif; direction: ltr; unicode-bidi: isolate; }
+  .discussion { white-space: pre-wrap; border: 1px solid #ccc; padding: 6pt; }
+</style>
+</head>
+<body>
+<h1>{{ s.title }}</h1>
+<p class="meta">פרויקט: {{ s.project.name }} · ניסוי: {{ s.experiment.id }} v{{ s.experiment.version }} ·
+  מודל: {{ s.model_version }} · הופק: {{ s.generated_at[:16].replace('T', ' ') }} UTC</p>
+<p class="meta">מקרא: <span class="src theory">מודל / תיאוריה</span> <span class="src sim">סימולציה</span>
+  <span class="src meas">מדידה</span></p>
+
+<h2>1. מטרת הניסוי</h2>
+<ul>
+  <li>הכרת מבנה השנאי התלת-פזי.</li>
+  <li>בדיקת מצב הבידוד ומדידת התנגדויות הליפופים.</li>
+  <li>בדיקת השנאי בריקם (יחס השנאה, ענף המגנוט), בקצר (הענף הטורי) ובעומס.</li>
+  <li>קביעת קבוצת החיבורים בשיטת השעון.</li>
+</ul>
+
+<h2>2. השנאי והנחות המודל</h2>
+{% set t = s.transformer %}
+{% if t.provenance == 'assumed' %}
+<div class="warn">פרמטרי השנאי מוערכים ואינם נתוני שלט: {{ t.provenance_note }}</div>
+{% endif %}
+<table>
+  <tr><th>S<sub>n</sub> [VA]</th><th>U<sub>1n</sub> [V]</th><th>U<sub>2n</sub> [V]</th><th>f [Hz]</th><th>חיבור נקוב</th>
+      <th>R1 [Ω]</th><th>X1 [Ω]</th><th>R2 [Ω]</th><th>X2 [Ω]</th><th>R<sub>Fe</sub> [Ω]</th><th>X<sub>m,unsat</sub> [Ω]</th><th>c, n</th></tr>
+  <tr>
+    <td class="num">{{ t.nameplate.S_n|f }}</td><td class="num">{{ t.nameplate.U1n|f }}</td><td class="num">{{ t.nameplate.U2n|f }}</td>
+    <td class="num">{{ t.nameplate.f_n|f }}</td><td>{{ t.nameplate.primary }}{{ t.nameplate.secondary|lower }}</td>
+    <td class="num">{{ t.ecm.R1|f }}</td><td class="num">{{ t.ecm.X1|f }}</td><td class="num">{{ t.ecm.R2|f }}</td>
+    <td class="num">{{ t.ecm.X2|f }}</td><td class="num">{{ t.ecm.R_fe|f }}</td><td class="num">{{ t.ecm.Xm_unsat|f }}</td>
+    <td class="num">{{ t.ecm.sat_c|f }}, {{ t.ecm.sat_n|f }}</td>
+  </tr>
+</table>
+<p>מודל: מעגל תמורה T לכל עמוד (מודל "בנק"), במצב מתמיד סינוסי ב-f, עם ענף מגנוט רווי
+  <span class="formula">X<sub>m</sub>(E) = X<sub>m,unsat</sub> / (1 + c·(E/E<sub>n</sub>)<sup>n</sup>)</span>. מכשירים אידיאליים.</p>
+<p><strong>לא ממודל:</strong> הרמוניות של זרם המגנוט וקריאת מכשיר true-RMS, זרם התנעה ותופעות מעבר, צימוד מגנטי בין העמודים
+  (האסימטריה של העמוד האמצעי), תלות טמפרטורה, דיוק המכשירים והעמסתם. מד הבידוד מציג פרמטר מודל ולא סימולציה.</p>
+
+{% for sec in s.sections %}
+<h2>{{ loop.index + 2 }}. {{ sec.title_he }} <span class="meta">({{ sec.manual_ref }})</span></h2>
+
+{% if sec.run %}
+<h3>תנאי עבודה וסימולציה <span class="src sim">סימולציה</span></h3>
+<p class="meta">ריצה {{ sec.run.id[:8] }} · {{ sec.run.label }} · סטטוס {{ sec.run.status }} · hash {{ sec.run.input_hash[:12] }}</p>
+<p class="meta">תנאי הניסוי: {% for k, v in (sec.run.case or {}).items() %}{{ k }} = {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+{% if sec.run.circuit_summary %}<p class="meta">מעגל: {{ sec.run.circuit_summary.components|join(', ') }} · {{ sec.run.circuit_summary.n_wires }} חוטים</p>{% endif %}
+{% if sec.run.error %}<div class="err">הסימולציה נכשלה: {{ sec.run.error.message }}</div>{% endif %}
+{% for w in sec.run.warnings %}<div class="warn">{{ w.message }}</div>{% endfor %}
+{% if sec.run.result %}
+{% for tb in sec.run.result.tables %}
+<p><strong>{{ tb.title_he }}</strong></p>
+<table>
+  <tr>{% for c in tb.columns %}<th>{{ c.label_he }}{% if c.unit %} [{{ c.unit }}]{% endif %}</th>{% endfor %}</tr>
+  {% for r in tb.rows %}<tr>{% for c in tb.columns %}<td class="num">{{ r[c.key]|f }}</td>{% endfor %}</tr>{% endfor %}
+</table>
+{% endfor %}
+{% if sec.run.result.parameters %}
+<p><strong>חישובים תיאורטיים מתוך תוצאות הסימולציה</strong></p>
+<table>
+  <tr><th>גודל</th><th>ערך</th><th>נוסחה</th><th>שיטה</th></tr>
+  {% for p in sec.run.result.parameters %}
+  <tr><td>{{ p.label_he }}</td>
+      <td class="num">{% if p.value is none %}לא מוגדר — {{ p.undefined_reason }}{% else %}{{ p.value|f(5) }} {{ p.unit }}{% endif %}</td>
+      <td class="formula">{{ p.formula }}</td>
+      <td>{{ {'consistent': 'עקבי', 'manual': 'נוסחת החוברת', 'analytic': 'פאזורים (סימולציה בלבד)'}[p.method] }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if sec.measurements %}
+{% set m = sec.measurements %}
+<h3>מדידות במעבדה <span class="src meas">מדידה</span></h3>
+<p class="meta">סט: {{ m.set.label }} · תאריך: {{ m.set.lab_date or '—' }} · מכשירים: {{ m.set.instruments or '—' }}
+  {% if m.set.conditions %} · תנאים: {{ m.set.conditions }}{% endif %}</p>
+<table>
+  <tr><th>#</th>{% for c in m.columns %}<th>{{ c.label_he }}{% if c.unit %} [{{ c.unit }}]{% endif %}</th>{% endfor %}</tr>
+  {% for r in m.rows %}<tr><td>{{ r.row_label or r.point }}</td>{% for c in m.columns %}<td class="num">{{ r[c.key]|f }}</td>{% endfor %}</tr>{% endfor %}
+</table>
+{% if m.corrected_cells %}<p class="meta">ערכים שתוקנו לאחר ההזנה הראשונה (ההיסטוריה שמורה): {{ m.corrected_cells|join(', ') }}</p>{% endif %}
+{% if m.missing %}<div class="warn">חסרים {{ m.missing|length }} ערכים בטבלת המדידות.</div>{% endif %}
+{% endif %}
+
+{% if sec.comparison %}
+{% set c = sec.comparison %}
+<h3>השוואה: מדידה מול סימולציה</h3>
+<p class="meta">שגיאה = נמדד − מסומלץ; שגיאה יחסית ביחס לערך הסימולציה. התאמת נקודות לפי {{ c.match_key }} (±{{ (c.match_tolerance*100)|round|int }}%).
+  שגיאה יחסית מרבית: {{ c.summary.max_abs_rel_error|pct }} · שורות ללא התאמה: {{ c.summary.unmatched_rows }} · חסרים: {{ c.summary.missing_measurements }}</p>
+<table>
+  <tr><th>שורה</th><th>גודל</th><th>נמדד</th><th>מסומלץ</th><th>שגיאה מוחלטת</th><th>שגיאה יחסית</th></tr>
+  {% for p in c.pairs %}
+    {% if p.simulated_row is none %}
+      <tr><td>{{ p.measured_row + 1 }}</td><td colspan="5">{{ p.unmatched_reason }}</td></tr>
+    {% else %}
+      {% for cell in p.cells %}{% if cell.measured is not none %}
+      <tr><td>{{ p.measured_row + 1 }}</td><td>{{ cell.quantity }}{% if cell.unit %} [{{ cell.unit }}]{% endif %}</td>
+          <td class="num meas">{{ cell.measured|f }}</td><td class="num sim">{{ cell.simulated|f }}</td>
+          <td class="num">{{ cell.abs_error|f }}</td>
+          <td class="num">{% if cell.rel_error is none %}{{ cell.undefined_reason or '—' }}{% else %}{{ cell.rel_error|pct }}{% endif %}</td></tr>
+      {% endif %}{% endfor %}
+    {% endif %}
+  {% endfor %}
+</table>
+{% if c.parameters %}
+<table>
+  <tr><th>פרמטר</th><th class="theory">מודל</th><th class="sim">מחולץ מסימולציה</th><th class="meas">מחולץ ממדידה</th><th>שגיאה יחסית</th></tr>
+  {% for p in c.parameters %}
+  <tr><td>{{ p.label_he }}</td><td class="num theory">{{ p.theory|f(5) }}</td><td class="num sim">{{ p.simulated|f(5) }}</td>
+      <td class="num meas">{{ p.measured|f(5) }}</td>
+      <td class="num">{% if p.rel_error is none %}{{ p.undefined_reason or '—' }}{% else %}{{ p.rel_error|pct }}{% endif %}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+<p class="meta">ההפרש כולל יחד שגיאת מודל ושגיאת מדידה; אין מספיק מידע להפריד ביניהן ללא נתוני דיוק המכשירים.</p>
+{% endif %}
+{% endfor %}
+
+<h2>{{ s.sections|length + 3 }}. דיון</h2>
+{% if s.discussion %}
+<div class="discussion">{{ s.discussion }}</div>
+{% else %}
+<div class="warn">הסטודנט לא כתב דיון. המערכת אינה מנסחת הסבר לפערים במקום הסטודנט.</div>
+{% endif %}
+
+<h2>{{ s.sections|length + 4 }}. מגבלות ונתונים חסרים</h2>
+<ul>
+  {% if s.transformer.provenance == 'assumed' %}<li>פרמטרי השנאי מוערכים; השוואה כמותית מדויקת מחייבת נתוני שלט ומדידות ריקם וקצר.</li>{% endif %}
+  {% for sec in s.sections %}
+    {% if not sec.run %}<li>{{ sec.title_he }}: אין סימולציה בדו״ח.</li>{% endif %}
+    {% if not sec.measurements %}<li>{{ sec.title_he }}: אין מדידות בדו״ח.</li>{% elif sec.measurements.missing %}<li>{{ sec.title_he }}: חסרים {{ sec.measurements.missing|length }} ערכים.</li>{% endif %}
+  {% endfor %}
+  <li>המודל אינו כולל הרמוניות, תופעות מעבר, אסימטריית ליבה ודיוק מכשירים (ראו סעיף 2).</li>
+</ul>
+</body>
+</html>

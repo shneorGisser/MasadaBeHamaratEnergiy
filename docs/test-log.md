@@ -51,3 +51,13 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
   the solver's values; variac to 475 V shows the saturated I0 (> 3× rated I0) matching the API; opening S gives 0 A / 0 V;
   selecting T in 3D selects it in the schematic and vice versa; nothing is persisted by the 3D view.
 - Limitation: equipment geometry is generic (procedural) until photographs of the lab bench are provided.
+
+## S5 — guided mode and reports (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- pytest: 60 passed. New: guide steps complete only from data (data steps cannot be ticked by a click); report HTML is RTL,
+  David font, contains measured values and the student's discussion; a later measurement correction and spec change leave
+  the published report byte-identical; empty discussion is stated, not generated; invalid section references rejected;
+  PDF rendered by headless Chromium (`%PDF-`, > 5 kB).
+- Playwright: 12 passed. New: the full §9 journey — guided mode (0/27 → safety ack), nameplate edit, simulation, reload,
+  reproduction, lab measurements, simulate at measured points, comparison, report generated and reopened after reload,
+  correction does not change the report, PDF downloads, guide shows compare + report steps done.

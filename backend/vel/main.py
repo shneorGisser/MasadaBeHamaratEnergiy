@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from vel import __version__
-from vel.api import measurements, projects, runs
+from vel.api import measurements, projects, reports, runs
 from vel.db import Database, default_database_url
 from vel.errors import install_handlers
 from vel.migrate import upgrade
@@ -31,6 +31,7 @@ def create_app(database_url: str | None = None, static_dir: Path | None = None) 
     app.include_router(projects.router)
     app.include_router(runs.router)
     app.include_router(measurements.router)
+    app.include_router(reports.router)
 
     static = static_dir or (
         Path(os.environ["VEL_STATIC_DIR"]) if "VEL_STATIC_DIR" in os.environ else None

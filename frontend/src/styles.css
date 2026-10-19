@@ -167,3 +167,10 @@ input.input.missing { background: #fffaf0; border-style: dashed; }
 }
 .lab-label.selected { border-color: #2b6f70; box-shadow: 0 0 0 2px #7fb3b4; }
 .lab-reading { font-family: var(--mono); color: var(--sim); font-size: 12px; direction: ltr; }
+
+.guide-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.guide-step { padding: 10px 14px; }
+.guide-step.done { background: #f2f8f4; border-color: #b6dcc4; }
+.guide-step.next { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.guide-check { font-size: 18px; width: 22px; color: var(--ok); }
+.report-frame { width: 100%; height: 900px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
