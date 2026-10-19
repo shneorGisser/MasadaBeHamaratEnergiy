@@ -1,8 +1,14 @@
 name: CI
 on: [push, pull_request]
+
+# Each gate stage is its own step, so a failure is visible by name; on failure the tail of the
+# stage's output is also published as an error annotation (readable from the API and the PR).
 jobs:
   check:
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,5 +21,17 @@ jobs:
         run: python -m venv .venv && .venv/bin/pip install -e 'backend[dev]'
       - name: Frontend deps
         run: cd frontend && npm ci && npx playwright install --with-deps chromium
-      - name: Quality gate
-        run: PW_CHROMIUM=/nonexistent scripts/check.sh
+
+      - name: Backend lint
+        run: scripts/ci-step.sh backend-lint "cd backend && ../.venv/bin/ruff check vel tests && ../.venv/bin/ruff format --check vel tests"
+      - name: Backend types
+        run: scripts/ci-step.sh backend-types "cd backend && ../.venv/bin/mypy"
+      - name: Backend tests
+        run: scripts/ci-step.sh backend-tests "cd backend && ../.venv/bin/pytest -ra"
+      - name: Frontend lint + types + unit tests
+        run: scripts/ci-step.sh frontend-checks "cd frontend && npm run -s lint && npm run -s typecheck && npm test --silent"
+      - name: Frontend build
+        run: scripts/ci-step.sh frontend-build "cd frontend && npm run -s build"
+      - name: End-to-end tests
+        env: { PW_CHROMIUM: /nonexistent }
+        run: scripts/ci-step.sh e2e "cd frontend && npx playwright test"
