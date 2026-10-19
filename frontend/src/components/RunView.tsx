@@ -95,7 +95,9 @@ export default function RunView({ run }: { run: Run }) {
           id: c.id,
           title: c.title_he,
           xLabel: axisLabel(tb.columns, c.x),
-          yLabel: axisLabel(tb.columns, c.y),
+          yLabel: c.y3
+            ? axisLabel(tb.columns, c.y).replace(/^[^[]*/, [c.y, c.y2, c.y3].map((k) => axisLabel(tb.columns, k ?? '').replace(/ \[.*\]$/, '')).join(', ') + ' ')
+            : axisLabel(tb.columns, c.y),
           series: curveSeries(c, [{ label: 'סימולציה', kind: 'sim', rows: tb.rows }], tb.columns),
         },
       ]

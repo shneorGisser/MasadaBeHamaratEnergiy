@@ -42,15 +42,27 @@ export function curveSeries(c: Curve, sources: { label: string; kind: Series['ki
   for (const src of sources) {
     groups(src.rows, c.group).forEach((g, i) => {
       out.push({
-        label: `${src.label}${groupLabel(g.key)}`,
+        label: `${src.label}${c.y3 ? ` · ${axisLabel(cols, c.y).replace(/ \[.*\]$/, '')}` : ''}${groupLabel(g.key)}`,
         kind: src.kind,
         points: points(g.rows, c.x, c.y),
         color: c.group ? GROUP_COLORS[i % GROUP_COLORS.length] : undefined,
       })
     })
-    if (c.y2 && src.kind === 'sim') {
-      out.push({ label: axisLabel(cols, c.y2).replace(/ \[.*\]$/, ''), kind: 'theory', points: points(src.rows, c.x, c.y2) })
-    }
+    // extra series of the same table (Kloss next to the model; Ik(2), Ik(1) next to Ik(3)):
+    // drawn for every source, coloured by position so they stay distinguishable
+    ;[c.y2, c.y3].forEach((y, i) => {
+      if (!y) return
+      if (src.kind === 'sim' && c.y2 && !c.y3) {
+        out.push({ label: axisLabel(cols, y).replace(/ \[.*\]$/, ''), kind: 'theory', points: points(src.rows, c.x, y) })
+        return
+      }
+      out.push({
+        label: `${src.label} · ${axisLabel(cols, y).replace(/ \[.*\]$/, '')}`,
+        kind: src.kind,
+        points: points(src.rows, c.x, y),
+        color: GROUP_COLORS[(i + 1) % GROUP_COLORS.length],
+      })
+    })
   }
   return out
 }

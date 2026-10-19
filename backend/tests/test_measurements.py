@@ -178,7 +178,9 @@ def test_zero_reference_is_undefined_in_load_comparison(client: TestClient) -> N
     assert row0["P2_W"]["rel_error"] is None
     assert "אפס" in row0["P2_W"]["undefined_reason"]
     row1 = {x["quantity"]: x for x in c["pairs"][1]["cells"]}
-    assert row1["I2"]["rel_error"] == pytest.approx(0, abs=1e-9)
+    # I2 is the operating-point key: the pairing makes it equal, so it is not a compared cell
+    assert "I2" not in row1
+    assert c["pairs"][1]["match_value"].startswith("I2=")
     assert row1["U2L"]["measured"] == 213
 
 

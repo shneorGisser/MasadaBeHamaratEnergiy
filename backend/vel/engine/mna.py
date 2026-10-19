@@ -77,6 +77,24 @@ class IdealTransformer:
 
 
 @dataclass
+class CoupledAdmittance:
+    """n coupled branches k: a_k → b_k with I = Y · (V_a − V_b) (I_k flows from a_k to b_k).
+
+    Used for a machine winding set whose impedance matrix is not diagonal, e.g. a synchronous
+    machine with different positive-, negative- and zero-sequence impedances. Y need not be
+    symmetric (Z1 ≠ Z2 makes the phase-domain matrix circulant but non-reciprocal).
+    """
+
+    pairs: list[tuple[int, int]]
+    y: npt.NDArray[np.complex128]
+    name: str = ""
+
+    def currents(self, v: CArray) -> CArray:
+        dv = np.array([v[a] - v[b] for a, b in self.pairs], dtype=np.complex128)
+        return np.asarray(self.y @ dv, dtype=np.complex128)
+
+
+@dataclass
 class Pin:
     node: int
     name: str
@@ -90,6 +108,7 @@ class Network:
     vsources: list[VSource] = field(default_factory=list)
     transformers: list[IdealTransformer] = field(default_factory=list)
     pins: list[Pin] = field(default_factory=list)
+    coupled: list[CoupledAdmittance] = field(default_factory=list)
 
 
 @dataclass
@@ -125,6 +144,14 @@ def _assemble(net: Network, ys_nl: list[complex]) -> tuple[CArray, CArray, list[
         stamp_y(adm.a, adm.b, adm.y)
     for nl, y in zip(net.nonlinear, ys_nl, strict=True):
         stamp_y(nl.a, nl.b, y)
+    for ca in net.coupled:
+        for i, (ai, bi) in enumerate(ca.pairs):
+            for j, (aj, bj) in enumerate(ca.pairs):
+                y = complex(ca.y[i, j])
+                A[ai, aj] += y
+                A[ai, bj] -= y
+                A[bi, aj] -= y
+                A[bi, bj] += y
 
     row = n
     for s in net.vsources:

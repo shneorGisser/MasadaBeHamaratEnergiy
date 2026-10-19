@@ -7,6 +7,9 @@ Modules:
 - **Experiment 2 — squirrel-cage induction motor** (insulation, DC winding resistance, no-load,
   locked rotor, load with a magnetic-powder brake and torque–speed curve, inverter V/f).
   Motor parameters are assumed until the lab nameplate is available — see `docs/model-induction-motor.md`.
+- **Experiment 3 — synchronous machine** (insulation, DC resistances, open-circuit characteristic, three-, two- and
+  single-phase short circuits, R/L/C load characteristics, regulation, zero-power-factor/Potier, V-curves on the grid).
+  Parameters fitted to the student's 2026 measurements — see `docs/model-synchronous.md` and `docs/lab-data-2026-exp3.md`.
 
 The planning package (vision, requirements, architecture, validation plan, roadmap) is in the
 project's planning document; `docs/` holds the engineering notes and the test log.

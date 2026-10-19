@@ -204,7 +204,8 @@ function ComparisonView({ cmp, view }: { cmp: Comparison; view: MSetView }) {
       .filter((c) => !c.table || c.table === 'readings')
       .map((c) => {
         const series: Series[] = curveSeries(
-          { ...c, y2: undefined },
+          // a model-only companion series (Kloss, Ef at no load) has no measured counterpart
+          c.y3 ? c : { ...c, y2: undefined },
           [
             { label: 'סימולציה', kind: 'sim', rows: cmp.simulated_rows },
             { label: 'מדידה', kind: 'meas', rows: cmp.measured_analysis.rows },

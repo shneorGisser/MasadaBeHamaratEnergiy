@@ -17,6 +17,7 @@ from typing import Any
 from vel.engine.circuit import CircuitModel, Component
 from vel.engine.mna import (
     Admittance,
+    CoupledAdmittance,
     IdealTransformer,
     Network,
     NonlinearShunt,
@@ -24,6 +25,7 @@ from vel.engine.mna import (
     VSource,
 )
 from vel.experiments.induction_motor.spec import MotorSpec
+from vel.experiments.synchronous.spec import SyncSpec
 from vel.experiments.transformer3ph.spec import TransformerSpec
 
 ZERO_Z = 1e-12
@@ -98,6 +100,26 @@ CATALOG: dict[str, ComponentType] = {
             (
                 ParamDef("M_load", "מומנט הבלם", "N·m", default=0.0, min=0, max=1e4),
                 ParamDef("locked", "רוטור נעול", "", kind="bool", default=False),
+            ),
+        ),
+        ComponentType(
+            "syncmachine3",
+            "מכונה סינכרונית תלת-פזית",
+            "machine",
+            ("U1", "U2", "V1", "V2", "W1", "W2", "F1", "F2"),
+            (
+                ParamDef("I_f", "זרם עירור", "A", default=0.0, min=-100, max=100),
+                ParamDef(
+                    "n_drive", "מהירות המנוע המניע (ללא רשת)", "rpm", default=1500.0, min=1, max=1e5
+                ),
+                ParamDef(
+                    "P_shaft",
+                    "הספק בציר (מחובר לרשת; + מנוע, − מחולל)",
+                    "W",
+                    default=0.0,
+                    min=-1e7,
+                    max=1e7,
+                ),
             ),
         ),
         ComponentType(
@@ -212,6 +234,8 @@ class Built:
     xfmr_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     # induction-motor internals (slip, branch names) for the mechanical bookkeeping
     motor_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # synchronous-machine internals (EMF source names, coupled winding branches)
+    sync_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     warnings: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -296,13 +320,16 @@ def build(
     equipment: Any = None,
     dc: bool = False,
     slips: dict[str, float] | None = None,
+    sync_emf: dict[str, complex] | None = None,
 ) -> Built:
     """Expand a circuit into an MNA network.
 
     `equipment` is the project's equipment spec (TransformerSpec, MotorSpec); machine
     components take their parameters from it (single source of truth). `slips` gives the
     operating slip of each induction motor — the mechanical balance that determines it is
-    solved one level up, in `simulate.operating_point`.
+    solved one level up, in `simulate.operating_point`. Likewise `sync_emf` gives the air-gap
+    EMF (phase U, positive sequence) of each synchronous machine; the magnetic (saturation /
+    armature reaction) and mechanical balance that fixes it is solved in `simulate`.
     """
     issues = validate_structure(circuit)
     if issues:
@@ -337,9 +364,20 @@ def build(
         return node_of_terminal[f"{cid}.{term}"]
 
     sources = [c for c in circuit.components if c.type in ("source3", "source_dc")]
-    if not sources:
+    machines = [c for c in circuit.components if c.type == "syncmachine3"]
+    if not sources and not (machines and not dc):
         raise CircuitValidationError([{"code": "no_source", "message": "circuit has no source"}])
     f_values = {_f(c.params, "f", CATALOG[c.type], c.id) for c in sources if c.type == "source3"}
+    if machines and not dc and not f_values:
+        # island operation: the generators' speed sets the frequency
+        if not isinstance(equipment, SyncSpec):
+            raise CircuitValidationError(
+                [{"code": "no_spec", "message": "this project has no synchronous-machine spec"}]
+            )
+        f_values = {
+            equipment.nameplate.poles * _f(m.params, "n_drive", CATALOG[m.type], m.id) / 120
+            for m in machines
+        }
     if dc and any(c.type == "source3" for c in sources):
         raise CircuitValidationError(
             [{"code": "mixed_sources", "message": "DC study cannot contain an AC source"}]
@@ -352,10 +390,26 @@ def build(
         raise CircuitValidationError(
             [{"code": "multi_frequency", "message": "all AC sources must share one frequency"}]
         )
+    if machines and not dc and any(c.type == "source3" for c in sources) and len(machines) > 1:
+        raise CircuitValidationError(
+            [
+                {
+                    "code": "unsupported",
+                    "message": "only one synchronous machine per grid is supported",
+                }
+            ]
+        )
     f = 0.0 if dc else f_values.pop()
     omega = 2 * math.pi * f
 
-    net_items: dict[str, list[Any]] = {"adm": [], "nl": [], "vs": [], "xf": [], "pin": []}
+    net_items: dict[str, list[Any]] = {
+        "adm": [],
+        "nl": [],
+        "vs": [],
+        "xf": [],
+        "pin": [],
+        "cpl": [],
+    }
     built = Built(network=Network(n_nodes=0), node_of_terminal=node_of_terminal, f=f)
 
     def series_z(a: int, b: int, z: complex, name: str) -> None:
@@ -416,6 +470,29 @@ def build(
                     ]
                 )
             _expand_motor(c, equipment, f, dc, slip, N, new_node, series_z, net_items, built)
+        elif c.type == "syncmachine3":
+            if not isinstance(equipment, SyncSpec):
+                raise CircuitValidationError(
+                    [
+                        {
+                            "code": "no_spec",
+                            "component": c.id,
+                            "message": f"{c.id}: this project has no synchronous-machine spec",
+                        }
+                    ]
+                )
+            _expand_sync(
+                c,
+                equipment,
+                f,
+                dc,
+                (sync_emf or {}).get(c.id, 0j),
+                N,
+                new_node,
+                series_z,
+                net_items,
+                built,
+            )
         elif c.type == "load3":
             kind = str(p.get("kind", "R"))
             conn = str(p.get("connection", "Y"))
@@ -468,6 +545,9 @@ def build(
     for x in net_items["xf"]:
         guf.union(str(x.p1), str(x.p2))
         guf.union(str(x.s1), str(x.s2))
+    for cpl in net_items["cpl"]:
+        for a_, b_ in cpl.pairs:
+            guf.union(str(a_), str(b_))
     group_ids: dict[str, int] = {}
     for i in range(n_nodes):
         r = guf.find(str(i))
@@ -493,6 +573,7 @@ def build(
         vsources=net_items["vs"],
         transformers=net_items["xf"],
         pins=net_items["pin"],
+        coupled=net_items["cpl"],
     )
     return built
 
@@ -618,6 +699,59 @@ def _expand_motor(
             series_z(node_e, q, complex(e.R2p / slip, e.X2p * k), f"{c.id}#{X}#Z2")
         meta["phases"][X] = {"e": node_e, "q": q}
     built.motor_internals[c.id] = meta
+
+
+A120 = complex(-0.5, math.sqrt(3) / 2)  # e^{j120°}
+
+
+def sequence_impedance_matrix(z0: complex, z1: complex, z2: complex) -> Any:
+    """Phase-domain impedance matrix (phases U, V, W; V lags U by 120°) from sequence
+    impedances: Z_abc = A·diag(Z0, Z1, Z2)·A⁻¹."""
+    import numpy as np
+
+    a = A120
+    A = np.array([[1, 1, 1], [1, a * a, a], [1, a, a * a]], dtype=np.complex128)
+    return A @ np.diag([z0, z1, z2]).astype(np.complex128) @ np.linalg.inv(A)
+
+
+def _expand_sync(
+    c: Component,
+    spec: SyncSpec,
+    f: float,
+    dc: bool,
+    emf: complex,
+    N: Callable[[str, str], int],
+    new_node: Callable[[], int],
+    series_z: Callable[[int, int, complex, str], None],
+    net_items: dict[str, list[Any]],
+    built: Built,
+) -> None:
+    """Each winding X1→X2 is: X2 —[EMF E_k]— e_k —[coupled Z_abc]— X1 (generator view).
+    The positive-sequence EMF E_U = emf, E_V = a²·emf, E_W = a·emf. DC: winding resistances,
+    and the field winding F1–F2 as its resistance."""
+    import numpy as np
+
+    e = spec.ecm
+    if dc:
+        for X in ("U", "V", "W"):
+            series_z(N(c.id, f"{X}1"), N(c.id, f"{X}2"), complex(e.Ra, 0), f"{c.id}#{X}#Radc")
+        series_z(N(c.id, "F1"), N(c.id, "F2"), complex(e.R_f, 0), f"{c.id}#F#Rdc")
+        built.sync_internals[c.id] = {"dc": True}
+        return
+    k = f / spec.nameplate.f_n
+    zabc = sequence_impedance_matrix(
+        complex(e.Ra, e.X0 * k), complex(e.Ra, e.Xl * k), complex(e.Ra, e.X2 * k)
+    )
+    a = A120
+    pattern = {"U": 1 + 0j, "V": a * a, "W": a}
+    pairs: list[tuple[int, int]] = []
+    for X in ("U", "V", "W"):
+        node_e = new_node()
+        net_items["vs"].append(VSource(node_e, N(c.id, f"{X}2"), emf * pattern[X], f"{c.id}#{X}#E"))
+        pairs.append((node_e, N(c.id, f"{X}1")))
+    cpl = CoupledAdmittance(pairs, np.linalg.inv(zabc), f"{c.id}#Zabc")
+    net_items["cpl"].append(cpl)
+    built.sync_internals[c.id] = {"dc": False, "f": f, "coupled": cpl, "spec": spec, "emf": emf}
 
 
 def _check_voltage_loops(vsources: list[VSource], n_nodes: int) -> None:

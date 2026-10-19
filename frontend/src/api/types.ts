@@ -56,8 +56,33 @@ export interface MotorSpec {
   insulation: { U_frame_Mohm: number; V_frame_Mohm: number; W_frame_Mohm: number }
 }
 
+export interface SyncSpec {
+  schema_version: 1
+  provenance: Provenance
+  provenance_note: string
+  nameplate: {
+    P_n: number
+    U_n: number
+    I_n: number
+    f_n: number
+    poles: number
+    connection: Connection
+    cos_phi_n: number | null
+    If_n: number
+  }
+  ecm: { Ra: number; Xl: number; k_a: number; X2: number; X0: number; R_f: number; P_fw: number }
+  occ: { a: number; I_s: number; m: number; F_res: number }
+  insulation: {
+    U_frame_Mohm: number
+    V_frame_Mohm: number
+    W_frame_Mohm: number
+    F_frame_Mohm: number
+    stator_rotor_Mohm: number
+  }
+}
+
 /** Equipment spec of whichever experiment the project belongs to. */
-export type EquipmentSpec = TransformerSpec | MotorSpec
+export type EquipmentSpec = TransformerSpec | MotorSpec | SyncSpec
 
 export interface Experiment {
   id: string
@@ -131,6 +156,8 @@ export interface Curve {
   y: string
   /** optional second series from the same table (e.g. Kloss formula next to the model) */
   y2?: string
+  /** optional third series from the same table */
+  y3?: string
   /** table id the curve reads from (default: the first table) */
   table?: string
   /** split the points into one series per value of this column (e.g. frequency) */

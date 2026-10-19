@@ -95,3 +95,21 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=… p
   present since S4 for component G; S4 now asserts it.
 - NOT verified: the motor parameters are ASSUMED (no nameplate of the experiment-2 motor yet, and last year's
   experiment-2 file is the blank manual). Skin effect, saturation and stray-load loss are not modelled (see model doc).
+
+## D3 — experiment 3: synchronous machine (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=… pytest` → 118 passed on PostgreSQL 16
+- Engine: `CoupledAdmittance` MNA primitive (non-reciprocal phase-domain matrix from sequence impedances);
+  `syncmachine3` component; island (prime-mover speed sets f) and grid (load angle from the power balance on the
+  stable branch, explicit out-of-step) operation; saturation by the MMF method; remanence as a field-axis offset.
+- pytest: 118 passed. New (test_synchronous, G1–G12): OCC reproduces the student's 11 measured points (≤ 2 V line);
+  unbalanced faults equal the sequence-network closed forms (≤ 1e-9) and extraction recovers Xs, X2, X0 (≤ 1e-9);
+  resistive-load closed form; energy balance island and grid; E_r on the OCC of F_r; EMF and f ∝ n; reversed field
+  cancels remanence; V-curve minimum at cos φ > 0.97, under→over-excited, out-of-step explicit; Potier extraction from a
+  simulated ZPF recovers X_l (< 5 %) and k_a (< 2 %); the student's inconsistent Ik(3) points (If = 1.0, 1.3 A) and
+  reversed descending OCC column are flagged; API journey incl. measured OCC vs simulation (≤ 1.2 %).
+- Comparison: operating-point key columns are no longer compared cells (equal by construction); S3 test updated.
+- Playwright: 16 passed. New (s8-synchronous): OCC/short-circuit runs, Xs = 674 Ω shown, field slider on the 3D bench
+  equals the API, V-curves with an out-of-step row, the student's OCC compared in the UI, spec form with the OCC section.
+- Data finding (docs/lab-data-2026-exp3.md): the student's load tables (6.5) contradict the short-circuit table by an
+  order of magnitude in Xs; the model follows the short circuit (two independent fault types + nameplate excitation agree).
+- NOT verified: Y connection / line-voltage reading of U1 (assumed); X_l (ZPF not yet measured); salient-pole effects.

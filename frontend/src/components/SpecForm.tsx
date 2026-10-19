@@ -7,7 +7,7 @@ import { fmt } from '../format'
 import { t } from '../i18n'
 import { ErrorBox } from './ErrorBox'
 
-type Section = 'nameplate' | 'ecm' | 'insulation'
+type Section = 'nameplate' | 'ecm' | 'occ' | 'insulation'
 interface FieldDef {
   section: Section
   key: string
@@ -58,6 +58,49 @@ const FORMS: Record<string, FormDef> = {
     ],
     modelNote: 'מודל: מעגל תמורה T לכל עמוד, ענף מגנוט רווי X_m(E) = X_m,unsat / (1 + c·(E/E_n)^n). אין צימוד מגנטי בין העמודים.',
   },
+  synchronous: {
+    fields: [
+      { section: 'nameplate', key: 'P_n', label: 'הספק נקוב P_n', unit: 'W' },
+      { section: 'nameplate', key: 'U_n', label: 'מתח קווי נקוב U_n', unit: 'V' },
+      { section: 'nameplate', key: 'I_n', label: 'זרם קווי נקוב I_n', unit: 'A' },
+      { section: 'nameplate', key: 'f_n', label: 'תדירות', unit: 'Hz' },
+      {
+        section: 'nameplate',
+        key: 'poles',
+        label: 'מספר קטבים',
+        unit: '',
+        choices: [2, 4, 6, 8, 10, 12].map((n) => ({ value: String(n), label: `${n} (n_s = ${(6000 / n).toFixed(0)} ב-50 Hz)`, int: true })),
+      },
+      { section: 'nameplate', key: 'connection', label: 'חיבור הסטטור', unit: '', choices: CONN },
+      { section: 'nameplate', key: 'cos_phi_n', label: 'cos φ נקוב (לא חובה)', unit: '' },
+      { section: 'nameplate', key: 'If_n', label: 'זרם עירור נקוב', unit: 'A' },
+      { section: 'ecm', key: 'Ra', label: 'Ra (ליפוף סטטור)', unit: 'Ω' },
+      { section: 'ecm', key: 'Xl', label: 'X_l היגב פיזור (פוטייה)', unit: 'Ω' },
+      { section: 'ecm', key: 'k_a', label: 'k_a תגובת עוגן [A עירור / A עוגן]', unit: '' },
+      { section: 'ecm', key: 'X2', label: 'X2 היגב סדר שלילי', unit: 'Ω' },
+      { section: 'ecm', key: 'X0', label: 'X0 היגב סדר אפס', unit: 'Ω' },
+      { section: 'ecm', key: 'R_f', label: 'R_f ליפוף העירור', unit: 'Ω' },
+      { section: 'ecm', key: 'P_fw', label: 'הפסדי חיכוך ואוורור', unit: 'W' },
+      { section: 'occ', key: 'a', label: 'שיפוע קו הפער a (לליפוף)', unit: 'V/A' },
+      { section: 'occ', key: 'I_s', label: 'ברך הרוויה I_s', unit: 'A' },
+      { section: 'occ', key: 'm', label: 'חדות הברך m', unit: '' },
+      { section: 'occ', key: 'F_res', label: 'שטף שיורי כהיסט בעירור F_res', unit: 'A' },
+      { section: 'insulation', key: 'U_frame_Mohm', label: 'סטטור U – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'V_frame_Mohm', label: 'סטטור V – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'W_frame_Mohm', label: 'סטטור W – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'F_frame_Mohm', label: 'רוטור – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'stator_rotor_Mohm', label: 'סטטור – רוטור', unit: 'MΩ' },
+    ],
+    derived: [
+      { key: 'n_sync', label: 'מהירות סינכרונית', unit: 'rpm' },
+      { key: 'U_winding', label: 'מתח ליפוף נקוב', unit: 'V' },
+      { key: 'Z_base', label: 'עכבת בסיס', unit: 'Ω' },
+      { key: 'Xs_unsat', label: 'Xs = X_l + a·k_a (לא רווי)', unit: 'Ω' },
+      { key: 'Xs_pu', label: 'Xs ביחידות יחסיות', unit: 'pu', digits: 3 },
+    ],
+    modelNote:
+      'מודל: רוטור גלילי, שיטת כמ״מ עם רוויה: E_r = OCC(|F_f + k_a·I1|) מאחורי עכבות הסדרים (Ra + jX_l, Ra + jX2, Ra + jX0). השטף השיורי כהיסט F_res בזרם העירור. ההיגב הסינכרוני הלא רווי Xs = X_l + a·k_a.',
+  },
   induction_motor: {
     fields: [
       { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },
@@ -102,7 +145,7 @@ type Draft = Record<string, string>
 function toDraft(form: FormDef, s: EquipmentSpec): Draft {
   const d: Draft = {}
   for (const f of form.fields) {
-    const v = (s[f.section] as unknown as Record<string, unknown>)[f.key]
+    const v = (s as unknown as Record<string, Record<string, unknown>>)[f.section]?.[f.key]
     d[`${f.section}.${f.key}`] = v == null ? '' : String(v)
   }
   return d
@@ -129,9 +172,10 @@ function fromDraft(form: FormDef, base: EquipmentSpec, d: Draft, provenance: Pro
   return out
 }
 
-const SECTION_TITLE: Record<Section, 'spec.nameplate' | 'spec.ecm' | 'spec.insulation'> = {
+const SECTION_TITLE: Record<Section, 'spec.nameplate' | 'spec.ecm' | 'spec.occ' | 'spec.insulation'> = {
   nameplate: 'spec.nameplate',
   ecm: 'spec.ecm',
+  occ: 'spec.occ',
   insulation: 'spec.insulation',
 }
 
@@ -196,7 +240,7 @@ function SpecFormInner({ project, form }: { project: Project; form: FormDef }) {
         {presetMsg && <span className="badge warn">{presetMsg}</span>}
       </div>
       <div className="grid-2">
-        {(['nameplate', 'ecm', 'insulation'] as Section[]).map((sec) => (
+        {(['nameplate', 'ecm', 'occ', 'insulation'] as Section[]).filter((sec) => form.fields.some((f) => f.section === sec)).map((sec) => (
           <section key={sec} className="card stack">
             <h2>{t(SECTION_TITLE[sec])}</h2>
             <div className="grid-2" style={{ gap: 10 }}>

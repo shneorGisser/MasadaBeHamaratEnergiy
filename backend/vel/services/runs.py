@@ -163,6 +163,7 @@ LIVE_OVERRIDABLE = {
     "switch3": {"closed"},
     "load3": {"value", "kind"},
     "motor3": {"M_load", "locked"},
+    "syncmachine3": {"I_f", "n_drive", "P_shaft"},
 }
 
 

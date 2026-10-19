@@ -76,10 +76,12 @@ def all_modules() -> list[ExperimentModule]:
 
 def _register_builtin() -> None:
     from vel.experiments.induction_motor import module as motor
+    from vel.experiments.synchronous import module as synchronous
     from vel.experiments.transformer3ph import module as transformer
 
     register(transformer.MODULE)
     register(motor.MODULE)
+    register(synchronous.MODULE)
 
 
 _register_builtin()

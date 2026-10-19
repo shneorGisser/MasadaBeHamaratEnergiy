@@ -30,6 +30,7 @@ const SIZE: Record<string, [number, number, number]> = {
   switch3: [0.6, 0.4, 0.5],
   transformer3: [1.2, 1.0, 0.8],
   motor3: [1.6, 0.7, 0.7],
+  syncmachine3: [1.6, 0.7, 0.7],
   load3: [1.0, 0.5, 0.7],
   resistor: [0.4, 0.2, 0.2],
   inductor: [0.4, 0.3, 0.3],
@@ -46,6 +47,7 @@ function readingText(c: CComponent, live: LivePoint | null): string | null {
   if (c.type === 'voltmeter') return r.U === null ? 'לא מוגדר' : `${fmt(r.U)} V`
   if (c.type === 'wattmeter') return r.P === null ? 'לא מוגדר' : `${fmt(r.P)} W · cos φ ${fmt(r.pf, 3)}`
   if (c.type === 'motor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m`
+  if (c.type === 'syncmachine3') return `${fmt(r.n)} rpm · ${fmt(r.f)} Hz · If ${fmt(r.If, 3)} A`
   return null
 }
 
@@ -53,7 +55,21 @@ function readingText(c: CComponent, live: LivePoint | null): string | null {
  * Motor + magnetic-powder brake on a common base. The coupling turns at a slowed-down rate
  * proportional to the solved speed (a visual cue only; 1500 rpm shown as 1 rev/s).
  */
-function MotorBrake({ rpm, emissive, onClick }: { rpm: number; emissive: string; onClick: (e: ThreeEvent<MouseEvent>) => void }) {
+function MotorBrake({
+  rpm,
+  emissive,
+  onClick,
+  bodyColor = '#5f7d95',
+  finColor = '#4f6a80',
+  loadColor = '#8c8f91',
+}: {
+  rpm: number
+  emissive: string
+  onClick: (e: ThreeEvent<MouseEvent>) => void
+  bodyColor?: string
+  finColor?: string
+  loadColor?: string
+}) {
   const coupling = useRef<Group>(null)
   useFrame((state, dt) => {
     if (!coupling.current || rpm <= 0) return
@@ -69,17 +85,17 @@ function MotorBrake({ rpm, emissive, onClick }: { rpm: number; emissive: string;
       {/* motor: finned cylinder along x */}
       <mesh position={[-0.35, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.27, 0.27, 0.7, 32]} />
-        <meshStandardMaterial color="#5f7d95" metalness={0.3} roughness={0.6} emissive={emissive} />
+        <meshStandardMaterial color={bodyColor} metalness={0.3} roughness={0.6} emissive={emissive} />
       </mesh>
       {[-0.6, -0.45, -0.3, -0.15].map((x) => (
         <mesh key={x} position={[x, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.3, 0.3, 0.03, 32]} />
-          <meshStandardMaterial color="#4f6a80" emissive={emissive} />
+          <meshStandardMaterial color={finColor} emissive={emissive} />
         </mesh>
       ))}
       <mesh position={[-0.35, 0.72, 0]}>
         <boxGeometry args={[0.26, 0.12, 0.26]} />
-        <meshStandardMaterial color="#4f6a80" emissive={emissive} />
+        <meshStandardMaterial color={finColor} emissive={emissive} />
       </mesh>
       {/* shaft + coupling */}
       <group ref={coupling} position={[0.12, 0.4, 0]}>
@@ -99,7 +115,7 @@ function MotorBrake({ rpm, emissive, onClick }: { rpm: number; emissive: string;
       {/* magnetic-powder brake */}
       <mesh position={[0.5, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.24, 0.24, 0.4, 32]} />
-        <meshStandardMaterial color="#8c8f91" metalness={0.5} roughness={0.4} emissive={emissive} />
+        <meshStandardMaterial color={loadColor} metalness={0.5} roughness={0.4} emissive={emissive} />
       </mesh>
     </group>
   )
@@ -135,6 +151,16 @@ function Equipment({
     <group position={pos}>
       {c.type === 'motor3' ? (
         <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
+      ) : c.type === 'syncmachine3' ? (
+        // synchronous machine (blue-grey) coupled to the servo drive (dark)
+        <MotorBrake
+          rpm={Number(live?.readings?.[c.id]?.n ?? 0)}
+          emissive={emissive}
+          onClick={click}
+          bodyColor="#6f8fa8"
+          finColor="#59768c"
+          loadColor="#3b3f44"
+        />
       ) : c.type === 'transformer3' ? (
         <group onClick={click}>
           <mesh position={[0, 0.05, 0]}>
@@ -184,7 +210,7 @@ function Equipment({
         </mesh>
       )}
       {showLabel && (
-      <Html position={[0, (c.type === 'transformer3' ? 1.1 : c.type === 'motor3' ? 0.8 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
+      <Html position={[0, (c.type === 'transformer3' ? 1.1 : c.type === 'motor3' || c.type === 'syncmachine3' ? 0.8 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
         <button
           className={`lab-label${selected ? ' selected' : ''}`}
           data-testid={`eq-${c.id}`}
@@ -241,7 +267,7 @@ function Scene({
     const [w, h, d] = SIZE[c.type] ?? [0.4, 0.3, 0.3]
     const slot = terminalSlots(c.type, [t])[t] ?? { side: 'left', at: 0.5 }
     const along = (slot.at - 0.5) * (slot.side === 'left' || slot.side === 'right' ? d : w)
-    const top = c.type === 'transformer3' || c.type === 'motor3' ? 0.1 : h
+    const top = c.type === 'transformer3' || c.type === 'motor3' || c.type === 'syncmachine3' ? 0.1 : h
     if (slot.side === 'left') return [base[0] - w / 2, top, base[2] + along]
     if (slot.side === 'right') return [base[0] + w / 2, top, base[2] + along]
     return [base[0] + along, top, base[2] + d / 2]
@@ -302,6 +328,15 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   const mLoad = brake ?? Number(motor?.params.M_load ?? 0)
   const isLocked = locked ?? Boolean(motor?.params.locked ?? false)
   const brakeMax = Math.round(3 * mN * 100) / 100
+  const sm = circuit?.components.find((c) => c.type === 'syncmachine3')
+  const spec = project.data?.spec as { nameplate?: { If_n?: number; P_n?: number } } | undefined
+  const ifMax = 1.5 * (spec?.nameplate?.If_n ?? 4)
+  const pMax = 1.5 * (spec?.nameplate?.P_n ?? 300)
+  const [iF, setIF] = useState<number | null>(null)
+  const [pShaft, setPShaft] = useState<number | null>(null)
+  const fieldI = iF ?? Number(sm?.params.I_f ?? 0)
+  const shaftP = pShaft ?? Number(sm?.params.P_shaft ?? 0)
+  const onGrid = Boolean(source)
 
   useEffect(() => {
     if (!circuit) return
@@ -309,6 +344,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
     if (source) overrides[source.id] = { U_line: u }
     for (const [id, closed] of Object.entries(switches)) overrides[id] = { closed }
     if (motor) overrides[motor.id] = { M_load: mLoad, locked: isLocked }
+    if (sm) overrides[sm.id] = onGrid ? { I_f: fieldI, P_shaft: shaftP } : { I_f: fieldI }
     const my = ++seq.current
     const t = setTimeout(() => {
       api
@@ -322,7 +358,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
         .catch((e) => my === seq.current && setError(e))
     }, 150)
     return () => clearTimeout(t)
-  }, [circuit, source, u, switches, motor, mLoad, isLocked, projectId, kind])
+  }, [circuit, source, u, switches, motor, mLoad, isLocked, sm, fieldI, shaftP, onGrid, projectId, kind])
 
   if (circuitQ.isLoading) return <p className="muted">טוען שולחן…</p>
   if (circuitQ.isError) return <ErrorBox error={circuitQ.error} />
@@ -382,6 +418,40 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
               <input type="checkbox" checked={isLocked} data-testid="locked" onChange={(e) => setLocked(e.target.checked)} />
               רוטור נעול
             </label>
+          </>
+        )}
+        {sm && (
+          <>
+            <label className="row" style={{ gap: 6 }}>
+              עירור ({sm.id}): <strong className="num" data-testid="field-value">{fmt(fieldI, 3)} A</strong>
+              <input
+                type="range"
+                min={0}
+                max={ifMax}
+                step={0.01}
+                value={fieldI}
+                onChange={(e) => setIF(Number(e.target.value))}
+                data-testid="field"
+                aria-label="זרם העירור"
+                style={{ width: 180 }}
+              />
+            </label>
+            {onGrid && (
+              <label className="row" style={{ gap: 6 }}>
+                הספק בציר: <strong className="num" data-testid="shaft-value">{fmt(shaftP)} W</strong>
+                <input
+                  type="range"
+                  min={-pMax}
+                  max={pMax}
+                  step={1}
+                  value={shaftP}
+                  onChange={(e) => setPShaft(Number(e.target.value))}
+                  data-testid="shaft"
+                  aria-label="הספק בציר"
+                  style={{ width: 160 }}
+                />
+              </label>
+            )}
           </>
         )}
         <span className="grow" />

@@ -26,15 +26,22 @@ const VARIANT_LABEL: Record<string, string> = {
 
 const HIDDEN_CASE_KEYS = new Set(['bindings', 'source', 'law'])
 
-/** Inverter operating points as text: "20@0.64, 35@1.28" (frequency @ brake torque). */
-function pointsToText(v: unknown[]): string {
-  return v.map((p) => `${String((p as { f: number }).f)}@${String((p as { M: number }).M)}`).join(', ')
+/**
+ * Operating points (list of small objects) as text: "20@0.64, 35@1.28". The key order comes
+ * from the study's default case — inverter: f@M, V-curves: P@If.
+ */
+function pointKeys(def: unknown): string[] {
+  const first = Array.isArray(def) ? (def[0] as Record<string, unknown> | undefined) : undefined
+  return first ? Object.keys(first) : ['f', 'M']
 }
-function parsePoints(raw: string): { f: number; M: number }[] | null {
+function pointsToText(v: unknown[], keys: string[]): string {
+  return v.map((p) => keys.map((k) => String((p as Record<string, unknown>)[k])).join('@')).join(', ')
+}
+function parsePoints(raw: string, keys: string[]): Record<string, number>[] | null {
   const parts = raw.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean)
   const out = parts.map((x) => x.split('@').map(Number))
-  if (!out.length || out.some((p) => p.length !== 2 || !p.every(Number.isFinite))) return null
-  return out.map((p) => ({ f: p[0] ?? NaN, M: p[1] ?? NaN }))
+  if (!out.length || out.some((p) => p.length !== keys.length || !p.every(Number.isFinite))) return null
+  return out.map((p) => Object.fromEntries(keys.map((k, i) => [k, p[i] ?? NaN])))
 }
 const isPoints = (k: string) => k === 'points'
 
@@ -78,7 +85,7 @@ function CaseEditor({
               </label>
             )
           const bad = isPoints(k)
-            ? parsePoints(v) === null
+            ? parsePoints(v, pointKeys(def)) === null
             : Array.isArray(def)
             ? parseList(v) === null
             : def === null
@@ -105,7 +112,7 @@ function caseToText(c: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(c)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
-    out[k] = isPoints(k) && Array.isArray(v) ? pointsToText(v) : Array.isArray(v) ? v.join(', ') : v === null || v === undefined ? '' : String(v)
+    out[k] = isPoints(k) && Array.isArray(v) ? pointsToText(v, pointKeys(v)) : Array.isArray(v) ? v.join(', ') : v === null || v === undefined ? '' : String(v)
   }
   return out
 }
@@ -116,7 +123,7 @@ function textToCase(study: Study, text: Record<string, string>): Record<string, 
   for (const [k, def] of Object.entries(study.default_case)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
     const raw = text[k] ?? ''
-    if (isPoints(k)) out[k] = parsePoints(raw) ?? raw
+    if (isPoints(k)) out[k] = parsePoints(raw, pointKeys(def)) ?? raw
     else if (Array.isArray(def)) out[k] = parseList(raw) ?? raw
     else if (typeof def === 'boolean') out[k] = raw === 'true'
     else if (typeof def === 'string') out[k] = raw

@@ -60,6 +60,10 @@ def operating_point(
 ) -> OperatingPoint:
     """Steady state of the circuit. For an induction motor the slip is found from the torque
     balance M_shaft(s) = M_load on the stable branch (0 ≤ s < s_pull-out)."""
+    if not dc and any(c.type == "syncmachine3" for c in circuit.components):
+        from vel.engine.synchronous import sync_operating_point
+
+        return sync_operating_point(circuit, equipment, _electrical)
     motors = [c for c in circuit.components if c.type == "motor3"]
     if dc or not motors:
         return _electrical(circuit, equipment, dc, {})
@@ -184,9 +188,13 @@ def operating_point(
 
 
 def _electrical(
-    circuit: CircuitModel, equipment: Any, dc: bool, slips: dict[str, float]
+    circuit: CircuitModel,
+    equipment: Any,
+    dc: bool,
+    slips: dict[str, float],
+    sync_emf: dict[str, complex] | None = None,
 ) -> OperatingPoint:
-    built: Built = build(circuit, equipment=equipment, dc=dc, slips=slips)
+    built: Built = build(circuit, equipment=equipment, dc=dc, slips=slips, sync_emf=sync_emf)
     sol = solve(built.network)
     readings: dict[str, dict[str, float | None]] = {}
     undefined: dict[str, str] = {}
@@ -332,6 +340,31 @@ def _electrical(
                     "ליפוף תקף רק להזנה סימטרית; רכיב הסדר השלילי אינו ממודל.",
                 }
             )
+
+    for sid, meta in built.sync_internals.items():
+        if meta["dc"]:
+            continue
+        cpl = meta["coupled"]
+        i_out = cpl.currents(sol.v)  # out of terminals X1 (generator convention)
+        a120 = complex(-0.5, math.sqrt(3) / 2)
+        e_u = meta["emf"]
+        e_k = [e_u, e_u * a120 * a120, e_u * a120]
+        p_gen = sum((ek * complex(ik).conjugate()).real for ek, ik in zip(e_k, i_out, strict=True))
+        ra = meta["spec"].ecm.Ra
+        i1 = (complex(i_out[0]) + a120 * complex(i_out[1]) + a120 * a120 * complex(i_out[2])) / 3
+        internals[f"{sid}.elec"] = {
+            "P_gen": p_gen,  # air-gap power, generator convention
+            "P_cu": ra * sum(abs(complex(x)) ** 2 for x in i_out),
+            "I1_re": i1.real,
+            "I1_im": i1.imag,
+            **{
+                f"I_{X}_{part}": (
+                    complex(i_out[k]).real if part == "re" else complex(i_out[k]).imag
+                )
+                for k, X in enumerate("UVW")
+                for part in ("re", "im")
+            },
+        }
 
     # total active power delivered by AC sources (for power-balance checks)
     p_src = 0.0

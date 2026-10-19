@@ -244,7 +244,11 @@ def compare(
     derived_cols = module.derived_columns.get(s.study_kind, [])
     sim_table = run.result["tables"][0]
     sim_rows: list[dict[str, Any]] = sim_table["rows"]
-    quantities = [c.key for c in d.columns] + [c["key"] for c in derived_cols]
+    # the operating-point key(s) are equal by construction of the pairing — not compared
+    match_keys = set() if d.match == "row" else set(d.match.split(","))
+    quantities = [c.key for c in d.columns if c.key not in match_keys] + [
+        c["key"] for c in derived_cols
+    ]
     units = {c.key: c.unit for c in d.columns} | {c["key"]: c["unit"] for c in derived_cols}
     pairs: list[dict[str, Any]] = []
     raw_keys = [c.key for c in d.columns]

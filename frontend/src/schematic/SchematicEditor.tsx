@@ -47,6 +47,9 @@ function ParamPanel({
         <input className="input" value={comp.label} onChange={(e) => onChange(comp.params, e.target.value)} />
       </label>
       {comp.type === 'transformer3' && <p className="muted small">הפרמטרים נלקחים ממפרט השנאי של הפרויקט (מקור אמת יחיד).</p>}
+      {comp.type === 'syncmachine3' && (
+        <p className="muted small">פרמטרי המכונה נלקחים ממפרט הפרויקט. כאן נקבעים זרם העירור, מהירות המנוע המניע (כשאין רשת) והספק הציר (כשמחובר לרשת).</p>
+      )}
       {comp.type === 'motor3' && (
         <p className="muted small">פרמטרי המנוע נלקחים ממפרט המנוע של הפרויקט. כאן נקבעים רק מומנט הבלם ונעילת הרוטור; ההחלקה נפתרת מאיזון המומנטים.</p>
       )}
