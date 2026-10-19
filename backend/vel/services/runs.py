@@ -165,6 +165,8 @@ LIVE_OVERRIDABLE = {
     "motor3": {"M_load", "locked"},
     "syncmachine3": {"I_f", "n_drive", "P_shaft"},
     "woundmotor3": {"M_load", "locked", "angle", "speed_mode", "n_set"},
+    "dcmachine": {"M_load", "speed_mode", "n_set"},
+    "resistor": {"R"},  # rheostats: field, extra armature resistance, load
 }
 
 
@@ -198,7 +200,9 @@ def live_point(
         "overrides": overrides,
     }
     try:
-        op = operating_point(circuit, spec, on_stall="stall")
+        types = {c.type for c in circuit.components}
+        dc = "source3" not in types and bool(types & {"source_dc", "dcmachine"})
+        op = operating_point(circuit, spec, dc=dc, on_stall="stall")
     except CircuitValidationError as exc:
         return {
             **base,

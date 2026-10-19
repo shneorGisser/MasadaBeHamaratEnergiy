@@ -24,7 +24,8 @@ const VARIANT_LABEL: Record<string, string> = {
   'Yd-abc-2': 'כוכב-משולש, סגירה x1→y2',
 }
 
-const HIDDEN_CASE_KEYS = new Set(['bindings', 'source', 'law'])
+// fixed by the study's figure (circuit topology), not by the student
+const HIDDEN_CASE_KEYS = new Set(['bindings', 'source', 'law', 'excitation', 'connections'])
 
 /**
  * Operating points (list of small objects) as text: "20@0.64, 35@1.28". The key order comes
@@ -71,6 +72,17 @@ function CaseEditor({
                   onChange={(e) => onChange({ ...value, [k]: String(e.target.checked) })}
                 />
                 {label}
+              </label>
+            )
+          if (k === 'series')
+            return (
+              <label key={k} className="field">
+                {label}
+                <select className="input" name={`case-${k}`} value={v} onChange={(e) => onChange({ ...value, [k]: e.target.value })}>
+                  <option value="none">ללא (עירור מקבילי בלבד)</option>
+                  <option value="cumulative">S1–S2 מצטבר (מחזק את השדה)</option>
+                  <option value="differential">S2–S1 מנוגד (מחליש את השדה)</option>
+                </select>
               </label>
             )
           if (k === 'load_kind')

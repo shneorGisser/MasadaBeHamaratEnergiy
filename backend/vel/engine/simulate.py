@@ -61,6 +61,10 @@ def operating_point(
 ) -> OperatingPoint:
     """Steady state of the circuit. For an induction motor the slip is found from the torque
     balance M_shaft(s) = M_load on the stable branch (0 ≤ s < s_pull-out)."""
+    if dc and any(c.type == "dcmachine" for c in circuit.components):
+        from vel.engine.dcmachine import dc_operating_point
+
+        return dc_operating_point(circuit, equipment, _electrical, on_stall)
     if not dc and any(c.type == "syncmachine3" for c in circuit.components):
         from vel.engine.synchronous import sync_operating_point
 
@@ -205,8 +209,11 @@ def _electrical(
     dc: bool,
     slips: dict[str, float],
     sync_emf: dict[str, complex] | None = None,
+    dc_emf: dict[str, float] | None = None,
 ) -> OperatingPoint:
-    built: Built = build(circuit, equipment=equipment, dc=dc, slips=slips, sync_emf=sync_emf)
+    built: Built = build(
+        circuit, equipment=equipment, dc=dc, slips=slips, sync_emf=sync_emf, dc_emf=dc_emf
+    )
     sol = solve(built.network)
     readings: dict[str, dict[str, float | None]] = {}
     undefined: dict[str, str] = {}
@@ -399,6 +406,15 @@ def _electrical(
                     "ליפוף תקף רק להזנה סימטרית; רכיב הסדר השלילי אינו ממודל.",
                 }
             )
+
+    for did in built.dc_internals:
+        net = built.network
+        internals[f"{did}.dc"] = {
+            # generator convention: armature current out of A1
+            "Ia": -_series_current(net, sol, f"{did}#Ra").real,
+            "If": _series_current(net, sol, f"{did}#Rf").real,
+            "Is": _series_current(net, sol, f"{did}#Rs").real,
+        }
 
     for sid, meta in built.sync_internals.items():
         if meta["dc"]:

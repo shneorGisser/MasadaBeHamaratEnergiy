@@ -24,6 +24,7 @@ from vel.engine.mna import (
     Pin,
     VSource,
 )
+from vel.experiments.dc_machine.spec import DCSpec
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.synchronous.spec import SyncSpec
 from vel.experiments.transformer3ph.spec import TransformerSpec
@@ -101,6 +102,26 @@ CATALOG: dict[str, ComponentType] = {
             (
                 ParamDef("M_load", "מומנט הבלם", "N·m", default=0.0, min=0, max=1e4),
                 ParamDef("locked", "רוטור נעול", "", kind="bool", default=False),
+            ),
+        ),
+        ComponentType(
+            "dcmachine",
+            "מכונת זרם ישר (עוגן, עירור מקבילי, עירור טורי)",
+            "machine",
+            ("A1", "A2", "F1", "F2", "S1", "S2"),
+            (
+                ParamDef(
+                    "speed_mode",
+                    "מהירות נקבעת ע״י",
+                    "",
+                    kind="choice",
+                    default="speed",
+                    choices=("speed", "torque"),
+                ),
+                ParamDef(
+                    "n_set", "מהירות (מנוע סרוו מניע)", "rpm", default=2000.0, min=-1e5, max=1e5
+                ),
+                ParamDef("M_load", "מומנט הבלם (פעולת מנוע)", "N·m", default=0.0, min=0, max=1e4),
             ),
         ),
         ComponentType(
@@ -257,6 +278,8 @@ class Built:
     motor_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     # synchronous-machine internals (EMF source names, coupled winding branches)
     sync_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # DC machines: armature/field branch names for the magnetic and mechanical balance
+    dc_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     # instruments inside a rotating wound rotor's circuit: their readings are at slip frequency
     rotor_instruments: dict[str, float] = field(default_factory=dict)
     # instruments that straddle a rotating rotor circuit and the stator side (no single f)
@@ -346,6 +369,7 @@ def build(
     dc: bool = False,
     slips: dict[str, float] | None = None,
     sync_emf: dict[str, complex] | None = None,
+    dc_emf: dict[str, float] | None = None,
 ) -> Built:
     """Expand a circuit into an MNA network.
 
@@ -390,7 +414,12 @@ def build(
 
     sources = [c for c in circuit.components if c.type in ("source3", "source_dc")]
     machines = [c for c in circuit.components if c.type == "syncmachine3"]
-    if not sources and not (machines and not dc):
+    dc_machines = [c for c in circuit.components if c.type == "dcmachine"]
+    if dc_machines and not dc:
+        raise CircuitValidationError(
+            [{"code": "mixed_sources", "message": "a DC machine needs a DC (steady-state) study"}]
+        )
+    if not sources and not (machines and not dc) and not dc_machines:
         raise CircuitValidationError([{"code": "no_source", "message": "circuit has no source"}])
     f_values = {_f(c.params, "f", CATALOG[c.type], c.id) for c in sources if c.type == "source3"}
     if machines and not dc and not f_values:
@@ -517,6 +546,26 @@ def build(
                     ]
                 )
             _expand_motor(c, equipment, f, dc, slip, N, new_node, series_z, net_items, built)
+        elif c.type == "dcmachine":
+            if not isinstance(equipment, DCSpec):
+                raise CircuitValidationError(
+                    [
+                        {
+                            "code": "no_spec",
+                            "component": c.id,
+                            "message": f"{c.id}: this project has no DC machine spec",
+                        }
+                    ]
+                )
+            e = equipment.ecm
+            x = new_node()
+            series_z(N(c.id, "A1"), x, complex(e.R_a, 0), f"{c.id}#Ra")
+            net_items["vs"].append(
+                VSource(x, N(c.id, "A2"), complex((dc_emf or {}).get(c.id, 0.0)), f"{c.id}#E")
+            )
+            series_z(N(c.id, "F1"), N(c.id, "F2"), complex(e.R_f, 0), f"{c.id}#Rf")
+            series_z(N(c.id, "S1"), N(c.id, "S2"), complex(e.R_s, 0), f"{c.id}#Rs")
+            built.dc_internals[c.id] = {"spec": equipment}
         elif c.type == "woundmotor3":
             if not isinstance(equipment, WoundSpec):
                 raise CircuitValidationError(

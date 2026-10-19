@@ -46,6 +46,14 @@ export function terminalSlots(type: string, terminals: string[]): Record<string,
       ;(['U2', 'V2', 'W2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.25 + 0.25 * i }))
       spread(['F1', 'F2'], 'top', s)
       break
+    case 'dcmachine':
+      // armature A1 on top (towards the supply / load); A2 and the series field S1–S2 along
+      // the bottom, so the series winding is drawn in the armature return path; shunt field
+      // on the left (from the field rheostat)
+      spread(['A1'], 'top', s)
+      ;(['A2', 'S1', 'S2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.25 + 0.25 * i }))
+      spread(['F1', 'F2'], 'left', s)
+      break
     case 'source3':
       spread(['L1', 'L2', 'L3'], 'right', s)
       spread(['N'], 'bottom', s)

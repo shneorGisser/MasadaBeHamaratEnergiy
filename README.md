@@ -12,6 +12,10 @@ Modules:
   Parameters fitted to the student's 2026 measurements — see `docs/model-synchronous.md` and `docs/lab-data-2026-exp3.md`.
 - **Experiment 4 — wound-rotor induction machine** (turns ratio, no-load, locked rotor, load with/without starter
   resistance, induction regulator, induction generator on the grid, inverter) — see `docs/model-wound-rotor.md`.
+- **Experiments 5 and 6 — DC machine as motor and as generator** (insulation, resistances with brush drop; shunt motor
+  at no load and on load, speed control by extra armature resistance and by field, compound motor; OCC, external
+  characteristics with separate / shunt / compound excitation incl. shunt build-up, regulation, parallel with a DC
+  network). One machine model fitted to the 2025 reports of both experiments — see `docs/model-dc-machine.md`.
 
 The planning package (vision, requirements, architecture, validation plan, roadmap) is in the
 project's planning document; `docs/` holds the engineering notes and the test log.

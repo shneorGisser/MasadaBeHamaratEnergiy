@@ -128,3 +128,26 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
   angle slider drives the regulator output (equals the API).
 - Finding: with the nameplate fit the pull-out torque is only ≈ 1.1·M_n — documented as a sign of inflated leakage
   reactances (docs/model-wound-rotor.md); load defaults stay within the reachable range.
+
+## D5/D6 — experiments 5 and 6: DC machine as motor and generator (2026-10-20)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- Engine: `dcmachine` component (A1–A2, F1–F2, S1–S2); `engine/dcmachine.py` — network affine in E_eff (two DC
+  solves), scalar MMF/EMF balance with saturation, armature reaction, series field and brush drop; generator
+  root reached from the remanence (build-up / no build-up); motor speed from the torque balance with explicit
+  runaway, stall and over-n_max errors. Live operating point now solved in DC when the circuit is DC.
+- Spec fitted to the 2025 reports of both experiments (same machine): every residual within 2 tolerances
+  (20 rpm, 0.05 N·m, 3 V); the generator OCC fits at an implied ≈ 2550 rpm (plate 2500) — `scripts/fit_dc_machine.py`.
+- pytest: +27 (test_dc_machine D1–D12). D1–D3 are fit regressions on the same data (not validation); D4–D12:
+  motor and generator power balances (≤ 1e-9), shunt build-up only with correct field polarity and below the
+  critical resistance, open-field runaway, stall, reversal, series motor runaway unloaded, brush drop in U/I,
+  every default study runs, rheostat solvers hit their targets (incl. shunt-generator collapse reported per row),
+  plausibility flags on the 2025 tables, API journey (live point, measured 5/2.4 vs simulation: n ≤ 2 %,
+  reproduce, report, export/import, presets).
+- Playwright: 19 passed. New (s10-dc-machine): motor load table, 3D brake equals the API, compound selector;
+  generator OCC warning (no hysteresis), shunt build-up to 220 V, compound polarities, spec form. Schematics of
+  every editable DC circuit inspected visually; the series field moved to the bottom edge and the voltmeter return
+  rerouted to remove near-overlapping wires.
+- Data findings (docs/model-dc-machine.md): 6/2.6 If/Ia rows apparently swapped from column 5; 6/2.7 shows no
+  series-field effect although 5/2.8 shows a strong one; 5/2.6 "60 % load" was practically no load; generator speed
+  not recorded (2800 rpm inferred).
+- NOT verified: n_max (assumed 3000 rpm); hysteresis not modelled; no-load armature current 13 % low.

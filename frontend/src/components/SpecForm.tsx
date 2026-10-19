@@ -27,6 +27,41 @@ const CONN = [
   { value: 'D', label: 'Δ (משולש)' },
 ]
 
+const DC_FORM: FormDef = {
+  fields: [
+    { section: 'nameplate', key: 'P_n', label: 'הספק נקוב P_n', unit: 'W' },
+    { section: 'nameplate', key: 'U_n', label: 'מתח עוגן נקוב U_n', unit: 'V' },
+    { section: 'nameplate', key: 'I_n', label: 'זרם עוגן נקוב I_n', unit: 'A' },
+    { section: 'nameplate', key: 'n_n', label: 'מהירות נקובה n_n', unit: 'rpm' },
+    { section: 'nameplate', key: 'If_n', label: 'זרם עירור נקוב (שלט)', unit: 'A' },
+    { section: 'nameplate', key: 'n_max', label: 'מהירות מרבית מותרת', unit: 'rpm' },
+    { section: 'ecm', key: 'R_a', label: 'R_a התנגדות מעגל העוגן', unit: 'Ω' },
+    { section: 'ecm', key: 'R_f', label: 'R_f ליפוף עירור מקבילי', unit: 'Ω' },
+    { section: 'ecm', key: 'R_s', label: 'R_s ליפוף עירור טורי', unit: 'Ω' },
+    { section: 'ecm', key: 'U_brush', label: 'מפל מברשות (שתי מברשות)', unit: 'V' },
+    { section: 'ecm', key: 'rho_s', label: 'ρ_s יחס כריכות טורי/מקבילי', unit: '' },
+    { section: 'ecm', key: 'k_ar', label: 'k_ar תגובת עוגן [A עירור / A עוגן]', unit: '' },
+    { section: 'ecm', key: 'P_rot_n', label: 'הפסדי סיבוב ב-n_n', unit: 'W' },
+    { section: 'ecm', key: 'k_rot', label: 'מעריך P_rot ∝ n^k (1 = מומנט חיכוך קבוע)', unit: '' },
+    { section: 'occ', key: 'n_ref', label: 'מהירות ייחוס לאופיין הריקם', unit: 'rpm' },
+    { section: 'occ', key: 'a', label: 'שיפוע קו הפער a', unit: 'V/A' },
+    { section: 'occ', key: 'I_s', label: 'ברך הרוויה I_s', unit: 'A' },
+    { section: 'occ', key: 'm', label: 'חדות הברך m', unit: '' },
+    { section: 'occ', key: 'F_res', label: 'שטף שיורי כהיסט בעירור F_res', unit: 'A' },
+    { section: 'insulation', key: 'armature_Mohm', label: 'עוגן – גוף', unit: 'MΩ' },
+    { section: 'insulation', key: 'shunt_Mohm', label: 'עירור מקבילי – גוף', unit: 'MΩ' },
+    { section: 'insulation', key: 'series_Mohm', label: 'עירור טורי – גוף', unit: 'MΩ' },
+  ],
+  derived: [
+    { key: 'M_n', label: 'מומנט נקוב', unit: 'N·m', digits: 3 },
+    { key: 'k_phi_n', label: 'k·Φ בזרם העירור הנקוב', unit: 'V·s', digits: 4 },
+    { key: 'If_at_Un', label: 'זרם עירור ב-U_n ללא ריאוסטט', unit: 'A', digits: 3 },
+    { key: 'M_fric', label: 'מומנט חיכוך ב-n_n', unit: 'N·m', digits: 3 },
+  ],
+  modelNote:
+    'מודל: E = (n/n_ref)·OCC(F), F = I_f + ρ_s·I_s − k_ar·|I_a| + F_res; מתח ההדקים U = E − I_a·R_a − ΔU_brush. מחולל מקבילי נבנה מהשטף השיורי, ולכן חיבור הפוך של העירור או התנגדות מעל הקריטית מונעים בנייה. אין היסטרזיס.',
+}
+
 /** One form definition per experiment; the backend validates the same fields (single source). */
 const FORMS: Record<string, FormDef> = {
   transformer3ph: {
@@ -101,6 +136,8 @@ const FORMS: Record<string, FormDef> = {
     modelNote:
       'מודל: רוטור גלילי, שיטת כמ״מ עם רוויה: E_r = OCC(|F_f + k_a·I1|) מאחורי עכבות הסדרים (Ra + jX_l, Ra + jX2, Ra + jX0). השטף השיורי כהיסט F_res בזרם העירור. ההיגב הסינכרוני הלא רווי Xs = X_l + a·k_a.',
   },
+  dc_motor: DC_FORM,
+  dc_generator: DC_FORM,
   wound_rotor: {
     fields: [
       { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },

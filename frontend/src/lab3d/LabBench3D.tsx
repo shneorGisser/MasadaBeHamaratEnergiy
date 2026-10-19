@@ -24,8 +24,10 @@ interface LivePoint {
 }
 
 const SCALE = 0.01 // schematic units → metres on the bench
+/** slider ranges of the DC-bench rheostats (field, extra armature resistance, load) */
+const RHEO_MAX: Record<string, number> = { Rf: 1000, Rx: 60, RL: 2000 }
 /** machines drawn as a motor/generator coupled to a brake or drive on a common base */
-const ROTATING = new Set(['motor3', 'woundmotor3', 'syncmachine3'])
+const ROTATING = new Set(['motor3', 'woundmotor3', 'syncmachine3', 'dcmachine'])
 const SIZE: Record<string, [number, number, number]> = {
   source3: [1.1, 0.7, 0.6],
   source_dc: [0.7, 0.4, 0.4],
@@ -34,6 +36,7 @@ const SIZE: Record<string, [number, number, number]> = {
   motor3: [1.6, 0.7, 0.7],
   syncmachine3: [1.6, 0.7, 0.7],
   woundmotor3: [1.6, 0.7, 0.7],
+  dcmachine: [1.6, 0.7, 0.7],
   load3: [1.0, 0.5, 0.7],
   resistor: [0.4, 0.2, 0.2],
   inductor: [0.4, 0.3, 0.3],
@@ -51,6 +54,7 @@ function readingText(c: CComponent, live: LivePoint | null): string | null {
   if (c.type === 'wattmeter') return r.P === null ? 'לא מוגדר' : `${fmt(r.P)} W · cos φ ${fmt(r.pf, 3)}`
   if (c.type === 'motor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m`
   if (c.type === 'woundmotor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m · f2 ${fmt(r.f_rotor, 3)} Hz`
+  if (c.type === 'dcmachine') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m`
   if (c.type === 'syncmachine3') return `${fmt(r.n)} rpm · ${fmt(r.f)} Hz · If ${fmt(r.If, 3)} A`
   return null
 }
@@ -155,6 +159,16 @@ function Equipment({
     <group position={pos}>
       {c.type === 'motor3' || c.type === 'woundmotor3' ? (
         <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
+      ) : c.type === 'dcmachine' ? (
+        // DC machine (brown-grey frame) on the servo brake / drive
+        <MotorBrake
+          rpm={Math.abs(Number(live?.readings?.[c.id]?.n ?? 0))}
+          emissive={emissive}
+          onClick={click}
+          bodyColor="#7d6f62"
+          finColor="#685c51"
+          loadColor="#3b3f44"
+        />
       ) : c.type === 'syncmachine3' ? (
         // synchronous machine (blue-grey) coupled to the servo drive (dark)
         <MotorBrake
@@ -344,6 +358,18 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   const fieldI = iF ?? Number(sm?.params.I_f ?? 0)
   const shaftP = pShaft ?? Number(sm?.params.P_shaft ?? 0)
   const onGrid = Boolean(source)
+  // DC machine bench: the servo either brakes (motor tests) or drives (generator tests)
+  const dcm = circuit?.components.find((c) => c.type === 'dcmachine')
+  const dcSpeedMode = dcm?.params.speed_mode === 'speed'
+  const nMax = Number((spec as { nameplate?: { n_max?: number } } | undefined)?.nameplate?.n_max ?? 3000)
+  const [dcBrake, setDcBrake] = useState<number | null>(null)
+  const [dcSpeed, setDcSpeed] = useState<number | null>(null)
+  const dcM = dcBrake ?? Number(dcm?.params.M_load ?? 0)
+  const dcN = dcSpeed ?? Number(dcm?.params.n_set ?? 0)
+  const dcSources = useMemo(() => circuit?.components.filter((c) => c.type === 'source_dc') ?? [], [circuit])
+  const rheostats = useMemo(() => (dcm ? circuit?.components.filter((c) => c.type === 'resistor') ?? [] : []), [circuit, dcm])
+  const [dcU, setDcU] = useState<Record<string, number>>({})
+  const [rheo, setRheo] = useState<Record<string, number>>({})
 
   useEffect(() => {
     if (!circuit) return
@@ -352,6 +378,9 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
     for (const [id, closed] of Object.entries(switches)) overrides[id] = { closed }
     if (motor) overrides[motor.id] = wound && isLocked ? { M_load: mLoad, locked: true, angle: rotorAngle } : { M_load: mLoad, locked: isLocked }
     if (sm) overrides[sm.id] = onGrid ? { I_f: fieldI, P_shaft: shaftP } : { I_f: fieldI }
+    if (dcm) overrides[dcm.id] = dcSpeedMode ? { n_set: dcN } : { M_load: dcM }
+    for (const [id, v] of Object.entries(dcU)) overrides[id] = { U: v }
+    for (const [id, v] of Object.entries(rheo)) overrides[id] = { R: v }
     const my = ++seq.current
     const t = setTimeout(() => {
       api
@@ -365,7 +394,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
         .catch((e) => my === seq.current && setError(e))
     }, 150)
     return () => clearTimeout(t)
-  }, [circuit, source, u, switches, motor, mLoad, isLocked, wound, rotorAngle, sm, fieldI, shaftP, onGrid, projectId, kind])
+  }, [circuit, source, u, switches, motor, mLoad, isLocked, wound, rotorAngle, sm, fieldI, shaftP, onGrid, dcm, dcSpeedMode, dcN, dcM, dcU, rheo, projectId, kind])
 
   if (circuitQ.isLoading) return <p className="muted">טוען שולחן…</p>
   if (circuitQ.isError) return <ErrorBox error={circuitQ.error} />
@@ -477,6 +506,79 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
             )}
           </>
         )}
+        {dcSources.map((d) => {
+          const nominalU = Number(d.params.U ?? 0)
+          const v = dcU[d.id] ?? nominalU
+          return (
+            <label key={d.id} className="row" style={{ gap: 6 }}>
+              {d.label || d.id}: <strong className="num" data-testid={`dc-value-${d.id}`}>{fmt(v)} V</strong>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(Math.round(nominalU * 1.3), 1)}
+                step={1}
+                value={v}
+                onChange={(e) => setDcU({ ...dcU, [d.id]: Number(e.target.value) })}
+                data-testid={`dc-${d.id}`}
+                aria-label={`מתח ${d.id}`}
+                style={{ width: 140 }}
+              />
+            </label>
+          )
+        })}
+        {rheostats.map((r) => {
+          const max = RHEO_MAX[r.id] ?? 1000
+          const set = Number(r.params.R ?? 0)
+          const v = rheo[r.id] ?? Math.min(set, max)
+          return (
+            <label key={r.id} className="row" style={{ gap: 6 }}>
+              {r.label || r.id}: <strong className="num" data-testid={`rheo-value-${r.id}`}>{set > max && rheo[r.id] === undefined ? 'פתוח' : `${fmt(v)} Ω`}</strong>
+              <input
+                type="range"
+                min={0}
+                max={max}
+                step={max / 200}
+                value={v}
+                onChange={(e) => setRheo({ ...rheo, [r.id]: Number(e.target.value) })}
+                data-testid={`rheo-${r.id}`}
+                aria-label={r.label || r.id}
+                style={{ width: 140 }}
+              />
+            </label>
+          )
+        })}
+        {dcm &&
+          (dcSpeedMode ? (
+            <label className="row" style={{ gap: 6 }}>
+              סרוו ({dcm.id}): <strong className="num" data-testid="speed-value">{fmt(dcN)} rpm</strong>
+              <input
+                type="range"
+                min={0}
+                max={nMax}
+                step={10}
+                value={dcN}
+                onChange={(e) => setDcSpeed(Number(e.target.value))}
+                data-testid="speed"
+                aria-label="מהירות הסרוו"
+                style={{ width: 180 }}
+              />
+            </label>
+          ) : (
+            <label className="row" style={{ gap: 6 }}>
+              בלם ({dcm.id}): <strong className="num" data-testid="brake-value">{fmt(dcM, 3)} N·m</strong>
+              <input
+                type="range"
+                min={0}
+                max={Math.round(2 * mN * 100) / 100}
+                step={0.01}
+                value={dcM}
+                onChange={(e) => setDcBrake(Number(e.target.value))}
+                data-testid="brake"
+                aria-label="מומנט הבלם"
+                style={{ width: 180 }}
+              />
+            </label>
+          ))}
         <span className="grow" />
         {live && <StatusBadge status={live.status} />}
         <span className="badge sim">נקודת עבודה חיה מהפותר · לא נשמרת</span>

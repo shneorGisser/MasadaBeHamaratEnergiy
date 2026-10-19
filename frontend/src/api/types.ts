@@ -90,8 +90,18 @@ export interface WoundSpec {
   insulation: Record<string, number>
 }
 
+export interface DCSpec {
+  schema_version: 1
+  provenance: Provenance
+  provenance_note: string
+  nameplate: Record<string, number>
+  ecm: Record<string, number>
+  occ: Record<string, number>
+  insulation: Record<string, number>
+}
+
 /** Equipment spec of whichever experiment the project belongs to. */
-export type EquipmentSpec = TransformerSpec | MotorSpec | SyncSpec | WoundSpec
+export type EquipmentSpec = TransformerSpec | MotorSpec | SyncSpec | WoundSpec | DCSpec
 
 export interface Experiment {
   id: string
