@@ -58,6 +58,9 @@ export default function ProjectPage() {
         <h1 className="grow" data-testid="project-title">
           {p.name}
         </h1>
+        <a className="btn small" href={`/api/projects/${p.id}/export`} download={`project-${p.id.slice(0, 8)}.json`} data-testid="export">
+          ייצוא גיבוי
+        </a>
         <span className={`badge ${p.transformer.provenance === 'assumed' ? 'assumed' : 'ok'}`}>
           {t(`provenance.${p.transformer.provenance}`)}
         </span>

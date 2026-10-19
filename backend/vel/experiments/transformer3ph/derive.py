@@ -136,3 +136,86 @@ def dc_resistance(rows: list[Row]) -> tuple[list[Row], list[Row]]:
             groups.setdefault(str(r.get("winding")), []).append(float(r["R"]))
     summary = [{"winding": w, "R_avg": sum(v) / len(v), "n": len(v)} for w, v in groups.items()]
     return out, summary
+
+
+def plausibility(kind: str, rows: list[Row], spec: TransformerSpec) -> list[dict[str, Any]]:
+    """Physical sanity checks on a (measured) table. They do not change any value; they point
+    the student to entries that cannot all be right (typo, wrong unit, line/phase confusion)."""
+    s3 = math.sqrt(3)
+    out: list[dict[str, Any]] = []
+    # (P column, voltage expression, current column, pf column) — wattmeter on one phase
+    triples: dict[str, list[tuple[str, Any, str, str | None]]] = {
+        "no_load": [("P_W", lambda r: r.get("U1ph"), "I0", "pf")],
+        "short_circuit": [
+            (
+                "P_W",
+                lambda r: (_num(r.get("U_k")) or 0) / s3 if _num(r.get("U_k")) else None,
+                "I1k",
+                "pf",
+            )
+        ],
+        "load": [
+            (
+                "P1_W",
+                lambda r: (_num(r.get("U1L")) or 0) / s3 if _num(r.get("U1L")) else None,
+                "I1",
+                "pf1",
+            ),
+            ("P2_W", lambda r: r.get("U2ph"), "I2", "pf2"),
+        ],
+    }
+    for i, r in enumerate(rows):
+        for pkey in ("pf", "pf1", "pf2"):
+            v = _num(r.get(pkey))
+            if v is not None and not (0 <= v <= 1):
+                out.append(
+                    {
+                        "code": "pf_range",
+                        "row": i,
+                        "column": pkey,
+                        "message": f"שורה {i + 1}: {pkey} = {v:g} מחוץ ל-[0, 1]",
+                    }
+                )
+        for pkey, ufn, ikey, pfkey in triples.get(kind, []):
+            p, u, cur = _num(r.get(pkey)), _num(ufn(r)), _num(r.get(ikey))
+            if p is None or u is None or cur is None or u * cur <= 0:
+                continue
+            s = u * cur
+            if abs(p) > 1.05 * s:
+                out.append(
+                    {
+                        "code": "power_exceeds_apparent",
+                        "row": i,
+                        "column": pkey,
+                        "message": f"שורה {i + 1}: {pkey} = {p:.4g} W גדול מ-U·I = {s:.4g} VA — "
+                        "בלתי אפשרי פיזיקלית (טעות הקלדה, יחידה, או מתח קווי/פאזי?)",
+                    }
+                )
+            pf = _num(r.get(pfkey)) if pfkey else None
+            if pf is not None and abs(pf - p / s) > 0.1:
+                out.append(
+                    {
+                        "code": "pf_inconsistent",
+                        "row": i,
+                        "column": pfkey,
+                        "message": f"שורה {i + 1}: cos φ = {pf:g} אבל P/(U·I) = {p / s:.3f} "
+                        "(U פאזי). "
+                        "ייתכן שנרשם מתח פאזי במקום קווי או להפך",
+                    }
+                )
+        if kind == "short_circuit":
+            i1, i2 = _num(r.get("I1k")), _num(r.get("I2k"))
+            if i1 and i2:
+                expected = (
+                    spec.turns_ratio if spec.nameplate.secondary == spec.nameplate.primary else None
+                )
+                if expected and abs(i2 / i1 - expected) > 0.15 * expected:
+                    out.append(
+                        {
+                            "code": "current_ratio",
+                            "row": i,
+                            "message": f"שורה {i + 1}: I2k/I1k = {i2 / i1:.3f}, "
+                            f"צפוי ≈ {expected:.3f}",
+                        }
+                    )
+    return out

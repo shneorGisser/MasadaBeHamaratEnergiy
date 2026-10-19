@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCreateProject, useDeleteProject, useExperiments, useProjects } from '../api/hooks'
+import { api } from '../api/client'
 import { ErrorBox } from '../components/ErrorBox'
 import { fmtDate, t } from '../i18n'
 
@@ -20,6 +21,19 @@ export default function ProjectsPage() {
       { name: name.trim(), experiment_id: experimentId },
       { onSuccess: (p) => navigate(`/projects/${p.id}`) },
     )
+  }
+
+  const [importErr, setImportErr] = useState<unknown>(null)
+  const onImport = async (file: File | undefined) => {
+    if (!file) return
+    setImportErr(null)
+    try {
+      const doc: unknown = JSON.parse(await file.text())
+      const p = await api.post<{ id: string }>('/api/projects/import', doc)
+      navigate(`/projects/${p.id}`)
+    } catch (e) {
+      setImportErr(e)
+    }
   }
 
   const titleOf = (id: string) => experiments.data?.find((x) => x.id === id)?.title_he ?? id
@@ -60,6 +74,11 @@ export default function ProjectsPage() {
         </button>
       </form>
       {create.isError && <ErrorBox error={create.error} />}
+      <label className="row small muted">
+        שחזור פרויקט מקובץ גיבוי (JSON):
+        <input type="file" accept="application/json" data-testid="import-file" onChange={(e) => void onImport(e.target.files?.[0])} />
+      </label>
+      {importErr != null && <ErrorBox error={importErr} />}
 
       <section className="card">
         {projects.isLoading && <p className="muted">{t('common.loading')}</p>}

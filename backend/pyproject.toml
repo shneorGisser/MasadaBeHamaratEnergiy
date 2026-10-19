@@ -14,7 +14,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov", "hypothesis", "httpx", "ruff", "mypy"]
+dev = ["pytest>=8", "pytest-cov", "hypothesis", "httpx", "httpx2", "ruff", "mypy"]
+postgres = ["psycopg[binary]>=3.2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

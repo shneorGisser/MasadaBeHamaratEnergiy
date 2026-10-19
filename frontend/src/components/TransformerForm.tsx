@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { api } from '../api/client'
 import { useUpdateProject } from '../api/hooks'
 import type { Project, Provenance, TransformerSpec } from '../api/types'
 import { fmt } from '../format'
@@ -72,6 +74,19 @@ export default function TransformerForm({ project }: { project: Project }) {
   const [note, setNote] = useState(project.transformer.provenance_note)
   const [localError, setLocalError] = useState<string | null>(null)
   const d = project.derived
+  const presets = useQuery({
+    queryKey: ['presets', project.experiment_id],
+    queryFn: () => api.get<{ id: string; label_he: string; spec: TransformerSpec }[]>(`/api/experiments/${project.experiment_id}/presets`),
+  })
+  const [presetMsg, setPresetMsg] = useState<string | null>(null)
+  const loadPreset = (id: string) => {
+    const p = presets.data?.find((x) => x.id === id)
+    if (!p) return
+    setDraft(toDraft(p.spec))
+    setProv(p.spec.provenance)
+    setNote(p.spec.provenance_note)
+    setPresetMsg(`נטען: ${p.label_he}. לחץ "שמור מפרט" כדי להחיל.`)
+  }
 
   const save = () => {
     const spec = fromDraft(project.transformer, draft, prov, note)
@@ -90,6 +105,22 @@ export default function TransformerForm({ project }: { project: Project }) {
           {t('provenance.assumed')}. {project.transformer.provenance_note}
         </div>
       )}
+      <div className="row small">
+        <label className="row" style={{ gap: 6 }}>
+          טען ערכים מוכנים:
+          <select className="input" name="preset" defaultValue="" onChange={(e) => loadPreset(e.target.value)} data-testid="preset">
+            <option value="" disabled>
+              בחר…
+            </option>
+            {presets.data?.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label_he}
+              </option>
+            ))}
+          </select>
+        </label>
+        {presetMsg && <span className="badge warn">{presetMsg}</span>}
+      </div>
       <div className="grid-2">
         {(['nameplate', 'ecm', 'insulation'] as Section[]).map((sec) => (
           <section key={sec} className="card stack">

@@ -61,3 +61,13 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
 - Playwright: 12 passed. New: the full §9 journey — guided mode (0/27 → safety ack), nameplate edit, simulation, reload,
   reproduction, lab measurements, simulate at measured points, comparison, report generated and reopened after reload,
   correction does not change the report, PDF downloads, guide shows compare + report steps done.
+
+## S6 — real lab data, backup, deployment readiness (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=postgresql+psycopg://… pytest` → 67 passed on PostgreSQL 16
+- pytest: 67 passed. New: fitted preset reproduces its own fit point; **independent validation** on last year's resistive-load
+  table (not used for fitting): U2ph within 2.5 % and I1 within 1.6 % on 4 of 5 rows; row 1 (−3.7 % / +6.1 %) is the row whose
+  P2 > U2·I2 is physically impossible and is flagged by the new plausibility check; line/phase ambiguity in the report's
+  short-circuit table detected; export → import round trip (new ids, runs reproducible, correction chain, report byte-identical).
+- Playwright: 14 passed. New: preset loaded and simulated at the report's rated short-circuit point; backup downloaded and restored.
+- Packaged (non-editable) install: migrations + solver + report verified.
+- NOT executed: `docker build` (Docker Hub blocked in this environment) and an actual Cloud Run deployment.

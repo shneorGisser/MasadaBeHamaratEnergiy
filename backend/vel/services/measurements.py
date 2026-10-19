@@ -140,6 +140,7 @@ def analyse(kind: str, rows: list[dict[str, Any]], spec: TransformerSpec) -> dic
     elif kind == "dc_resistance":
         r2, summary = derive.dc_resistance(rows)
         out.update(rows=r2, summary=summary)
+    out["warnings"] = list(out["warnings"]) + derive.plausibility(kind, rows, spec)
     return out
 
 

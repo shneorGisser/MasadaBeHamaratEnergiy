@@ -93,6 +93,18 @@ def list_experiments() -> list[ExperimentOut]:
     ]
 
 
+@router.get("/experiments/{experiment_id}/presets")
+def list_presets(experiment_id: str) -> list[dict[str, Any]]:
+    from vel.experiments.transformer3ph.spec import PRESETS
+
+    if experiment_id != "transformer3ph":
+        raise ApiError(404, "not_found", f"no presets for {experiment_id}")
+    return [
+        {"id": k, "label_he": label, "spec": fn().model_dump(mode="json")}
+        for k, (label, fn) in PRESETS.items()
+    ]
+
+
 @router.get("/projects", response_model=list[ProjectOut])
 def list_projects(session: SessionDep) -> list[ProjectOut]:
     rows = session.scalars(select(Project).order_by(Project.updated_at.desc())).all()
@@ -149,6 +161,20 @@ def update_project(project_id: str, body: ProjectUpdate, session: SessionDep) ->
     session.commit()
     session.refresh(p)
     return to_out(p)
+
+
+@router.get("/projects/{project_id}/export")
+def export_project(project_id: str, session: SessionDep) -> dict[str, Any]:
+    from vel.services.backup import export_project as _export
+
+    return _export(session, load_project(session, project_id))
+
+
+@router.post("/projects/import", response_model=ProjectOut, status_code=201)
+def import_project(body: dict[str, Any], session: SessionDep) -> ProjectOut:
+    from vel.services.backup import import_project as _import
+
+    return to_out(_import(session, body))
 
 
 @router.delete("/projects/{project_id}", status_code=204)

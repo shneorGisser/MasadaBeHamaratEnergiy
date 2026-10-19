@@ -33,3 +33,16 @@ test('S0: unknown project shows an error, not a blank page', async ({ page }) =>
   await page.goto('/projects/00000000-0000-0000-0000-000000000000')
   await expect(page.getByRole('alert')).toContainText('not found')
 })
+
+test('S6: export a project and restore it from the backup file', async ({ page }) => {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill('גיבוי')
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-title')).toHaveText('גיבוי')
+  const download = page.waitForEvent('download')
+  await page.getByTestId('export').click()
+  const file = await (await download).path()
+  await page.goto('/')
+  await page.getByTestId('import-file').setInputFiles(file!)
+  await expect(page.getByTestId('project-title')).toHaveText('גיבוי (שוחזר)')
+})

@@ -137,3 +137,50 @@ def assumed_lab_transformer() -> TransformerSpec:
             primary_core_Mohm=500, secondary_core_Mohm=500, primary_secondary_Mohm=800
         ),
     )
+
+
+def fitted_from_2025_report() -> TransformerSpec:
+    """Parameters fitted to data transcribed from a previous year's student report (same course,
+    same lab). The data is UNVERIFIED — use with caution.
+
+    Source values (handwritten in the report):
+      Nameplate: V_n = 220/110 V, I_n = 0.35/0.7 A, P_max = 500 VA.
+        → per-winding 220 V / 110 V, ratio 2. 3·220·0.35 = 231 VA, which conflicts with the
+          500 VA written on the nameplate line; S_n = 231 VA is used (consistent with I_n).
+      Short circuit, last row (rated current): U_k = 21 V, I1k = 0.35 A, I2k = 0.7 A,
+        P = 3.3 W, cos φ = 0.44. cos φ = P/(U·I) only holds if U_k is the PHASE voltage and P is
+        the single-wattmeter reading → per phase: Z_k = 60.0 Ω, r_k = 26.94 Ω, x_k = 53.61 Ω
+        (referred to the 220 V winding), split equally: R1 = 13.47, X1 = 26.81,
+        R2 = 13.47/4 = 3.367, X2 = 26.81/4 = 6.70 Ω.
+      Magnetizing branch: no no-load table was filled in. The capacitive-load rows with no recorded
+        I2 (I1 ≈ 31.5 mA, P ≈ 1.7 W per phase, U1ph = 220 V) are used as an APPROXIMATE no-load
+        point: R_Fe = 220²/1.7 ≈ 28.5 kΩ, X_m ≈ 7.20 kΩ at rated voltage. Saturation shape
+        (c = 1, n = 8) is assumed, not measured.
+      Insulation: every cell reads 999 MΩ — the megger's display limit, not a measured value.
+    """
+    s3 = math.sqrt(3)
+    return TransformerSpec(
+        provenance="fitted",
+        provenance_note=(
+            "הותאם לנתונים מדו״ח של סטודנט משנה קודמת (לא מאומת): 220/110 V, 0.35/0.7 A; "
+            "ענף טורי מניסוי הקצר; ענף מגנוט משוער משורות העומס הקיבולי; צורת הרוויה מוערכת"
+        ),
+        nameplate=Nameplate(
+            S_n=3 * 220 * 0.35, U1n=220 * s3, U2n=110 * s3, f_n=50, primary="Y", secondary="Y"
+        ),
+        ecm=EquivalentCircuit(
+            R1=13.47, X1=26.81, R2=3.367, X2=6.70, R_fe=28470, Xm_unsat=14400, sat_c=1.0, sat_n=8
+        ),
+        insulation=Insulation(
+            primary_core_Mohm=999, secondary_core_Mohm=999, primary_secondary_Mohm=999
+        ),
+    )
+
+
+PRESETS = {
+    "assumed_3kva": ("ערכים מוערכים: שנאי 3 kVA, 380/220 V (ללא מקור)", assumed_lab_transformer),
+    "report_2025": (
+        "מותאם לדו״ח סטודנט משנה קודמת: 220/110 V לליפוף, 231 VA (לא מאומת)",
+        fitted_from_2025_report,
+    ),
+}

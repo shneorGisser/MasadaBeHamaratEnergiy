@@ -146,8 +146,8 @@ class LoadCase(BaseModel):
     @field_validator("I2_targets_pu")
     @classmethod
     def _pos(cls, v: list[float]) -> list[float]:
-        if any((not math.isfinite(x)) or x <= 0 or x > 1.5 for x in v):
-            raise ValueError("targets must be in (0, 1.5] × I_2n")
+        if any((not math.isfinite(x)) or x <= 0 or x > 2.0 for x in v):
+            raise ValueError("targets must be in (0, 2.0] × I_2n")
         return v
 
 
@@ -438,6 +438,14 @@ def run_load(spec: TransformerSpec, circuit: CircuitModel, case: LoadCase) -> Ou
             raise StudyError("convergence_failure", "כיוון העומס לזרם המטרה לא התכנס")
         unit = {"R": "Ω", "L": "H", "C": "F"}[case.load_kind]
         rows.append(row_from(op, f"{math.exp(x1):.4g} {unit}", math.exp(x1)))
+        if tpu > 1.0:
+            warnings.append(
+                {
+                    "code": "above_rated_current",
+                    "row": len(rows) - 1,
+                    "message": "זרם העומס מעל הנומינלי",
+                }
+            )
         i1 = rows[-1].get("I1")
         if i1 is not None and i1 > 1.05 * spec.I1n_line:
             warnings.append(
