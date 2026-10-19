@@ -14,7 +14,8 @@ function ProjectMetaForm({ project }: { project: Project }) {
   const [notes, setNotes] = useState(project.notes)
   const [name, setName] = useState(project.name)
   return (
-    <section className="card stack">
+    <details className="card project-meta">
+      <summary>פרטי הפרויקט: שם והערות על המערך הפיזי</summary>
       <div className="row">
         <label className="field grow">
           {t('project.rename')}
@@ -35,7 +36,7 @@ function ProjectMetaForm({ project }: { project: Project }) {
         {update.isSuccess && <span className="badge ok">{t('project.saved')}</span>}
       </div>
       {update.isError && <ErrorBox error={update.error} />}
-    </section>
+    </details>
   )
 }
 
@@ -49,12 +50,12 @@ export default function ProjectPage() {
 
   return (
     <div className="stack">
-      <div className="row">
-        <Link to="/" className="small">
-          → {t('project.back')}
+      <div className="page-head">
+        <Link to="/" className="crumb">
+          {t('project.back')}
         </Link>
       </div>
-      <div className="row">
+      <div className="page-head">
         <h1 className="grow" data-testid="project-title">
           {p.name}
         </h1>

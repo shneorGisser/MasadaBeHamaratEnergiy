@@ -44,8 +44,8 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const { comp, ctype } = data
   const terminals = ctype?.terminals ?? []
   const slots = terminalSlots(comp.type, terminals)
-  const tall = comp.type === 'transformer3' ? 200 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
-  const wide = comp.type === 'transformer3' ? 130 : 110
+  const tall = comp.type === 'transformer3' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
+  const wide = comp.type === 'transformer3' ? 180 : 110
   const instrument = ctype?.instrument
   return (
     <div
@@ -55,7 +55,13 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
       title={ctype?.label_he ?? comp.type}
     >
       <div className="sch-title">
-        <strong>{comp.id}</strong> {comp.label && <span>{comp.label}</span>}
+        {comp.label && comp.label.startsWith(comp.id) ? (
+          <strong>{comp.label}</strong>
+        ) : (
+          <>
+            <strong>{comp.id}</strong> {comp.label && <span>{comp.label}</span>}
+          </>
+        )}
       </div>
       <div className="sch-symbol">{SYMBOL[comp.type] ?? '?'}</div>
       <div className="sch-sub">{summary(comp.type, comp.params)}</div>

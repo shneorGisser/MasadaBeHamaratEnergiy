@@ -21,8 +21,12 @@ export function terminalSlots(type: string, terminals: string[]): Record<string,
   const s: Record<string, Slot> = {}
   switch (type) {
     case 'transformer3':
-      spread(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'], 'left', s)
-      spread(['a1', 'a2', 'b1', 'b2', 'c1', 'c2'], 'right', s)
+      // Winding starts on the outer sides, winding ends on the bottom edge (star point closes
+      // underneath) — the usual drawing convention; keeps line and star wiring from crossing.
+      spread(['A1', 'B1', 'C1'], 'left', s)
+      spread(['a1', 'b1', 'c1'], 'right', s)
+      ;(['A2', 'B2', 'C2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.12 + 0.13 * i }))
+      ;(['a2', 'b2', 'c2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.62 + 0.13 * i }))
       break
     case 'source3':
       spread(['L1', 'L2', 'L3'], 'right', s)

@@ -12,6 +12,7 @@ test('S0: create, open, rename, reload and delete a project (real backend + SQLi
   await expect(page.getByTestId('project-title')).toHaveText('קבוצה 3 — בדיקת E2E')
   await expect(page.getByText('ערכים מוערכים — לא נתוני שלט')).toBeVisible()
 
+  await page.getByText('פרטי הפרויקט').click()
   await page.locator('input[name="notes"]').fill('שולחן 4, וריאק ישן')
   await page.locator('input[name="rename"]').fill('קבוצה 3')
   await page.getByRole('button', { name: 'שמור', exact: true }).click()

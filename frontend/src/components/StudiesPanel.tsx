@@ -197,7 +197,7 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
         {create.isError && <ErrorBox error={create.error} />}
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 280px) 1fr', gap: 16, alignItems: 'start' }}>
+      <div className="workspace-split">
         <section className="card stack" style={{ gap: 6 }} aria-label={t('study.history')}>
           <h3>{t('study.history')}</h3>
           {runs.isError && <ErrorBox error={runs.error} />}

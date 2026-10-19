@@ -45,6 +45,7 @@ export default function Chart({
         width,
         height,
         scales: { x: { time: false } },
+        legend: { live: false },
         axes: [{ label: xLabel }, { label: yLabel }],
         series: [
           { label: xLabel },

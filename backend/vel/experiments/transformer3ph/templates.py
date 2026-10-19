@@ -45,9 +45,9 @@ class _B:
 
 def _primary_feed(b: _B, u_line: float, f: float, *, line_voltmeter: bool = True) -> None:
     """Supply → 3-pole switch S → wattmeter (phase A) → ammeter → primary A1/B1/C1 (fig. 1.3)."""
-    # Aligned so that S.o2 → T.B1 is a straight run (switch y = transformer y + 31).
-    b.add("G", "source3", 0, 231, "רשת + וריאק", U_line=u_line, f=f)
-    b.add("S", "switch3", 170, 231, "S", closed=True)
+    # Aligned so that S.o2 → T.B1 and S.o3 → T.C1 run nearly straight (switch y ≈ T y + 25).
+    b.add("G", "source3", 0, 225, "רשת + וריאק", U_line=u_line, f=f)
+    b.add("S", "switch3", 170, 225, "S", closed=True)
     b.add("W", "wattmeter", 320, 60, "W")
     b.add("A", "ammeter", 470, 60, "A")
     b.add("T", "transformer3", 640, 200, "שנאי")
@@ -123,9 +123,9 @@ def load_test(u1n: float, f: float, kind: str = "R", value: float = 50.0) -> Cir
     b.w("T.b1", "S2.i2").w("T.c1", "S2.i3")
     b.w("S2.o1", "L.1").w("S2.o2", "L.2").w("S2.o3", "L.3")
     b.w("W2.Vp", "T.a1").w("W2.Vn", "T.a2")
-    b.add("V2", "voltmeter", 860, 340, "V2 (קווי)")
+    b.add("V2", "voltmeter", 900, 430, "V2 (קווי)")
     b.w("V2.p", "T.a1").w("V2.n", "T.b1")
-    b.add("V2ph", "voltmeter", 980, 400, "V2 (פאזי)")
+    b.add("V2ph", "voltmeter", 1060, 430, "V2 (פאזי)")
     b.w("V2ph.p", "T.a1").w("V2ph.n", "T.a2")
     return b.done()
 
