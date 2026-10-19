@@ -1,8 +1,12 @@
 # Virtual Energy Lab — מעבדה וירטואלית להמרת אנרגיה
 
 A browser-based virtual laboratory for the Electrical Energy Conversion lab course (JCT).
-First module: **Experiment 1 — three-phase transformer** (insulation, DC winding resistance,
-no-load, short-circuit, R/L/C load, vector groups).
+Modules:
+- **Experiment 1 — three-phase transformer** (insulation, DC winding resistance, no-load,
+  short-circuit, R/L/C load, vector groups).
+- **Experiment 2 — squirrel-cage induction motor** (insulation, DC winding resistance, no-load,
+  locked rotor, load with a magnetic-powder brake and torque–speed curve, inverter V/f).
+  Motor parameters are assumed until the lab nameplate is available — see `docs/model-induction-motor.md`.
 
 The planning package (vision, requirements, architecture, validation plan, roadmap) is in the
 project's planning document; `docs/` holds the engineering notes and the test log.
