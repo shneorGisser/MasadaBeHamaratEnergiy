@@ -120,6 +120,46 @@ class InsulationCase(BaseModel):
     U_test: float = Field(default=500.0, gt=0, le=5000)
 
 
+class LoadCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source: str = "G"
+    load: str = "L"
+    load_switch: str = "S2"
+    load_kind: Literal["R", "L", "C"] = "R"
+    U_line: float | None = Field(default=None, gt=0, description="None → rated U1n")
+    I2_targets_pu: list[float] = Field(min_length=1, max_length=20)
+    include_no_load: bool = True
+    bindings: dict[str, str] = Field(
+        default_factory=lambda: {
+            "U1L": "V1.U",
+            "I1": "A.I",
+            "P1_W": "W.P",
+            "pf1": "W.pf",
+            "U2L": "V2.U",
+            "U2ph": "V2ph.U",
+            "I2": "A2.I",
+            "P2_W": "W2.P",
+            "pf2": "W2.pf",
+        }
+    )
+
+    @field_validator("I2_targets_pu")
+    @classmethod
+    def _pos(cls, v: list[float]) -> list[float]:
+        if any((not math.isfinite(x)) or x <= 0 or x > 1.5 for x in v):
+            raise ValueError("targets must be in (0, 1.5] × I_2n")
+        return v
+
+
+class VectorGroupCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source: str = "G"
+    U_line: float = Field(default=100.0, gt=0, le=1000)
+    bindings: dict[str, str] = Field(
+        default_factory=lambda: {"U_aAB": "VaAB.U", "U_aAb": "VaAb.U", "U_Bb": "VBb.U"}
+    )
+
+
 # --------------------------------------------------------------------------- helpers
 
 
@@ -136,7 +176,7 @@ def _read(op: OperatingPoint, binding: str) -> float | None:
     return op.readings[inst][qty]
 
 
-def _with_param(circuit: CircuitModel, cid: str, key: str, value: float) -> CircuitModel:
+def _with_param(circuit: CircuitModel, cid: str, key: str, value: Any) -> CircuitModel:
     c = copy.deepcopy(circuit)
     try:
         comp = c.component(cid)
@@ -344,6 +384,189 @@ def run_short_circuit(
     )
 
 
+def run_load(spec: TransformerSpec, circuit: CircuitModel, case: LoadCase) -> Outcome:
+    """Figure 1.7 / table 1.6: constant rated primary voltage, adjust the load (as the student
+    adjusts the bank) until the secondary current reaches each target."""
+    U = case.U_line or spec.nameplate.U1n
+    I2n = spec.I2n_line
+    omega = 2 * math.pi * spec.nameplate.f_n
+    base = _with_param(circuit, case.source, "U_line", U)
+    base = _with_param(base, case.load, "kind", case.load_kind)
+    i2_binding = case.bindings["I2"]
+    rows: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
+
+    def at(value: float, closed: bool = True) -> OperatingPoint:
+        c = _with_param(base, case.load, "value", value)
+        c = _with_param(c, case.load_switch, "closed", closed)
+        return _solve(c, spec)
+
+    def row_from(op: OperatingPoint, label: str, value: float | None) -> dict[str, Any]:
+        r: dict[str, Any] = {"point": len(rows) + 1, "load_setting": label, "load_value": value}
+        for col, b in case.bindings.items():
+            r[col] = _read(op, b)
+        r["P1"] = 3 * r["P1_W"] if r.get("P1_W") is not None else None
+        r["P2"] = 3 * r["P2_W"] if r.get("P2_W") is not None else None
+        r["beta"] = r["I2"] / I2n if r.get("I2") is not None else None
+        r["eta"] = (r["P2"] / r["P1"]) if r.get("P1") and r.get("P2") is not None else None
+        return r
+
+    if case.include_no_load:
+        op0 = at(1.0, closed=False)
+        rows.append(row_from(op0, "S2 פתוח", None))
+    u20 = rows[0]["U2L"] if rows else None
+
+    # Initial guess from the rated phase voltage, then secant iteration in log(value).
+    U2ph = spec.U2_winding if spec.nameplate.secondary == "Y" else spec.nameplate.U2n / math.sqrt(3)
+    for tpu in case.I2_targets_pu:
+        target = tpu * I2n
+        if case.load_kind == "R":
+            guess = U2ph / target
+        elif case.load_kind == "L":
+            guess = U2ph / (omega * target)
+        else:
+            guess = target / (omega * U2ph)
+
+        def err(logv: float, target: float = target) -> tuple[float, OperatingPoint]:
+            op = at(math.exp(logv))
+            val = _read(op, i2_binding)
+            if val is None or val <= 0:
+                raise StudyError("invalid_circuit", "אין זרם בעומס — המעגל המשני פתוח?")
+            return math.log(val / target), op
+
+        x0 = math.log(guess)
+        f0, op = err(x0)
+        x1 = x0 - f0 if case.load_kind != "C" else x0 + f0
+        f1, op = err(x1)
+        for _ in range(60):
+            if abs(f1) < 1e-11:
+                break
+            denom = f1 - f0
+            if denom == 0:
+                break
+            x0, f0, x1 = x1, f1, x1 - f1 * (x1 - x0) / denom
+            f1, op = err(x1)
+        else:
+            raise StudyError("convergence_failure", "כיוון העומס לזרם המטרה לא התכנס")
+        if abs(f1) > 1e-8:
+            raise StudyError("convergence_failure", "כיוון העומס לזרם המטרה לא התכנס")
+        unit = {"R": "Ω", "L": "H", "C": "F"}[case.load_kind]
+        rows.append(row_from(op, f"{math.exp(x1):.4g} {unit}", math.exp(x1)))
+        i1 = rows[-1].get("I1")
+        if i1 is not None and i1 > 1.05 * spec.I1n_line:
+            warnings.append(
+                {
+                    "code": "above_rated_current",
+                    "row": len(rows) - 1,
+                    "message": "זרם הראשוני מעל הנומינלי",
+                }
+            )
+    for r in rows:
+        r["dU_pct"] = (100 * (u20 - r["U2L"]) / u20) if (u20 and r.get("U2L") is not None) else None
+    title = {"R": "התנגדותי", "L": "השראותי", "C": "קיבולי"}[case.load_kind]
+    columns = [
+        _col("point", "#", ""),
+        _col("load_setting", "כיוון העומס", ""),
+        _col("U1L", "U1 קווי", "V"),
+        _col("I1", "I1", "A"),
+        _col("P1", "P1 = 3·P", "W"),
+        _col("pf1", "cos φ1", ""),
+        _col("U2L", "U2 קווי", "V"),
+        _col("I2", "I2", "A"),
+        _col("P2", "P2 = 3·P", "W"),
+        _col("pf2", "cos φ2", ""),
+        _col("beta", "β = I2/I2n", ""),
+        _col("eta", "η = P2/P1", ""),
+        _col("dU_pct", "ΔU%", "%"),
+    ]
+    return Outcome(
+        status="success_with_warnings" if warnings else "success",
+        warnings=warnings,
+        result={
+            "tables": [
+                {
+                    "id": "readings",
+                    "title_he": f"טבלה 1.6 — עומס {title}",
+                    "columns": columns,
+                    "rows": rows,
+                }
+            ],
+            "parameters": [],
+            "curves": [
+                {"id": "external", "title_he": "אופיין חיצוני U2 = f(I2)", "x": "I2", "y": "U2L"},
+                {"id": "efficiency", "title_he": "נצילות η = f(β)", "x": "beta", "y": "eta"},
+            ],
+        },
+    )
+
+
+def clock_from_angles(theta_deg: float) -> list[int]:
+    """Cosine law gives the interior angle θ ∈ [0°, 180°]; the clock number is θ/30 or
+    (360° − θ)/30 — the measurement alone cannot tell which (the manual asks the student to
+    decide from the phasor drawing)."""
+    a = round(theta_deg / 30) % 12
+    b = round((360 - theta_deg) / 30) % 12
+    return sorted({a, b})
+
+
+def run_vector_group(
+    spec: TransformerSpec, circuit: CircuitModel, case: VectorGroupCase
+) -> Outcome:
+    op = _solve(_with_param(circuit, case.source, "U_line", case.U_line), spec)
+    vals = {col: _read(op, b) for col, b in case.bindings.items()}
+    warnings = _undefined_warnings(op, 0, case.bindings)
+    if any(v is None for v in vals.values()):
+        raise StudyError(
+            "invalid_circuit",
+            "אחד המתחים אינו מוגדר — האם A1 מגושר לנקודה המייצגת את a1?",
+            {k: v for k, v in vals.items()},
+        )
+    aAB, aAb, Bb = vals["U_aAB"], vals["U_aAb"], vals["U_Bb"]
+    assert aAB is not None and aAb is not None and Bb is not None
+    params = analysis.vector_group_parameters(aAB, aAb, Bb)
+    # simulation-only: true phase displacement from the phasors (not measurable with voltmeters)
+    inst_ab, _, _ = case.bindings["U_aAB"].partition(".")
+    inst_ab2, _, _ = case.bindings["U_aAb"].partition(".")
+    ang_hv = op.readings[inst_ab].get("angle_deg")
+    ang_lv = op.readings[inst_ab2].get("angle_deg")
+    if ang_hv is not None and ang_lv is not None:
+        lag = (ang_hv - ang_lv) % 360
+        clock = round(lag / 30) % 12
+        params.append(
+            analysis.Param(
+                "clock_true",
+                "מספר השעון (מהפאזורים — סימולציה בלבד)",
+                clock,
+                "",
+                "(∠U_AB − ∠U_ab) / 30°",
+                "analytic",
+                note=f"פיגור המשני אחרי הראשוני: {lag:.2f}°. לא ניתן למדידה במדי מתח בלבד",
+            )
+        )
+    rows = [{"point": 1, **vals}]
+    return Outcome(
+        status="success_with_warnings" if warnings else "success",
+        warnings=warnings,
+        result={
+            "tables": [
+                {
+                    "id": "readings",
+                    "title_he": "קבוצת חיבורים — מדידות לשיטת השעון",
+                    "columns": [
+                        _col("point", "#", ""),
+                        _col("U_aAB", "U aA–B1", "V"),
+                        _col("U_aAb", "U aA–b1", "V"),
+                        _col("U_Bb", "U B1–b1", "V"),
+                    ],
+                    "rows": rows,
+                }
+            ],
+            "parameters": [p.to_json() for p in params],
+            "curves": [],
+        },
+    )
+
+
 WINDINGS = (
     ("A", "ראשוני A1–A2"),
     ("B", "ראשוני B1–B2"),
@@ -510,6 +733,28 @@ STUDIES: dict[str, StudyDef] = {
                 0.05 * spec.nameplate.U1n, spec.nameplate.f_n
             ),
         ),
+        StudyDef(
+            "load",
+            "ניסוי עומס",
+            "סעיף 5, ציור 1.7, טבלה 1.6",
+            LoadCase,
+            lambda spec: {
+                "load_kind": "R",
+                "I2_targets_pu": [0.25, 0.5, 0.75, 1.0],
+                "include_no_load": True,
+                "U_line": None,
+            },
+            lambda spec, variant: templates.load_test(spec.nameplate.U1n, spec.nameplate.f_n),
+        ),
+        StudyDef(
+            "vector_group",
+            "קבוצות חיבורים (שיטת השעון)",
+            "סעיף 6",
+            VectorGroupCase,
+            lambda spec: {"U_line": 100.0},
+            lambda spec, variant: templates.vector_group(100.0, spec.nameplate.f_n, variant),
+            variants=tuple(templates.VG_VARIANTS),
+        ),
     ]
 }
 
@@ -542,6 +787,12 @@ def execute(
         if kind == "short_circuit":
             assert isinstance(case, ShortCircuitCase)
             return run_short_circuit(spec, circuit, case)
+        if kind == "load":
+            assert isinstance(case, LoadCase)
+            return run_load(spec, circuit, case)
+        if kind == "vector_group":
+            assert isinstance(case, VectorGroupCase)
+            return run_vector_group(spec, circuit, case)
     except StudyError as f:
         return Outcome(status=f.status, error={"message": f.message, "details": f.details})
     return Outcome(status="unsupported", error={"message": f"study {kind} has no executor"})

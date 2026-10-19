@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import cmath
+import math
 from dataclasses import dataclass, field
 
 from vel.engine.circuit import CircuitModel
@@ -59,7 +61,11 @@ def operating_point(
                 )
                 continue
             v = sol.vdiff(a, b)
-            readings[iid] = {"U": v.real if dc else abs(v)}
+            # angle_deg is a simulation-only phasor quantity (a lab voltmeter shows |U| only);
+            # absolute angle reference = phase L1 of the first AC source.
+            readings[iid] = (
+                {"U": v.real} if dc else {"U": abs(v), "angle_deg": math.degrees(cmath.phase(v))}
+            )
         elif typ == "wattmeter":
             i = sol.branch_i[f"{iid}#I"]
             a, b = node(iid, "Vp"), node(iid, "Vn")

@@ -188,3 +188,47 @@ def efficiency_table(
     ]
     beta_opt = math.sqrt(P0 / Pk_rated) if Pk_rated > 0 else None
     return {"columns": cols, "rows": rows, "beta_eta_max": beta_opt}
+
+
+def vector_group_parameters(U_aAB: float, U_aAb: float, U_Bb: float) -> list[Param]:
+    """Manual section 6: cos(B1·aA·b1) = (|aAB|² + |aAb|² − |Bb|²) / (2·|aAB|·|aAb|)."""
+    if U_aAB <= 0 or U_aAb <= 0:
+        return [Param("theta", "זווית", None, "°", "", "manual", "מתח אפס — הזווית אינה מוגדרת")]
+    c = (U_aAB**2 + U_aAb**2 - U_Bb**2) / (2 * U_aAB * U_aAb)
+    if c > 1 + 1e-9 or c < -1 - 1e-9:
+        return [
+            Param(
+                "theta",
+                "זווית",
+                None,
+                "°",
+                "",
+                "manual",
+                f"cos = {c:.4f} מחוץ ל-[−1, 1]: המדידות אינן יכולות ליצור משולש",
+            )
+        ]
+    theta = math.degrees(math.acos(max(-1.0, min(1.0, c))))
+    a = round(theta / 30) % 12
+    b = round((360 - theta) / 30) % 12
+    cands = sorted({a, b})
+    return [
+        Param(
+            "cos_theta",
+            "cos של הזווית (משפט הקוסינוס)",
+            c,
+            "",
+            "(aAB² + aAb² − Bb²) / (2·aAB·aAb)",
+            "manual",
+        ),
+        Param("theta", "הזווית הפנימית θ", theta, "°", "arccos(…)", "manual"),
+        Param(
+            "clock_candidates",
+            "מספרי שעון אפשריים (θ/30 או (360−θ)/30)",
+            None if len(cands) > 1 else float(cands[0]),
+            "",
+            "θ/30 , (360° − θ)/30",
+            "manual",
+            "יש להכריע לפי ציור הפאזורים (פנימית/חיצונית)" if len(cands) > 1 else None,
+            note=" או ".join(str(x) for x in cands),
+        ),
+    ]

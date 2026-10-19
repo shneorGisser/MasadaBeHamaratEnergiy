@@ -19,3 +19,13 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
   - API: immutable runs, spec change does not alter stored runs, reproduction identical, failed runs stored as failures
 - vitest: 5 passed · Playwright: 5 passed (S0 ×2, S1 ×3: no-load, short circuit + invalid input, DC + insulation)
 - Known limitation found while testing: none blocking. ngspice's `echo` prints 6 digits; the cross-check uses `print` with `numdgt=15`.
+
+## S2 — 2D schematic, load test, vector groups (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- pytest: 46 passed. New: R6 vector groups Yy0/Yy6/Yy4/Yy8/Yd1/Yd11 from wiring topology (clock from phasors + cosine-law candidates),
+  cosine-law geometry check on ideal Yy0, missing A1–a1 bridge → invalid_circuit, load study R/L/C (η, ΔU% sign, rated-current target hit to 1e-9)
+- vitest: 8 passed (CircuitModel ↔ React Flow round trip, nets, id generation)
+- Playwright: 8 passed. New: load test R and C; delete instrument → save → run fails naming A2 → reload persists edit →
+  add ammeter + drag-wire between terminals → stored wire verified through the API → reset to manual circuit → success;
+  vector groups 0 / 4 / 11 via the UI.
+- Limitation: wire routing in the schematic is automatic (smoothstep); dense templates still have crossings.

@@ -14,7 +14,7 @@ test('S0: create, open, rename, reload and delete a project (real backend + SQLi
 
   await page.locator('input[name="notes"]').fill('שולחן 4, וריאק ישן')
   await page.locator('input[name="rename"]').fill('קבוצה 3')
-  await page.getByRole('button', { name: 'שמור' }).click()
+  await page.getByRole('button', { name: 'שמור', exact: true }).click()
   await expect(page.getByText('נשמר')).toBeVisible()
 
   // Full reload: state must come back from the database, not from client memory.

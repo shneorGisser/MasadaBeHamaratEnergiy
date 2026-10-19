@@ -135,3 +135,23 @@ a.tab { text-decoration: none; }
 .chart { width: 100%; }
 .chart .u-title { font-size: 14px; font-weight: 600; }
 details > summary { cursor: pointer; font-weight: 600; }
+
+.sch-layout { display: grid; grid-template-columns: 1fr 280px; gap: 12px; }
+.sch-canvas { height: 560px; border: 1px solid var(--line); border-radius: 6px; background: #fbfcfa; }
+.sch-side { max-height: 560px; overflow: auto; }
+.sch-node {
+  position: relative; background: #fff; border: 1.5px solid #46524f; border-radius: 6px;
+  font-size: 11px; color: var(--ink); display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; padding: 16px 22px;
+}
+.sch-node.instrument { border-radius: 50px; border-color: var(--sim); }
+.sch-node.unknown { border-color: var(--err); background: var(--err-soft); }
+.sch-node.selected { box-shadow: 0 0 0 3px #7fb3b4; }
+.sch-title { position: absolute; top: -18px; left: 0; right: 0; font-size: 11px; white-space: nowrap; }
+.sch-symbol { font-size: 22px; font-weight: 700; line-height: 1; }
+.sch-sub { font-size: 10px; color: var(--ink-2); margin-top: 4px; }
+.sch-term { position: absolute; font-size: 9px; color: var(--ink-3); pointer-events: none; }
+.sch-handle { width: 9px !important; height: 9px !important; background: #c8862a !important; border: 1px solid #6d4710 !important; }
+.react-flow__edge-path { stroke: #2a3634; stroke-width: 1.6; }
+.react-flow__edge.selected .react-flow__edge-path { stroke: var(--accent); stroke-width: 2.5; }
+@media (max-width: 900px) { .sch-layout { grid-template-columns: 1fr; } }

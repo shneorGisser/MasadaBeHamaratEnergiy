@@ -248,3 +248,78 @@ def test_delta_primary_on_star_voltage_saturates() -> None:
     i_d = op_d.readings["A"]["I"]
     assert i_y is not None and i_d is not None
     assert i_d > 10 * i_y
+
+
+# R6 — vector groups from wiring topology. Expected clock numbers derived by hand from the
+# phasor diagrams (IEC 60076-1 convention: clock = LV lag behind HV / 30°):
+#   Yy abc → 0, Yy reversed → 6, Yy with b-c-a roles → 4, c-a-b roles → 8,
+#   Yd with x2→y1 closure → 1, Yd with x1→y2 closure → 11.
+@pytest.mark.parametrize(
+    "variant,clock,candidates",
+    [
+        ("Yy-abc", 0, "0"),
+        ("Yy-abc-rev", 6, "6"),
+        ("Yy-bca", 4, "4 או 8"),
+        ("Yy-cab", 8, "4 או 8"),
+        ("Yd-abc-1", 1, "1 או 11"),
+        ("Yd-abc-2", 11, "1 או 11"),
+    ],
+)
+def test_R6_vector_groups(variant: str, clock: int, candidates: str) -> None:
+    s = assumed_lab_transformer()
+    sd = STUDIES["vector_group"]
+    o = execute("vector_group", s, sd.default_circuit(s, variant).model_dump(), {"U_line": 100})  # type: ignore[union-attr]
+    assert o.status == "success", o.error
+    assert o.result is not None
+    p = {x["key"]: x for x in o.result["parameters"]}
+    assert p["clock_true"]["value"] == clock
+    assert p["clock_candidates"]["note"] == candidates
+
+
+def test_R6_cosine_law_matches_ideal_geometry() -> None:
+    """Ideal Yy0, ratio 380/220, U_line = 100 V: with A1 bridged to a1, |B1–b1| = |AB| − |ab|."""
+    s = ideal_spec()
+    sd = STUDIES["vector_group"]
+    o = execute("vector_group", s, sd.default_circuit(s, "Yy-abc").model_dump(), {"U_line": 100})  # type: ignore[union-attr]
+    assert o.result is not None
+    row = o.result["tables"][0]["rows"][0]
+    assert row["U_aAB"] == pytest.approx(100, rel=1e-9)
+    assert row["U_aAb"] == pytest.approx(100 * 220 / 380, rel=1e-6)
+    assert row["U_Bb"] == pytest.approx(100 - 100 * 220 / 380, rel=1e-5)
+
+
+def test_vector_group_without_bridge_is_explicit_failure() -> None:
+    s = assumed_lab_transformer()
+    c = STUDIES["vector_group"].default_circuit(s, "Yy-abc").model_dump()  # type: ignore[union-attr]
+    c["wires"] = [
+        w
+        for w in c["wires"]
+        if not (w["a"] == {"component": "T", "terminal": "A1"} and w["b"]["terminal"] == "a1")
+    ]
+    o = execute("vector_group", s, c, {"U_line": 100})
+    assert o.status == "invalid_circuit"
+
+
+# Load test: energy balance P1 = P2 + losses, regulation sign by load type
+@pytest.mark.parametrize("kind", ["R", "L", "C"])
+def test_load_study(kind: str) -> None:
+    s = assumed_lab_transformer()
+    sd = STUDIES["load"]
+    o = execute(
+        "load",
+        s,
+        sd.default_circuit(s, "").model_dump(),
+        {"load_kind": kind, "I2_targets_pu": [0.5, 1.0]},
+    )  # type: ignore[union-attr]
+    assert o.status in ("success", "success_with_warnings"), o.error
+    assert o.result is not None
+    rows = o.result["tables"][0]["rows"]
+    assert rows[0]["I2"] == pytest.approx(0, abs=1e-9)  # S2 open
+    assert rows[-1]["I2"] == pytest.approx(s.I2n_line, rel=1e-9)
+    if kind == "R":
+        assert 0.9 < rows[-1]["eta"] < 1.0
+        assert rows[-1]["dU_pct"] > 0
+    if kind == "L":
+        assert rows[-1]["dU_pct"] > rows[1]["dU_pct"] > 0
+    if kind == "C":
+        assert rows[-1]["dU_pct"] < 0  # voltage rise

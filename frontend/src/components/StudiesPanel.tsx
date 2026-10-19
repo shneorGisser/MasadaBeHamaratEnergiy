@@ -6,9 +6,21 @@ import { useCreateRun, useRun, useRuns, useStudies } from '../api/hooks'
 import type { Study } from '../api/types'
 import { parseList } from '../format'
 import { fmtDate, t, type MessageKey } from '../i18n'
+import SchematicEditor from '../schematic/SchematicEditor'
 import { ErrorBox } from './ErrorBox'
 import RunView from './RunView'
 import StatusBadge from './StatusBadge'
+
+const VARIANT_LABEL: Record<string, string> = {
+  YY: 'כוכב-כוכב',
+  YD: 'כוכב-משולש',
+  'Yy-abc': 'כוכב-כוכב, סדר a b c',
+  'Yy-bca': 'כוכב-כוכב, סדר b c a',
+  'Yy-cab': 'כוכב-כוכב, סדר c a b',
+  'Yy-abc-rev': 'כוכב-כוכב, קוטביות הפוכה',
+  'Yd-abc-1': 'כוכב-משולש, סגירה x2→y1',
+  'Yd-abc-2': 'כוכב-משולש, סגירה x1→y2',
+}
 
 const HIDDEN_CASE_KEYS = new Set(['bindings', 'source'])
 
@@ -25,10 +37,37 @@ function CaseEditor({
     <div className="stack" style={{ gap: 10 }}>
       {Object.entries(study.default_case)
         .filter(([k]) => !HIDDEN_CASE_KEYS.has(k))
-        .map(([k]) => {
+        .map(([k, def]) => {
           const label = t(`case.${k}` as MessageKey)
           const v = value[k] ?? ''
-          const bad = Array.isArray(study.default_case[k]) ? parseList(v) === null : !Number.isFinite(Number(v)) || v.trim() === ''
+          if (typeof def === 'boolean')
+            return (
+              <label key={k} className="row small">
+                <input
+                  type="checkbox"
+                  name={`case-${k}`}
+                  checked={v === 'true'}
+                  onChange={(e) => onChange({ ...value, [k]: String(e.target.checked) })}
+                />
+                {label}
+              </label>
+            )
+          if (k === 'load_kind')
+            return (
+              <label key={k} className="field">
+                {label}
+                <select className="input" name={`case-${k}`} value={v} onChange={(e) => onChange({ ...value, [k]: e.target.value })}>
+                  <option value="R">R — התנגדותי</option>
+                  <option value="L">L — השראותי</option>
+                  <option value="C">C — קיבולי</option>
+                </select>
+              </label>
+            )
+          const bad = Array.isArray(def)
+            ? parseList(v) === null
+            : def === null
+              ? v.trim() !== '' && !Number.isFinite(Number(v))
+              : !Number.isFinite(Number(v)) || v.trim() === ''
           return (
             <label key={k} className="field">
               {label}
@@ -50,7 +89,7 @@ function caseToText(c: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(c)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
-    out[k] = Array.isArray(v) ? v.join(', ') : String(v)
+    out[k] = Array.isArray(v) ? v.join(', ') : v === null || v === undefined ? '' : String(v)
   }
   return out
 }
@@ -58,10 +97,13 @@ function caseToText(c: Record<string, unknown>): Record<string, string> {
 /** Build the case document; invalid text is sent as-is so the server's validation answers. */
 function textToCase(study: Study, text: Record<string, string>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(study.default_case)) {
+  for (const [k, def] of Object.entries(study.default_case)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
     const raw = text[k] ?? ''
-    if (Array.isArray(v)) out[k] = parseList(raw) ?? raw
+    if (Array.isArray(def)) out[k] = parseList(raw) ?? raw
+    else if (typeof def === 'boolean') out[k] = raw === 'true'
+    else if (typeof def === 'string') out[k] = raw
+    else if (def === null) out[k] = raw.trim() === '' ? null : Number(raw)
     else out[k] = raw.trim() === '' ? raw : Number(raw)
   }
   return out
@@ -97,7 +139,7 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
     setVariantMsg(null)
     try {
       await api.post(`/api/projects/${projectId}/circuits/${study.kind}/reset`, { variant })
-      setVariantMsg(`המעגל נטען בתצורה ${variant}`)
+      setVariantMsg(variant ? `המעגל נטען בתצורה ${VARIANT_LABEL[variant] ?? variant}` : 'המעגל נטען לפי החוברת')
       void qc.invalidateQueries({ queryKey: ['circuit', projectId, study.kind] })
     } catch (e) {
       setVariantMsg(String(e))
@@ -113,16 +155,24 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
           <h2 className="grow">{study.title_he}</h2>
           <span className="muted small">חוברת: {study.manual_ref}</span>
         </div>
-        {study.variants.length > 0 && (
+        {study.editable_circuit && (
           <div className="row">
             <span className="small muted">{t('study.variant')}:</span>
-            {study.variants.map((v) => (
+            {(study.variants.length > 0 ? study.variants : ['']).map((v) => (
               <button key={v} className="btn small" disabled={variantBusy} onClick={() => void resetVariant(v)}>
-                {t('study.resetCircuit')} — {v === 'YY' ? 'כוכב-כוכב' : v === 'YD' ? 'כוכב-משולש' : v}
+                {t('study.resetCircuit')}{v ? ` — ${VARIANT_LABEL[v] ?? v}` : ''}
               </button>
             ))}
             {variantMsg && <span className="badge ok">{variantMsg}</span>}
           </div>
+        )}
+        {study.editable_circuit && (
+          <details open className="card" style={{ padding: 10 }} data-testid="circuit-section">
+            <summary>מעגל הניסוי (סכמה דו-ממדית)</summary>
+            <div style={{ marginTop: 10 }}>
+              <SchematicEditor projectId={projectId} kind={study.kind} />
+            </div>
+          </details>
         )}
         <h3>{t('study.case')}</h3>
         <CaseEditor study={study} value={caseText} onChange={setCaseText} />

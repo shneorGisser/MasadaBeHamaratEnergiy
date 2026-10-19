@@ -42,7 +42,7 @@ function ParamTable({ params, method }: { params: Param[]; method: Param['method
   if (rows.length === 0) return null
   return (
     <div className="stack" style={{ gap: 6 }}>
-      <h3>{method === 'consistent' ? t('run.consistent') : t('run.manual')}</h3>
+      <h3>{method === 'consistent' ? t('run.consistent') : method === 'manual' ? t('run.manual') : t('run.analytic')}</h3>
       <table className="data" data-testid={`params-${method}`}>
         <thead>
           <tr>
@@ -58,7 +58,7 @@ function ParamTable({ params, method }: { params: Param[]; method: Param['method
                 {p.label_he}
                 {p.note && <div className="muted small">{p.note}</div>}
               </td>
-              <td className="num">
+              <td className="num" data-value={p.value ?? ''}>
                 {p.value === null ? (
                   <span className="badge err" title={p.undefined_reason ?? ''}>
                     {t('run.undefined')}
@@ -176,6 +176,7 @@ export default function RunView({ run }: { run: Run }) {
           <div className="grid-2">
             <ParamTable params={res.parameters} method="consistent" />
             <ParamTable params={res.parameters} method="manual" />
+            <ParamTable params={res.parameters} method="analytic" />
           </div>
         </section>
       )}
