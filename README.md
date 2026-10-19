@@ -10,6 +10,8 @@ Modules:
 - **Experiment 3 — synchronous machine** (insulation, DC resistances, open-circuit characteristic, three-, two- and
   single-phase short circuits, R/L/C load characteristics, regulation, zero-power-factor/Potier, V-curves on the grid).
   Parameters fitted to the student's 2026 measurements — see `docs/model-synchronous.md` and `docs/lab-data-2026-exp3.md`.
+- **Experiment 4 — wound-rotor induction machine** (turns ratio, no-load, locked rotor, load with/without starter
+  resistance, induction regulator, induction generator on the grid, inverter) — see `docs/model-wound-rotor.md`.
 
 The planning package (vision, requirements, architecture, validation plan, roadmap) is in the
 project's planning document; `docs/` holds the engineering notes and the test log.

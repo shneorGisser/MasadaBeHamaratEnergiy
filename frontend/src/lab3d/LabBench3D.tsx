@@ -24,6 +24,8 @@ interface LivePoint {
 }
 
 const SCALE = 0.01 // schematic units → metres on the bench
+/** machines drawn as a motor/generator coupled to a brake or drive on a common base */
+const ROTATING = new Set(['motor3', 'woundmotor3', 'syncmachine3'])
 const SIZE: Record<string, [number, number, number]> = {
   source3: [1.1, 0.7, 0.6],
   source_dc: [0.7, 0.4, 0.4],
@@ -31,6 +33,7 @@ const SIZE: Record<string, [number, number, number]> = {
   transformer3: [1.2, 1.0, 0.8],
   motor3: [1.6, 0.7, 0.7],
   syncmachine3: [1.6, 0.7, 0.7],
+  woundmotor3: [1.6, 0.7, 0.7],
   load3: [1.0, 0.5, 0.7],
   resistor: [0.4, 0.2, 0.2],
   inductor: [0.4, 0.3, 0.3],
@@ -47,6 +50,7 @@ function readingText(c: CComponent, live: LivePoint | null): string | null {
   if (c.type === 'voltmeter') return r.U === null ? 'לא מוגדר' : `${fmt(r.U)} V`
   if (c.type === 'wattmeter') return r.P === null ? 'לא מוגדר' : `${fmt(r.P)} W · cos φ ${fmt(r.pf, 3)}`
   if (c.type === 'motor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m`
+  if (c.type === 'woundmotor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m · f2 ${fmt(r.f_rotor, 3)} Hz`
   if (c.type === 'syncmachine3') return `${fmt(r.n)} rpm · ${fmt(r.f)} Hz · If ${fmt(r.If, 3)} A`
   return null
 }
@@ -149,7 +153,7 @@ function Equipment({
   const reading = readingText(c, live)
   return (
     <group position={pos}>
-      {c.type === 'motor3' ? (
+      {c.type === 'motor3' || c.type === 'woundmotor3' ? (
         <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
       ) : c.type === 'syncmachine3' ? (
         // synchronous machine (blue-grey) coupled to the servo drive (dark)
@@ -210,7 +214,7 @@ function Equipment({
         </mesh>
       )}
       {showLabel && (
-      <Html position={[0, (c.type === 'transformer3' ? 1.1 : c.type === 'motor3' || c.type === 'syncmachine3' ? 0.8 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
+      <Html position={[0, (c.type === 'transformer3' ? 1.1 : ROTATING.has(c.type) ? 0.8 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
         <button
           className={`lab-label${selected ? ' selected' : ''}`}
           data-testid={`eq-${c.id}`}
@@ -267,7 +271,7 @@ function Scene({
     const [w, h, d] = SIZE[c.type] ?? [0.4, 0.3, 0.3]
     const slot = terminalSlots(c.type, [t])[t] ?? { side: 'left', at: 0.5 }
     const along = (slot.at - 0.5) * (slot.side === 'left' || slot.side === 'right' ? d : w)
-    const top = c.type === 'transformer3' || c.type === 'motor3' || c.type === 'syncmachine3' ? 0.1 : h
+    const top = c.type === 'transformer3' || ROTATING.has(c.type) ? 0.1 : h
     if (slot.side === 'left') return [base[0] - w / 2, top, base[2] + along]
     if (slot.side === 'right') return [base[0] + w / 2, top, base[2] + along]
     return [base[0] + along, top, base[2] + d / 2]
@@ -320,7 +324,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   const uMax = Math.max(Math.round(nominal * 1.25), 1)
 
   const switchComps = useMemo(() => circuit?.components.filter((c) => c.type === 'switch3') ?? [], [circuit])
-  const motor = circuit?.components.find((c) => c.type === 'motor3')
+  const motor = circuit?.components.find((c) => c.type === 'motor3' || c.type === 'woundmotor3')
   const project = useProject(projectId)
   const mN = project.data?.derived.M_n ?? 1
   const [brake, setBrake] = useState<number | null>(null)
@@ -328,6 +332,9 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   const mLoad = brake ?? Number(motor?.params.M_load ?? 0)
   const isLocked = locked ?? Boolean(motor?.params.locked ?? false)
   const brakeMax = Math.round(3 * mN * 100) / 100
+  const [angle, setAngle] = useState<number | null>(null)
+  const rotorAngle = angle ?? Number(motor?.params.angle ?? 0)
+  const wound = motor?.type === 'woundmotor3'
   const sm = circuit?.components.find((c) => c.type === 'syncmachine3')
   const spec = project.data?.spec as { nameplate?: { If_n?: number; P_n?: number } } | undefined
   const ifMax = 1.5 * (spec?.nameplate?.If_n ?? 4)
@@ -343,7 +350,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
     const overrides: Record<string, Record<string, unknown>> = {}
     if (source) overrides[source.id] = { U_line: u }
     for (const [id, closed] of Object.entries(switches)) overrides[id] = { closed }
-    if (motor) overrides[motor.id] = { M_load: mLoad, locked: isLocked }
+    if (motor) overrides[motor.id] = wound && isLocked ? { M_load: mLoad, locked: true, angle: rotorAngle } : { M_load: mLoad, locked: isLocked }
     if (sm) overrides[sm.id] = onGrid ? { I_f: fieldI, P_shaft: shaftP } : { I_f: fieldI }
     const my = ++seq.current
     const t = setTimeout(() => {
@@ -358,7 +365,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
         .catch((e) => my === seq.current && setError(e))
     }, 150)
     return () => clearTimeout(t)
-  }, [circuit, source, u, switches, motor, mLoad, isLocked, sm, fieldI, shaftP, onGrid, projectId, kind])
+  }, [circuit, source, u, switches, motor, mLoad, isLocked, wound, rotorAngle, sm, fieldI, shaftP, onGrid, projectId, kind])
 
   if (circuitQ.isLoading) return <p className="muted">טוען שולחן…</p>
   if (circuitQ.isError) return <ErrorBox error={circuitQ.error} />
@@ -418,6 +425,22 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
               <input type="checkbox" checked={isLocked} data-testid="locked" onChange={(e) => setLocked(e.target.checked)} />
               רוטור נעול
             </label>
+            {wound && isLocked && (
+              <label className="row" style={{ gap: 6 }}>
+                זווית הרוטור: <strong className="num" data-testid="angle-value">{fmt(rotorAngle)}°</strong>
+                <input
+                  type="range"
+                  min={0}
+                  max={360}
+                  step={5}
+                  value={rotorAngle}
+                  onChange={(e) => setAngle(Number(e.target.value))}
+                  data-testid="angle"
+                  aria-label="זווית הרוטור"
+                  style={{ width: 160 }}
+                />
+              </label>
+            )}
           </>
         )}
         {sm && (

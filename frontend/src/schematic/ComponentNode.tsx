@@ -10,6 +10,7 @@ const SYMBOL: Record<string, string> = {
   transformer3: '⧚',
   motor3: 'M3~',
   syncmachine3: 'SG3~',
+  woundmotor3: 'M3~ (טבעות)',
   load3: 'Z',
   resistor: 'R',
   inductor: 'L',
@@ -39,6 +40,9 @@ function summary(type: string, p: Record<string, unknown>): string {
       return 'פרמטרים: מפרט השנאי'
     case 'syncmachine3':
       return `I_f = ${fmt(p.I_f ?? 0)} A`
+    case 'woundmotor3':
+      if (p.locked) return `נעול · α = ${fmt(p.angle ?? 0)}°`
+      return p.speed_mode === 'speed' ? `n = ${fmt(p.n_set ?? 0)} rpm` : `M_load = ${fmt(p.M_load ?? 0)} N·m`
     case 'motor3':
       return p.locked ? 'רוטור נעול' : `M_load = ${fmt(p.M_load ?? 0)} N·m`
     default:
@@ -50,8 +54,8 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const { comp, ctype } = data
   const terminals = ctype?.terminals ?? []
   const slots = terminalSlots(comp.type, terminals)
-  const tall = comp.type === 'transformer3' || comp.type === 'motor3' || comp.type === 'syncmachine3' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
-  const wide = comp.type === 'transformer3' ? 180 : comp.type === 'motor3' || comp.type === 'syncmachine3' ? 150 : 110
+  const tall = comp.type === 'transformer3' || comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
+  const wide = comp.type === 'transformer3' ? 180 : comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' ? 150 : 110
   const instrument = ctype?.instrument
   return (
     <div

@@ -6,6 +6,7 @@ from typing import Any
 
 from vel.experiments.common import SAFETY, InputError, MCol, MeasureDef, Step, study_steps
 from vel.experiments.induction_motor import derive
+from vel.experiments.induction_motor.derive import MotorLike
 from vel.experiments.induction_motor.spec import PRESETS, MotorSpec, assumed_lab_motor
 from vel.experiments.induction_motor.studies import MODEL_VERSION, STUDIES, execute
 from vel.experiments.induction_motor.templates import WINDINGS
@@ -105,7 +106,7 @@ DERIVED_COLUMNS: dict[str, list[dict[str, str]]] = {
 }
 
 
-def analyse(kind: str, rows: Rows, spec: MotorSpec) -> dict[str, Any]:
+def analyse(kind: str, rows: Rows, spec: MotorLike) -> dict[str, Any]:
     out: dict[str, Any] = {"rows": rows, "parameters": [], "parameters_at": None, "warnings": []}
     if kind == "no_load":
         r2, params, at, w = derive.no_load(rows, spec)
@@ -133,7 +134,7 @@ def _vals(rows: Rows, key: str) -> list[float]:
 
 
 def matching_case(
-    kind: str, conditions: dict[str, Any], rows: Rows, spec: MotorSpec
+    kind: str, conditions: dict[str, Any], rows: Rows, spec: MotorLike
 ) -> dict[str, Any]:
     if kind == "no_load":
         u = [x for x in _vals(rows, "U1L") if x > 0]

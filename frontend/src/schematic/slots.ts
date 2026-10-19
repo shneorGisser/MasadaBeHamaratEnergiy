@@ -34,6 +34,12 @@ export function terminalSlots(type: string, terminals: string[]): Record<string,
       spread(['U1', 'V1', 'W1'], 'left', s)
       ;(['U2', 'V2', 'W2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.25 + 0.25 * i }))
       break
+    case 'woundmotor3':
+      // stator like the cage motor; the slip rings on the right (to the starter)
+      spread(['U1', 'V1', 'W1'], 'left', s)
+      ;(['U2', 'V2', 'W2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.25 + 0.25 * i }))
+      spread(['R1', 'R2', 'R3'], 'right', s)
+      break
     case 'syncmachine3':
       // stator starts toward the external circuit, winding ends (star) below, field on top
       spread(['U1', 'V1', 'W1'], 'left', s)

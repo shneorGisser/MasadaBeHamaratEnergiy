@@ -101,6 +101,47 @@ const FORMS: Record<string, FormDef> = {
     modelNote:
       'מודל: רוטור גלילי, שיטת כמ״מ עם רוויה: E_r = OCC(|F_f + k_a·I1|) מאחורי עכבות הסדרים (Ra + jX_l, Ra + jX2, Ra + jX0). השטף השיורי כהיסט F_res בזרם העירור. ההיגב הסינכרוני הלא רווי Xs = X_l + a·k_a.',
   },
+  wound_rotor: {
+    fields: [
+      { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },
+      { section: 'nameplate', key: 'U_n', label: 'מתח סטטור קווי U_n', unit: 'V' },
+      { section: 'nameplate', key: 'I_n', label: 'זרם סטטור קווי I_n', unit: 'A' },
+      { section: 'nameplate', key: 'f_n', label: 'תדירות', unit: 'Hz' },
+      { section: 'nameplate', key: 'n_n', label: 'מהירות נקובה n_n', unit: 'rpm' },
+      {
+        section: 'nameplate',
+        key: 'poles',
+        label: 'מספר קטבים',
+        unit: '',
+        choices: [2, 4, 6, 8, 10, 12].map((n) => ({ value: String(n), label: `${n} (n_s = ${(6000 / n).toFixed(0)} ב-50 Hz)`, int: true })),
+      },
+      { section: 'nameplate', key: 'connection', label: 'חיבור הסטטור', unit: '', choices: CONN },
+      { section: 'nameplate', key: 'cos_phi_n', label: 'cos φ נקוב (לא חובה)', unit: '' },
+      { section: 'nameplate', key: 'U2_n', label: 'מתח רוטור נח (קווי)', unit: 'V' },
+      { section: 'nameplate', key: 'I2_n', label: 'זרם רוטור נקוב', unit: 'A' },
+      { section: 'ecm', key: 'R1', label: 'R1 (ליפוף סטטור)', unit: 'Ω' },
+      { section: 'ecm', key: 'X1', label: 'X1 פיזור סטטור', unit: 'Ω' },
+      { section: 'ecm', key: 'R2', label: 'R2 פאזת רוטור (בפועל)', unit: 'Ω' },
+      { section: 'ecm', key: 'X2', label: 'X2 פיזור רוטור (בפועל, ב-f_n)', unit: 'Ω' },
+      { section: 'ecm', key: 'k', label: 'k יחס כריכות סטטור/רוטור', unit: '' },
+      { section: 'ecm', key: 'R_fe', label: 'R_Fe הפסדי ברזל', unit: 'Ω' },
+      { section: 'ecm', key: 'Xm', label: 'X_m היגב מגנוט', unit: 'Ω' },
+      { section: 'ecm', key: 'P_fw_n', label: 'חיכוך ואוורור ב-n_n', unit: 'W' },
+      { section: 'insulation', key: 'U_frame_Mohm', label: 'סטטור U – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'V_frame_Mohm', label: 'סטטור V – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'W_frame_Mohm', label: 'סטטור W – מארז', unit: 'MΩ' },
+      { section: 'insulation', key: 'rotor_frame_Mohm', label: 'רוטור – מארז', unit: 'MΩ' },
+    ],
+    derived: [
+      { key: 'n_sync', label: 'מהירות סינכרונית', unit: 'rpm' },
+      { key: 'slip_n', label: 'החלקה נקובה', unit: '', digits: 4 },
+      { key: 'M_n', label: 'מומנט נקוב', unit: 'N·m' },
+      { key: 'R2_referred', label: "R2' = k²·R2 (מוחזר לסטטור)", unit: 'Ω' },
+      { key: 'X2_referred', label: "X2' = k²·X2", unit: 'Ω' },
+    ],
+    modelNote:
+      'מודל: מעגל T לכל פאזה עם שנאי אידיאלי k בין סטטור לרוטור, טבעות R1–R3 נגישות (כוכב פנימי). ברוטור מסתובב המעגל החיצוני של הרוטור נפתר בתדר ההחלקה. רוטור נעול בזווית α: יחס מרוכב k·e^{j(p/2)α}.',
+  },
   induction_motor: {
     fields: [
       { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },

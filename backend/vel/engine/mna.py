@@ -72,7 +72,7 @@ class IdealTransformer:
     p2: int
     s1: int
     s2: int
-    k: float
+    k: complex
     name: str
 
 
@@ -162,10 +162,11 @@ def _assemble(net: Network, ys_nl: list[complex]) -> tuple[CArray, CArray, list[
         z[row] = s.v
         row += 1
     for t in net.transformers:
+        kc = complex(t.k).conjugate()
         A[t.p1, row] += 1
         A[t.p2, row] -= 1
-        A[t.s1, row] -= t.k
-        A[t.s2, row] += t.k
+        A[t.s1, row] -= kc
+        A[t.s2, row] += kc
         A[row, t.p1] += 1
         A[row, t.p2] -= 1
         A[row, t.s1] -= t.k

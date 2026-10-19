@@ -21,6 +21,7 @@ from vel.experiments.common import (
     with_param,
 )
 from vel.experiments.induction_motor import derive, templates
+from vel.experiments.induction_motor.derive import MotorLike
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.induction_motor.templates import WINDINGS
 
@@ -160,7 +161,7 @@ def _status(warnings: list[dict[str, Any]]) -> Literal["success", "success_with_
     return "success_with_warnings" if warnings else "success"
 
 
-def _vf(spec: MotorSpec, f: float, boost: float) -> float:
+def _vf(spec: MotorLike, f: float, boost: float) -> float:
     """V/f law: U = U_boost + (U_n − U_boost)·f/f_n, limited to U_n above f_n (field weakening)."""
     un, fn = spec.nameplate.U_n, spec.nameplate.f_n
     return min(un, boost + (un - boost) * f / fn)
@@ -169,7 +170,7 @@ def _vf(spec: MotorSpec, f: float, boost: float) -> float:
 # --------------------------------------------------------------------------- studies
 
 
-def run_no_load(spec: MotorSpec, circuit: CircuitModel, case: NoLoadCase) -> Outcome:
+def run_no_load(spec: MotorLike, circuit: CircuitModel, case: NoLoadCase) -> Outcome:
     base = with_param(circuit, MOTOR, "M_load", 0.0)
     rows, warnings = [], []
     for i, u in enumerate(case.U_line_values):
@@ -219,7 +220,7 @@ def run_no_load(spec: MotorSpec, circuit: CircuitModel, case: NoLoadCase) -> Out
     )
 
 
-def run_locked_rotor(spec: MotorSpec, circuit: CircuitModel, case: LockedRotorCase) -> Outcome:
+def run_locked_rotor(spec: MotorLike, circuit: CircuitModel, case: LockedRotorCase) -> Outcome:
     un, i_n = spec.nameplate.U_n, spec.nameplate.I_n
     base = with_param(circuit, MOTOR, "locked", True)
     i_bind = case.bindings["I_k"]
@@ -290,7 +291,7 @@ def _kloss(m_max: float, s_cr: float, s: float) -> float:
     return 2 * m_max / (s / s_cr + s_cr / s) if s > 0 else 0.0
 
 
-def run_load(spec: MotorSpec, circuit: CircuitModel, case: LoadCase) -> Outcome:
+def run_load(spec: MotorLike, circuit: CircuitModel, case: LoadCase) -> Outcome:
     u = case.U_line or spec.nameplate.U_n
     base = with_param(circuit, case.source, "U_line", u)
     base = with_param(base, MOTOR, "locked", False)
@@ -412,14 +413,25 @@ INVERTER_WARNING = (
 )
 
 
-def run_inverter(spec: MotorSpec, circuit: CircuitModel, case: InverterCase) -> Outcome:
+def run_inverter(spec: MotorLike, circuit: CircuitModel, case: InverterCase) -> Outcome:
     base = with_param(circuit, MOTOR, "locked", False)
-    rows, warnings = [], [{"code": "fundamental_only", "message": INVERTER_WARNING}]
+    rows: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = [{"code": "fundamental_only", "message": INVERTER_WARNING}]
     for k, pt in enumerate(case.points):
         u = _vf(spec, pt.f, case.U_boost)
         c = with_param(with_param(base, case.source, "U_line", u), case.source, "f", pt.f)
-        op = solve(with_param(c, MOTOR, "M_load", pt.M), spec)
-        rows.append(_row(op, case.bindings, point=k + 1, f=pt.f, M_set=pt.M))
+        try:
+            op = solve(with_param(c, MOTOR, "M_load", pt.M), spec)
+        except StudyError as exc:
+            if exc.status != "constraint_violation":
+                raise
+            # a stalled point ends that frequency's curve; it does not void the other points
+            rows.append({"point": k + 1, "f": pt.f, "M_set": pt.M, "state": "נעצר"})
+            warnings.append(
+                {"code": "stalled", "row": k, "message": f"f = {pt.f:g} Hz: {exc.message}"}
+            )
+            continue
+        rows.append(_row(op, case.bindings, point=k + 1, f=pt.f, M_set=pt.M, state="עובד"))
         warnings += undefined_warnings(op, k, case.bindings) + _op_warnings(op, k)
     rows = derive.inverter(rows, spec)
 
@@ -460,6 +472,7 @@ def run_inverter(spec: MotorSpec, circuit: CircuitModel, case: InverterCase) -> 
                         col("P2", "Pout = M·n/9.55", "W"),
                         col("eta", "η", ""),
                         col("slip", "s", ""),
+                        col("state", "מצב", ""),
                     ],
                     "rows": rows,
                 },
@@ -579,11 +592,11 @@ def run_insulation(spec: MotorSpec, case: InsulationCase) -> Outcome:
 # --------------------------------------------------------------------------- registry
 
 
-def _conn(spec: MotorSpec) -> Literal["Y", "D"]:
+def _conn(spec: MotorLike) -> Literal["Y", "D"]:
     return spec.nameplate.connection
 
 
-def _load_default(spec: MotorSpec) -> dict[str, Any]:
+def _load_default(spec: MotorLike) -> dict[str, Any]:
     mn = spec.M_n
     return {
         "M_targets": [round(k * mn, 3) for k in (0.0, 0.25, 0.5, 0.75, 1.0, 1.15)],
@@ -592,7 +605,7 @@ def _load_default(spec: MotorSpec) -> dict[str, Any]:
     }
 
 
-def _inverter_default(spec: MotorSpec) -> dict[str, Any]:
+def _inverter_default(spec: MotorLike) -> dict[str, Any]:
     mn = spec.M_n
     return {
         "points": [

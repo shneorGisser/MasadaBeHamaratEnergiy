@@ -113,3 +113,18 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=… p
 - Data finding (docs/lab-data-2026-exp3.md): the student's load tables (6.5) contradict the short-circuit table by an
   order of magnitude in Xs; the model follows the short circuit (two independent fault types + nameplate excitation agree).
 - NOT verified: Y connection / line-voltage reading of U1 (assumed); X_l (ZPF not yet measured); salient-pole effects.
+
+## D4 — experiment 4: wound-rotor induction machine (2026-10-20)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- Engine: complex turns ratio in IdealTransformer (conj on the current side; all earlier transformer and ngspice tests
+  unchanged); `woundmotor3` with accessible slip rings; external rotor circuit at slip frequency solved as Z(s·f)/s,
+  rotor-circuit instrument readings returned at slip frequency; isolated-rotor check; imposed-speed mode.
+- pytest: 137 passed. New (test_wound_rotor, W1–W9): explicit rotor ≡ referred T-circuit (≤ 1e-9); starter closed form,
+  rotor ammeter = k·I2', voltmeter on the starter at s·f; energy balance incl. winding/starter split; speed falls with
+  R_ext; open-rotor ratio and hand turning ∝ |s|; regulator closed form; generator above synchronism; rejection of a
+  turning rotor tied to the supply; the nameplate fit reproduces the plate (1360 rpm, 0.83 A, cos φ 0.70, 107 V).
+- Inverter runs (experiments 2 and 4): a stalled point is a marked row, not a failed run.
+- Playwright: 17 passed. New (s9-wound-rotor): ratio 3.738 shown, R_ext lowers the speed at equal torque, the 3D rotor
+  angle slider drives the regulator output (equals the API).
+- Finding: with the nameplate fit the pull-out torque is only ≈ 1.1·M_n — documented as a sign of inflated leakage
+  reactances (docs/model-wound-rotor.md); load defaults stay within the reachable range.

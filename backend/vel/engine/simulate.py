@@ -10,6 +10,7 @@ from typing import Any, Literal
 from vel.engine.circuit import CircuitModel
 from vel.engine.mna import Network, Solution, solve
 from vel.engine.netlist import Built, CircuitValidationError, build
+from vel.experiments.wound_rotor.spec import WoundSpec
 
 SLIP_SCAN = 80  # grid points used to locate the pull-out torque before root finding
 SLIP_TOL = 1e-13
@@ -64,7 +65,7 @@ def operating_point(
         from vel.engine.synchronous import sync_operating_point
 
         return sync_operating_point(circuit, equipment, _electrical)
-    motors = [c for c in circuit.components if c.type == "motor3"]
+    motors = [c for c in circuit.components if c.type in ("motor3", "woundmotor3")]
     if dc or not motors:
         return _electrical(circuit, equipment, dc, {})
     if len(motors) > 1:
@@ -74,6 +75,17 @@ def operating_point(
     m = motors[0]
     if bool(m.params.get("locked", False)):
         return _electrical(circuit, equipment, dc, {m.id: 1.0})
+    if m.type == "woundmotor3" and m.params.get("speed_mode", "torque") == "speed":
+        # speed imposed (turned by hand, or driven above synchronism as a generator)
+        supplies = [c for c in circuit.components if c.type == "source3"]
+        if not supplies or not isinstance(equipment, WoundSpec):
+            raise CircuitValidationError(
+                [{"code": "no_source", "message": "imposed speed needs an AC supply"}]
+            )
+        f = float(supplies[0].params.get("f", 50.0))
+        n_sync = 120 * f / equipment.nameplate.poles
+        n_set = float(m.params.get("n_set", 0.0))
+        return _electrical(circuit, equipment, dc, {m.id: 1 - n_set / n_sync})
     try:
         m_load = float(m.params.get("M_load", 0.0))
     except (TypeError, ValueError) as exc:
@@ -254,6 +266,26 @@ def _electrical(
                 "I": abs(i),
             }
 
+    # instruments in a rotating rotor's circuit read slip-frequency quantities: the network
+    # is solved referred to stator frequency (impedances / s), so voltages and powers × s
+    for iid, sc in built.rotor_instruments.items():
+        r = readings.get(iid, {})
+        for q in ("U", "S"):
+            if r.get(q) is not None:
+                r[q] = abs(sc) * float(r[q])  # type: ignore[arg-type]
+        for q in ("P", "Q"):
+            if r.get(q) is not None:
+                r[q] = sc * float(r[q])  # type: ignore[arg-type]
+        if r:
+            r["f"] = abs(sc) * built.f
+    for iid in built.mixed_instruments:
+        for q in list(readings.get(iid, {})):
+            if q != "I":
+                readings[iid][q] = None
+                undefined[f"{iid}.{q}"] = (
+                    "המכשיר מחבר את מעגל הרוטור המסתובב (תדר החלקה) עם צד הסטטור — אין ערך אחד"
+                )
+
     internals: dict[str, dict[str, float]] = {}
     for xid, meta in built.xfmr_internals.items():
         tot = {"P_cu1": 0.0, "P_cu2": 0.0, "P_fe": 0.0, "Q_m": 0.0}
@@ -290,8 +322,31 @@ def _electrical(
         slip, f = meta["slip"], meta["f"]
         tot = {"P_cu1": 0.0, "P_fe": 0.0, "P_ag": 0.0}
         e_mags = []
+        wound = isinstance(spec, WoundSpec)
+        p_cu2_int = 0.0
         for X, ph in meta["phases"].items():
             i1 = _series_current(built.network, sol, f"{mid}#{X}#Z1")
+            if wound:
+                ev = sol.vdiff(ph["e"], ph["q"])
+                e_mags.append(abs(ev))
+                i_xf = sol.branch_i[f"{mid}#{X}#xf"]
+                i2a = _series_current(built.network, sol, f"{mid}#{X}#Z2")  # actual rotor I
+                p_cu1 = abs(i1) ** 2 * e.R1
+                p_fe = abs(ev) ** 2 / e.R_fe
+                p_ag = (ev * i_xf.conjugate()).real  # power through the air gap
+                p_cu2_int += abs(i2a) ** 2 * e.R2
+                internals[f"{mid}.{X}"] = {
+                    "E": abs(ev),
+                    "I1": abs(i1),
+                    "I2": abs(i2a),
+                    "P_cu1": p_cu1,
+                    "P_fe": p_fe,
+                    "P_ag": p_ag,
+                }
+                tot["P_cu1"] += p_cu1
+                tot["P_fe"] += p_fe
+                tot["P_ag"] += p_ag
+                continue
             i2 = _series_current(built.network, sol, f"{mid}#{X}#Z2") if slip > 0 else 0j
             ev = sol.vdiff(ph["e"], ph["q"])
             e_mags.append(abs(ev))
@@ -319,6 +374,10 @@ def _electrical(
         p_cu2 = slip * tot["P_ag"]
         p_mech = (1 - slip) * tot["P_ag"]
         internals[f"{mid}.total"] = {**tot, "P_cu2": p_cu2}
+        if wound:
+            # rotor circuit losses s·P_ag split into the winding and the external resistors
+            internals[f"{mid}.total"]["P_cu2_winding"] = p_cu2_int
+            internals[f"{mid}.total"]["P_rotor_external"] = p_cu2 - p_cu2_int
         internals[f"{mid}.mech"] = {
             "s": slip,
             "n_sync": n_sync,
@@ -330,7 +389,7 @@ def _electrical(
             "P2": p_mech - p_fw,
         }
         # what the brake control unit displays: speed and the torque it holds
-        readings[mid] = {"n": n, "M": m_em - m_fw, "s": slip}
+        readings[mid] = {"n": n, "M": m_em - m_fw, "s": slip, "f_rotor": abs(slip) * f}
         spread = (max(e_mags) - min(e_mags)) / max(max(e_mags), 1e-30)
         if spread > 0.01:
             op_warnings.append(
@@ -389,7 +448,7 @@ def _electrical(
 def operating_point_at_slip(circuit: CircuitModel, equipment: Any, slip: float) -> OperatingPoint:
     """Electrical steady state at an imposed slip (no torque balance) — for the simulation-only
     torque–speed characteristic, including its unstable branch that no brake setting reaches."""
-    motors = [c for c in circuit.components if c.type == "motor3"]
+    motors = [c for c in circuit.components if c.type in ("motor3", "woundmotor3")]
     if len(motors) != 1:
         raise MechanicalError("unsupported", "the circuit must contain exactly one motor")
     return _electrical(circuit, equipment, False, {motors[0].id: slip})

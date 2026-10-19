@@ -27,6 +27,7 @@ from vel.engine.mna import (
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.synchronous.spec import SyncSpec
 from vel.experiments.transformer3ph.spec import TransformerSpec
+from vel.experiments.wound_rotor.spec import WoundSpec
 
 ZERO_Z = 1e-12
 
@@ -100,6 +101,26 @@ CATALOG: dict[str, ComponentType] = {
             (
                 ParamDef("M_load", "מומנט הבלם", "N·m", default=0.0, min=0, max=1e4),
                 ParamDef("locked", "רוטור נעול", "", kind="bool", default=False),
+            ),
+        ),
+        ComponentType(
+            "woundmotor3",
+            "מכונת השראה עם רוטור מלופף + בלם",
+            "machine",
+            ("U1", "U2", "V1", "V2", "W1", "W2", "R1", "R2", "R3"),
+            (
+                ParamDef("M_load", "מומנט הבלם", "N·m", default=0.0, min=0, max=1e4),
+                ParamDef("locked", "רוטור נעול", "", kind="bool", default=False),
+                ParamDef("angle", "זווית הרוטור (נעול)", "°", default=0.0, min=-3600, max=3600),
+                ParamDef(
+                    "speed_mode",
+                    "מהירות נקבעת ע״י",
+                    "",
+                    kind="choice",
+                    default="torque",
+                    choices=("torque", "speed"),
+                ),
+                ParamDef("n_set", "מהירות כפויה", "rpm", default=0.0, min=-1e5, max=1e5),
             ),
         ),
         ComponentType(
@@ -236,6 +257,10 @@ class Built:
     motor_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     # synchronous-machine internals (EMF source names, coupled winding branches)
     sync_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # instruments inside a rotating wound rotor's circuit: their readings are at slip frequency
+    rotor_instruments: dict[str, float] = field(default_factory=dict)
+    # instruments that straddle a rotating rotor circuit and the stator side (no single f)
+    mixed_instruments: set[str] = field(default_factory=set)
     warnings: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -418,6 +443,28 @@ def build(
         else:
             net_items["adm"].append(Admittance(a, b, 1 / z, name))
 
+    rotor_scale: dict[str, float] = {}
+    if not dc:
+        for m in circuit.components:
+            if m.type == "woundmotor3" and not bool(m.params.get("locked", False)):
+                slip = (slips or {}).get(m.id, 1.0)
+                comps, inst, mixed = _rotor_circuit(circuit, node_of_terminal, m)
+                for cid in comps:
+                    rotor_scale[cid] = slip
+                for iid in inst:
+                    built.rotor_instruments[iid] = slip
+                built.mixed_instruments |= mixed
+
+    def scaled_z(cid: str, kind: str, val: float) -> complex:
+        """Impedance as seen from the stator: a rotor-circuit element at slip frequency s·f,
+        divided by s (R → R/s, X_L unchanged, X_C → X_C/s²)."""
+        sc = rotor_scale.get(cid)
+        if sc is None:
+            return _impedance(kind, val, omega)
+        if abs(sc) < SLIP_FLOOR:
+            sc = math.copysign(SLIP_FLOOR, sc or 1.0)
+        return _impedance(kind, val, omega * sc) / sc
+
     for c in circuit.components:
         ct = CATALOG[c.type]
         p = c.params
@@ -470,6 +517,21 @@ def build(
                     ]
                 )
             _expand_motor(c, equipment, f, dc, slip, N, new_node, series_z, net_items, built)
+        elif c.type == "woundmotor3":
+            if not isinstance(equipment, WoundSpec):
+                raise CircuitValidationError(
+                    [
+                        {
+                            "code": "no_spec",
+                            "component": c.id,
+                            "message": f"{c.id}: this project has no wound-rotor machine spec",
+                        }
+                    ]
+                )
+            locked = bool(p.get("locked", False))
+            slip = 1.0 if locked else (slips or {}).get(c.id, 1.0)
+            angle = _f(p, "angle", ct, c.id) if locked else 0.0
+            _expand_wound(c, equipment, f, dc, slip, angle, N, new_node, series_z, net_items, built)
         elif c.type == "syncmachine3":
             if not isinstance(equipment, SyncSpec):
                 raise CircuitValidationError(
@@ -507,7 +569,7 @@ def build(
                     ]
                 )
             val = _f(p, "value", ct, c.id)
-            z = _impedance(kind, val, omega)
+            z = scaled_z(c.id, kind, val)
             if conn == "Y":
                 star = new_node()
                 for t in ("1", "2", "3"):
@@ -518,7 +580,7 @@ def build(
         elif c.type in ("resistor", "inductor", "capacitor"):
             key = {"resistor": "R", "inductor": "L", "capacitor": "C"}[c.type]
             val = _f(p, key, ct, c.id)
-            z = _impedance(key, val, omega)
+            z = scaled_z(c.id, key, val)
             _branch(N(c.id, "p"), N(c.id, "n"), z, c.id, net_items, series_z)
         elif c.type == "ammeter":
             net_items["vs"].append(VSource(N(c.id, "p"), N(c.id, "n"), 0j, f"{c.id}#I"))
@@ -697,6 +759,115 @@ def _expand_motor(
         if slip > 0:
             # s = 0 (synchronous speed): no rotor current — the branch is open.
             series_z(node_e, q, complex(e.R2p / slip, e.X2p * k), f"{c.id}#{X}#Z2")
+        meta["phases"][X] = {"e": node_e, "q": q}
+    built.motor_internals[c.id] = meta
+
+
+SLIP_FLOOR = 1e-9  # |s| below this is treated as this (R2/s finite, no special open case)
+
+_CONDUCTING: dict[str, tuple[tuple[str, str], ...]] = {
+    "resistor": (("p", "n"),),
+    "inductor": (("p", "n"),),
+    "capacitor": (("p", "n"),),
+    "ammeter": (("p", "n"),),
+    "wattmeter": (("Ip", "In"),),
+    "load3": (("1", "2"), ("2", "3")),
+}
+
+
+def _rotor_circuit(
+    circuit: CircuitModel, node_of_terminal: dict[str, int], motor: Component
+) -> tuple[set[str], set[str], set[str]]:
+    """Components galvanically connected to a rotating rotor's slip rings. They carry current
+    at slip frequency, so they must not touch the stator side or any source."""
+    start = {node_of_terminal[f"{motor.id}.{t}"] for t in ("R1", "R2", "R3")}
+    forbidden: set[int] = set()
+    for c in circuit.components:
+        terms = CATALOG[c.type].terminals
+        if c.type in ("source3", "source_dc") or CATALOG[c.type].category == "machine":
+            for t in terms:
+                if c.id == motor.id and t in ("R1", "R2", "R3"):
+                    continue
+                forbidden.add(node_of_terminal[f"{c.id}.{t}"])
+    seen = set(start)
+    frontier = list(start)
+    comps: set[str] = set()
+    while frontier:
+        n = frontier.pop()
+        for c in circuit.components:
+            for a, b in _CONDUCTING.get(c.type, ()):
+                na, nb = node_of_terminal[f"{c.id}.{a}"], node_of_terminal[f"{c.id}.{b}"]
+                if n in (na, nb):
+                    comps.add(c.id)
+                    for x in (na, nb):
+                        if x not in seen:
+                            seen.add(x)
+                            frontier.append(x)
+    if seen & forbidden:
+        raise CircuitValidationError(
+            [
+                {
+                    "code": "rotor_circuit_not_isolated",
+                    "component": motor.id,
+                    "message": f"{motor.id}: rotor circuit connects to the stator side or a source "
+                    "while the rotor turns — rotor currents are at slip frequency; only a locked "
+                    "rotor may be connected to the supply (e.g. the induction regulator)",
+                }
+            ]
+        )
+    inst: set[str] = set()
+    mixed: set[str] = set()
+    for c in circuit.components:
+        if c.type in ("voltmeter", "wattmeter"):
+            nodes = [node_of_terminal[f"{c.id}.{t}"] for t in CATALOG[c.type].terminals]
+            inside = [x in seen for x in nodes]
+            if all(inside):
+                inst.add(c.id)
+            elif any(inside):
+                mixed.add(c.id)
+        elif c.id in comps and c.type == "ammeter":
+            inst.add(c.id)
+    return comps, inst, mixed
+
+
+def _expand_wound(
+    c: Component,
+    spec: WoundSpec,
+    f: float,
+    dc: bool,
+    slip: float,
+    angle_deg: float,
+    N: Callable[[str, str], int],
+    new_node: Callable[[], int],
+    series_z: Callable[[int, int, complex, str], None],
+    net_items: dict[str, list[Any]],
+    built: Built,
+) -> None:
+    """Stator winding X1 → R1+jX1 → e (R_fe ‖ jXm to X2) ; ideal transformer e:X2 = k·(a:n_r) ;
+    rotor phase a → R2/s + jX2 → slip ring. A locked rotor at mechanical angle α shifts the
+    rotor phases by (p/2)·α electrical: complex ratio k·e^{j(p/2)α}."""
+    e = spec.ecm
+    rings = {"U": "R1", "V": "R2", "W": "R3"}
+    star = new_node()  # rotor star point (inside the machine)
+    meta: dict[str, Any] = {"slip": slip, "f": f, "dc": dc, "phases": {}, "spec": spec}
+    if dc:
+        for X, ring in rings.items():
+            series_z(N(c.id, f"{X}1"), N(c.id, f"{X}2"), complex(e.R1, 0), f"{c.id}#{X}#R1dc")
+            series_z(N(c.id, ring), star, complex(e.R2, 0), f"{c.id}#{ring}#R2dc")
+        built.motor_internals[c.id] = meta
+        return
+    kf = f / spec.nameplate.f_n
+    s_eff = slip if abs(slip) >= SLIP_FLOOR else math.copysign(SLIP_FLOOR, slip or 1.0)
+    theta = math.radians(spec.nameplate.poles / 2 * angle_deg)
+    ratio = e.k * cmath.exp(1j * theta)
+    for X, ring in rings.items():
+        p_, q = N(c.id, f"{X}1"), N(c.id, f"{X}2")
+        node_e, node_a = new_node(), new_node()
+        series_z(p_, node_e, complex(e.R1, e.X1 * kf), f"{c.id}#{X}#Z1")
+        net_items["adm"].append(Admittance(node_e, q, complex(1 / e.R_fe, 0), f"{c.id}#{X}#Rfe"))
+        net_items["adm"].append(Admittance(node_e, q, 1 / complex(0, e.Xm * kf), f"{c.id}#{X}#Xm"))
+        net_items["xf"].append(IdealTransformer(node_e, q, node_a, star, ratio, f"{c.id}#{X}#xf"))
+        series_z(node_a, N(c.id, ring), complex(e.R2 / s_eff, e.X2 * kf), f"{c.id}#{X}#Z2")
         meta["phases"][X] = {"e": node_e, "q": q}
     built.motor_internals[c.id] = meta
 

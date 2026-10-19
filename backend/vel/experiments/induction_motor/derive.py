@@ -18,8 +18,11 @@ from typing import Any
 
 from vel.experiments.common import Param, num
 from vel.experiments.induction_motor.spec import MotorSpec
+from vel.experiments.wound_rotor.spec import WoundSpec
 
 Row = dict[str, Any]
+# experiment 2 (cage) and experiment 4 (wound rotor) share the nameplate fields used here
+MotorLike = MotorSpec | WoundSpec
 SQ3 = math.sqrt(3)
 
 
@@ -43,7 +46,7 @@ def _nearest(rows: list[Row], key: str, target: float, needed: tuple[str, ...]) 
     return min(cands, key=lambda i: abs(float(rows[i][key]) - target))
 
 
-def r1_star(spec: MotorSpec) -> float:
+def r1_star(spec: MotorLike) -> float:
     """Stator resistance of the star equivalent (Δ winding → R/3)."""
     r = spec.ecm.R1
     return r if spec.nameplate.connection == "Y" else r / 3
@@ -60,7 +63,7 @@ def _sqrt_diff(a2: float, b2: float) -> tuple[float | None, str | None]:
 
 
 def no_load(
-    rows: list[Row], spec: MotorSpec
+    rows: list[Row], spec: MotorLike
 ) -> tuple[list[Row], list[Param], dict[str, Any], list[dict[str, Any]]]:
     out = []
     for r in rows:
@@ -135,7 +138,7 @@ def no_load(
 
 
 def locked_rotor(
-    rows: list[Row], spec: MotorSpec
+    rows: list[Row], spec: MotorLike
 ) -> tuple[list[Row], list[Param], dict[str, Any], list[dict[str, Any]]]:
     out = []
     for r in rows:
@@ -194,7 +197,7 @@ def locked_rotor(
 # --------------------------------------------------------------------------- load
 
 
-def load(rows: list[Row], spec: MotorSpec, f: float | None = None) -> list[Row]:
+def load(rows: list[Row], spec: MotorLike, f: float | None = None) -> list[Row]:
     ns = 120 * (f or spec.nameplate.f_n) / spec.nameplate.poles
     out = []
     for r in rows:
@@ -215,7 +218,7 @@ def load(rows: list[Row], spec: MotorSpec, f: float | None = None) -> list[Row]:
     return out
 
 
-def inverter(rows: list[Row], spec: MotorSpec) -> list[Row]:
+def inverter(rows: list[Row], spec: MotorLike) -> list[Row]:
     out = []
     for r in rows:
         f = num(r.get("f"))
@@ -239,7 +242,7 @@ def dc_resistance(rows: list[Row]) -> tuple[list[Row], list[Row]]:
 # --------------------------------------------------------------------------- plausibility
 
 
-def plausibility(kind: str, rows: list[Row], spec: MotorSpec) -> list[dict[str, Any]]:
+def plausibility(kind: str, rows: list[Row], spec: MotorLike) -> list[dict[str, Any]]:
     """Checks that point at entries that cannot all be right. Values are never changed."""
     out: list[dict[str, Any]] = []
     cols = {
