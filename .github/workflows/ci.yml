@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: System packages (ngspice is the independent cross-validation oracle)
+        run: sudo apt-get update && sudo apt-get install -y ngspice
+      - name: Python env
+        run: python -m venv .venv && .venv/bin/pip install -e 'backend[dev]'
+      - name: Frontend deps
+        run: cd frontend && npm ci && npx playwright install --with-deps chromium
+      - name: Quality gate
+        run: PW_CHROMIUM=/nonexistent scripts/check.sh
