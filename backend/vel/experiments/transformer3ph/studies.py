@@ -20,7 +20,7 @@ from vel.engine.circuit import CircuitModel
 from vel.engine.mna import ConvergenceError, SingularCircuitError
 from vel.engine.netlist import CircuitValidationError
 from vel.engine.simulate import OperatingPoint, operating_point
-from vel.experiments.transformer3ph import analysis, templates
+from vel.experiments.transformer3ph import analysis, derive, templates
 from vel.experiments.transformer3ph.spec import TransformerSpec
 
 MODEL_VERSION = "mna-phasor-1.0+xfmr-T-sat-1.0"
@@ -233,7 +233,6 @@ def run_no_load(spec: TransformerSpec, circuit: CircuitModel, case: NoLoadCase) 
         row: dict[str, Any] = {"point": i + 1, "U_set": u}
         for col, b in case.bindings.items():
             row[col] = _read(op, b)
-        row["P0"] = 3 * row["P_W"] if row.get("P_W") is not None else None
         row["iterations"] = op.iterations
         rows.append(row)
         warnings += _undefined_warnings(op, i, case.bindings)
@@ -246,25 +245,19 @@ def run_no_load(spec: TransformerSpec, circuit: CircuitModel, case: NoLoadCase) 
                     "המגנוט וקריאת מכשיר true-RMS אינן ממודלות",
                 }
             )
-    # parameters at rated voltage
-    idx = min(range(len(rows)), key=lambda k: abs(rows[k]["U_set"] - U1n))
-    r = rows[idx]
-    if abs(r["U_set"] - U1n) > 1e-9 * U1n:
+    # derived quantities + parameters: same code path as measured tables
+    rows, params, at, dw = derive.no_load(rows, spec)
+    warnings += [w for w in dw if w["code"] != "rated_point_missing"]
+    if not params:
+        raise StudyError("invalid_circuit", "חסרות קריאות בנקודה הנומינלית לחישוב הפרמטרים")
+    if abs(rows[at["row"]]["U_set"] - U1n) > 1e-9 * U1n:
         warnings.append(
             {
                 "code": "rated_point_missing",
                 "message": f"Un = {U1n:g} V לא נכלל בסוויפ; הפרמטרים חושבו בנקודה הקרובה "
-                f"({r['U_set']:g} V)",
+                f"({rows[at['row']]['U_set']:g} V)",
             }
         )
-    needed = ("U1L", "I0", "P0", "U1ph", "U2ph", "U2L")
-    if any(r.get(k) is None for k in needed):
-        raise StudyError(
-            "invalid_circuit",
-            "חסרות קריאות בנקודה הנומינלית לחישוב הפרמטרים",
-            {"missing": [k for k in needed if r.get(k) is None]},
-        )
-    params = analysis.no_load_parameters(r["U1L"], r["I0"], r["P0"], r["U1ph"], r["U2ph"], r["U2L"])
     columns = [
         _col("point", "#", ""),
         _col("U1L", "U1 קווי", "V"),
@@ -284,7 +277,7 @@ def run_no_load(spec: TransformerSpec, circuit: CircuitModel, case: NoLoadCase) 
                 {"id": "readings", "title_he": "טבלה 1.3 — ריקם", "columns": columns, "rows": rows}
             ],
             "parameters": [p.to_json() for p in params],
-            "parameters_at": {"row": idx, "U1L": r["U1L"]},
+            "parameters_at": at,
             "curves": [
                 {
                     "id": "magnetization",
@@ -342,7 +335,6 @@ def run_short_circuit(
         row: dict[str, Any] = {"point": k + 1, "I_target_pu": tpu, "U_set": u1}
         for col, b in case.bindings.items():
             row[col] = _read(op, b)
-        row["P_k"] = 3 * row["P_W"] if row.get("P_W") is not None else None
         rows.append(row)
         warnings += _undefined_warnings(op, k, case.bindings)
         if tpu > 1.0:
@@ -353,11 +345,10 @@ def run_short_circuit(
                     "message": "זרם מעל הנומינלי — אסור במעבדה",
                 }
             )
-    idx = min(range(len(rows)), key=lambda j: abs(rows[j]["I_target_pu"] - 1.0))
-    r = rows[idx]
-    if r.get("P_k") is None or r.get("U_k") is None:
+    rows, params, at, dw = derive.short_circuit(rows, spec)
+    warnings += dw
+    if not params:
         raise StudyError("invalid_circuit", "חסרות קריאות לחישוב פרמטרי הקצר")
-    params = analysis.short_circuit_parameters(r["U_k"], r["I1k"], r["P_k"], U1n, I1n)
     columns = [
         _col("point", "#", ""),
         _col("U_k", "Uk קווי", "V"),
@@ -375,7 +366,7 @@ def run_short_circuit(
                 {"id": "readings", "title_he": "טבלה 1.5 — קצר", "columns": columns, "rows": rows}
             ],
             "parameters": [p.to_json() for p in params],
-            "parameters_at": {"row": idx, "I1k": r["I1k"]},
+            "parameters_at": at,
             "curves": [
                 {"id": "uk", "title_he": "Uk = f(Ik)", "x": "I1k", "y": "U_k"},
                 {"id": "pk", "title_he": "הפסדי נחושת Pk = f(Ik)", "x": "I1k", "y": "P_k"},
@@ -405,16 +396,11 @@ def run_load(spec: TransformerSpec, circuit: CircuitModel, case: LoadCase) -> Ou
         r: dict[str, Any] = {"point": len(rows) + 1, "load_setting": label, "load_value": value}
         for col, b in case.bindings.items():
             r[col] = _read(op, b)
-        r["P1"] = 3 * r["P1_W"] if r.get("P1_W") is not None else None
-        r["P2"] = 3 * r["P2_W"] if r.get("P2_W") is not None else None
-        r["beta"] = r["I2"] / I2n if r.get("I2") is not None else None
-        r["eta"] = (r["P2"] / r["P1"]) if r.get("P1") and r.get("P2") is not None else None
         return r
 
     if case.include_no_load:
         op0 = at(1.0, closed=False)
         rows.append(row_from(op0, "S2 פתוח", None))
-    u20 = rows[0]["U2L"] if rows else None
 
     # Initial guess from the rated phase voltage, then secant iteration in log(value).
     U2ph = spec.U2_winding if spec.nameplate.secondary == "Y" else spec.nameplate.U2n / math.sqrt(3)
@@ -461,8 +447,7 @@ def run_load(spec: TransformerSpec, circuit: CircuitModel, case: LoadCase) -> Ou
                     "message": "זרם הראשוני מעל הנומינלי",
                 }
             )
-    for r in rows:
-        r["dU_pct"] = (100 * (u20 - r["U2L"]) / u20) if (u20 and r.get("U2L") is not None) else None
+    rows = derive.load(rows, spec)
     title = {"R": "התנגדותי", "L": "השראותי", "C": "קיבולי"}[case.load_kind]
     columns = [
         _col("point", "#", ""),
@@ -523,7 +508,7 @@ def run_vector_group(
         )
     aAB, aAb, Bb = vals["U_aAB"], vals["U_aAb"], vals["U_Bb"]
     assert aAB is not None and aAb is not None and Bb is not None
-    params = analysis.vector_group_parameters(aAB, aAb, Bb)
+    params = derive.vector_group([vals])
     # simulation-only: true phase displacement from the phasors (not measurable with voltmeters)
     inst_ab, _, _ = case.bindings["U_aAB"].partition(".")
     inst_ab2, _, _ = case.bindings["U_aAb"].partition(".")

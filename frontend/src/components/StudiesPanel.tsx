@@ -8,6 +8,7 @@ import { parseList } from '../format'
 import { fmtDate, t, type MessageKey } from '../i18n'
 import SchematicEditor from '../schematic/SchematicEditor'
 import { ErrorBox } from './ErrorBox'
+import MeasurementsPanel from './MeasurementsPanel'
 import RunView from './RunView'
 import StatusBadge from './StatusBadge'
 
@@ -228,6 +229,7 @@ export default function StudiesPanel({ projectId }: { projectId: string }) {
   if (studies.isError) return <ErrorBox error={studies.error} />
   const list = studies.data ?? []
   const kind = params.get('study') ?? 'no_load'
+  const mode = params.get('mode') === 'measure' ? 'measure' : 'sim'
   const study = list.find((s) => s.kind === kind) ?? list[0]
   if (!study) return null
   return (
@@ -239,13 +241,35 @@ export default function StudiesPanel({ projectId }: { projectId: string }) {
             role="tab"
             className="tab"
             aria-selected={s.kind === study.kind}
-            onClick={() => setParams({ study: s.kind })}
+            onClick={() => setParams({ study: s.kind, mode })}
           >
             {s.title_he}
           </button>
         ))}
       </div>
-      <StudyWorkspace key={study.kind} projectId={projectId} study={study} />
+      <div className="row" role="tablist" aria-label="מצב">
+        {(
+          [
+            ['sim', 'סימולציה'],
+            ['measure', 'מדידות מעבדה והשוואה'],
+          ] as const
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            role="tab"
+            className={`btn small${mode === m ? ' primary' : ''}`}
+            aria-selected={mode === m}
+            onClick={() => setParams({ study: study.kind, mode: m })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {mode === 'measure' ? (
+        <MeasurementsPanel key={study.kind} projectId={projectId} study={study} />
+      ) : (
+        <StudyWorkspace key={study.kind} projectId={projectId} study={study} />
+      )}
     </div>
   )
 }

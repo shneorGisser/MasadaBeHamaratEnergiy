@@ -71,6 +71,8 @@ class MeasurementSet(Base):
     lab_date: Mapped[str] = mapped_column(String(20), default="")
     instruments: Mapped[str] = mapped_column(Text, default="")
     notes: Mapped[str] = mapped_column(Text, default="")
+    conditions: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    n_rows: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

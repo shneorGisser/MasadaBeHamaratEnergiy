@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Experiment, Project, Reproduction, Run, RunSummary, Study } from './types'
+import type { Comparison, Experiment, MSet, MSetView, Project, Reproduction, Run, RunSummary, Study } from './types'
 
 export const keys = {
   experiments: ['experiments'] as const,
@@ -87,4 +87,33 @@ export function useCreateRun(pid: string) {
 
 export function useReproduce() {
   return useMutation({ mutationFn: (rid: string) => api.post<Reproduction>(`/api/runs/${rid}/reproduce`) })
+}
+
+export const mKeys = {
+  sets: (pid: string, kind: string) => ['msets', pid, kind] as const,
+  set: (sid: string) => ['mset', sid] as const,
+  cmp: (rid: string, sid: string, ref: string) => ['cmp', rid, sid, ref] as const,
+}
+
+export function useMeasurementSets(pid: string, kind: string) {
+  return useQuery({
+    queryKey: mKeys.sets(pid, kind),
+    queryFn: () => api.get<MSet[]>(`/api/projects/${pid}/measurement-sets?study_kind=${kind}`),
+  })
+}
+
+export function useMeasurementSet(sid: string | null) {
+  return useQuery({
+    queryKey: mKeys.set(sid ?? ''),
+    queryFn: () => api.get<MSetView>(`/api/measurement-sets/${sid}`),
+    enabled: !!sid,
+  })
+}
+
+export function useComparison(rid: string | null, sid: string | null, reference: string) {
+  return useQuery({
+    queryKey: mKeys.cmp(rid ?? '', sid ?? '', reference),
+    queryFn: () => api.get<Comparison>(`/api/comparison?run_id=${rid}&set_id=${sid}&reference=${reference}`),
+    enabled: !!rid && !!sid,
+  })
 }

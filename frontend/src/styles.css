@@ -155,3 +155,6 @@ details > summary { cursor: pointer; font-weight: 600; }
 .react-flow__edge-path { stroke: #2a3634; stroke-width: 1.6; }
 .react-flow__edge.selected .react-flow__edge-path { stroke: var(--accent); stroke-width: 2.5; }
 @media (max-width: 900px) { .sch-layout { grid-template-columns: 1fr; } }
+
+input.input.missing { background: #fffaf0; border-style: dashed; }
+.mcell { padding: 3px 4px !important; }

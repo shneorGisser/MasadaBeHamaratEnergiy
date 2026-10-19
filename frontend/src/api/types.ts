@@ -153,3 +153,115 @@ export interface Reproduction {
   model_version_then: string
   model_version_now: string
 }
+
+export interface MSet {
+  id: string
+  project_id: string
+  study_kind: string
+  label: string
+  lab_date: string
+  instruments: string
+  notes: string
+  conditions: Record<string, string>
+  n_rows: number
+  created_at: string
+}
+
+export interface MColumn extends Column {
+  units: string[]
+}
+
+export interface MCell {
+  entry_id: string
+  value: number
+  entered_value: number
+  entered_unit: string
+  instrument_range: string
+  note: string
+  versions: number
+}
+
+export interface MHistory {
+  id: string
+  row: number
+  quantity: string
+  entered_value: number
+  entered_unit: string
+  value: number
+  supersedes_id: string | null
+  note: string
+  created_at: string
+}
+
+export interface MSetView {
+  set: MSet
+  definition: {
+    kind: string
+    rows: 'free' | 'fixed'
+    match: string
+    row_labels: string[]
+    condition_keys: string[]
+    columns: MColumn[]
+  }
+  derived_columns: Column[]
+  cells: Record<string, MCell>
+  missing: { row: number; quantity: string }[]
+  analysis: {
+    rows: Record<string, unknown>[]
+    parameters: Param[]
+    parameters_at: Record<string, number> | null
+    warnings: RunWarning[]
+    summary?: { winding: string; R_avg: number; n: number }[]
+  }
+  history: MHistory[]
+}
+
+export interface CmpCell {
+  quantity: string
+  unit: string
+  measured: number | null
+  simulated: number | null
+  abs_error: number | null
+  rel_error: number | null
+  undefined_reason: string | null
+}
+
+export interface Comparison {
+  run_id: string
+  set_id: string
+  reference: 'simulation' | 'measurement'
+  match_key: string
+  match_tolerance: number
+  pairs: {
+    measured_row: number
+    simulated_row: number | null
+    unmatched_reason: string | null
+    match_value: number | null
+    cells: CmpCell[]
+  }[]
+  parameters: {
+    key: string
+    label_he: string
+    unit: string
+    method: string
+    theory: number | null
+    simulated: number | null
+    measured: number | null
+    abs_error: number | null
+    rel_error: number | null
+    undefined_reason: string | null
+  }[]
+  summary: {
+    rows: number
+    empty_rows_skipped: number
+    unmatched_rows: number
+    cells: number
+    missing_measurements: number
+    max_abs_rel_error: number | null
+    median_abs_rel_error: number | null
+  }
+  curves: Curve[]
+  simulated_rows: Record<string, unknown>[]
+  measured_analysis: MSetView['analysis']
+  notes: string[]
+}

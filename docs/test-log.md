@@ -29,3 +29,15 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
   add ammeter + drag-wire between terminals → stored wire verified through the API → reset to manual circuit → success;
   vector groups 0 / 4 / 11 via the UI.
 - Limitation: wire routing in the schematic is automatic (smoothstep); dense templates still have crossings.
+
+## S3 — real measurements, comparison, extraction (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- pytest: 54 passed. New (R10 + API): unit conversion and rejection of incompatible/non-finite/unknown units; error definitions
+  (meas − sim, relative to the selected reference, undefined for a zero reference with reason); append-only corrections with
+  the original kept verbatim; rows with data cannot be removed; "simulate at measured points" reproduces measured operating
+  points exactly; measured = simulated except I0 × 1.05 → I0 and Y_m errors exactly 5 %, g_m and P0 exactly 0; unmatched and
+  missing rows explicit; kind mismatch rejected; vector group from measured voltages (θ = 30° → clock 1 or 11).
+- Bug found by the tests and fixed: the no-load row (I2 = 0) was not detected (`0.0 or 1.0`), so ΔU% was missing.
+- Simulated and measured tables now go through one derivation module (`derive.py`).
+- Playwright: 10 passed. New: enter 9 values incl. mA, correct a typo (history shown), reload, measured P0 analysis,
+  simulate at measured points, relative error of I0 checked numerically for both reference choices; invalid number rejected.
