@@ -20,3 +20,4 @@ export function t(key: MessageKey, vars?: Record<string, string | number>): stri
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })
 }
+export type { MessageKey } from './he'

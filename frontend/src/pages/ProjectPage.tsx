@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom'
 import { useProject, useUpdateProject } from '../api/hooks'
 import type { Project } from '../api/types'
 import { ErrorBox } from '../components/ErrorBox'
+import StudiesPanel from '../components/StudiesPanel'
+import TransformerForm from '../components/TransformerForm'
 import { t } from '../i18n'
 
 function ProjectMetaForm({ project }: { project: Project }) {
@@ -59,6 +61,18 @@ export default function ProjectPage() {
         </span>
       </div>
       <ProjectMetaForm key={p.id} project={p} />
+      <nav className="tabs" aria-label="project sections">
+        <NavLink end to={`/projects/${p.id}`} className="tab">
+          {t('tabs.studies')}
+        </NavLink>
+        <NavLink to={`/projects/${p.id}/spec`} className="tab">
+          {t('tabs.spec')}
+        </NavLink>
+      </nav>
+      <Routes>
+        <Route index element={<StudiesPanel projectId={p.id} />} />
+        <Route path="spec" element={<TransformerForm key={p.id} project={p} />} />
+      </Routes>
     </div>
   )
 }

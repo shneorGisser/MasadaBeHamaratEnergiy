@@ -1,0 +1,85 @@
+import { expect, test, type Page } from '@playwright/test'
+
+async function newProject(page: Page, name: string) {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill(name)
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-title')).toHaveText(name)
+}
+
+test('S1: no-load simulation → results → reload → reproduce → spec change keeps old run', async ({ page }) => {
+  await newProject(page, 'S1 ריקם')
+  await expect(page.getByRole('tab', { name: 'ניסוי ריקם' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByText('אין עדיין ריצות לניסוי זה.')).toBeVisible()
+
+  await page.locator('input[name="run-label"]').fill('ריצה ראשונה')
+  await page.getByTestId('run-button').click()
+
+  const view = page.getByTestId('run-view')
+  await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', 'success_with_warnings')
+  const table = view.getByRole('table', { name: /טבלה 1.3/ })
+  await expect(table.locator('tbody tr')).toHaveCount(8)
+  // rated point row: U1L = 380 V, I0 ≈ 0.3623 A (from the assumed parameter set)
+  await expect(table.locator('tbody tr').nth(5)).toContainText('380.0')
+  await expect(table.locator('tbody tr').nth(5)).toContainText('0.3623')
+  await expect(view.locator('[data-param="R_fe"]')).toContainText('2397.6')
+  await expect(view.getByTestId('run-warnings')).toContainText('1.1·Un')
+  await expect(view.locator('.chart canvas').first()).toBeVisible()
+  await page.screenshot({ path: 'test-results/s1-no-load.png', fullPage: true })
+
+  const runId = await view.getAttribute('data-run-id')
+  expect(runId).toBeTruthy()
+
+  // reload: the run comes back from SQLite
+  await page.reload()
+  await expect(page.getByTestId('run-view')).toHaveAttribute('data-run-id', runId!)
+  await expect(page.getByTestId('run-history').getByText('ריצה ראשונה')).toBeVisible()
+
+  await page.getByRole('button', { name: 'בדוק שחזור' }).click()
+  await expect(page.getByTestId('reproduce-result')).toHaveText('שוחזר: תוצאה זהה לחלוטין')
+
+  // change the transformer (R_Fe halved) — the stored run must not change
+  await page.getByRole('link', { name: 'מפרט השנאי' }).click()
+  await page.locator('input[name="ecm.R_fe"]').fill('1200')
+  await page.getByRole('button', { name: 'שמור מפרט' }).click()
+  await expect(page.getByText('המפרט נשמר')).toBeVisible()
+  await page.getByRole('link', { name: 'ניסויים וסימולציה' }).click()
+  await expect(page.getByTestId('run-view')).toHaveAttribute('data-run-id', runId!)
+  await expect(page.getByTestId('run-view').locator('[data-param="R_fe"]')).toContainText('2397.6')
+
+  await page.getByTestId('run-button').click()
+  await expect(page.getByTestId('run-view')).not.toHaveAttribute('data-run-id', runId!)
+  await expect(page.getByTestId('run-view').locator('[data-param="R_fe"]')).toContainText('1201.8')
+})
+
+test('S1: short circuit shows the manual-formula failure; invalid input is a failed run', async ({ page }) => {
+  await newProject(page, 'S1 קצר')
+  await page.getByRole('tab', { name: 'ניסוי קצר' }).click()
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', 'success')
+  await expect(view.locator('[data-param="x_k"]')).toContainText('1.9238')
+  await expect(view.locator('[data-param="x_k_manual"]')).toContainText('לא מוגדר')
+  await expect(view.locator('[data-param="u_k_pct"]')).toContainText('4.9864')
+  await page.screenshot({ path: 'test-results/s1-short-circuit.png', fullPage: true })
+
+  // invalid case → explicit failure, never shown as success
+  await page.getByRole('tab', { name: 'ניסוי ריקם' }).click()
+  await page.locator('input[name="case-U_line_values"]').fill('380, abc')
+  await page.getByTestId('run-button').click()
+  await expect(page.getByTestId('run-view').getByTestId('run-status')).toHaveAttribute('data-status', 'invalid_input')
+  await expect(page.getByTestId('run-error')).toBeVisible()
+  await expect(page.getByTestId('run-view').locator('table')).toHaveCount(0)
+})
+
+test('S1: DC resistance and insulation run', async ({ page }) => {
+  await newProject(page, 'S1 DC')
+  await page.getByRole('tab', { name: 'התנגדות ליפופים בזרם ישר' }).click()
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.getByRole('table', { name: 'התנגדות ממוצעת לליפוף' }).locator('tbody tr')).toHaveCount(6)
+  await expect(view.getByRole('table', { name: 'התנגדות ממוצעת לליפוף' })).toContainText('0.7200')
+  await page.getByRole('tab', { name: 'בדיקת בידוד (מגר)' }).click()
+  await page.getByTestId('run-button').click()
+  await expect(page.getByTestId('run-view').getByTestId('run-warnings')).toContainText('אינה סימולציה פיזיקלית')
+})

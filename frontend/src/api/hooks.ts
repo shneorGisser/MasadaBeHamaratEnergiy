@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Experiment, Project } from './types'
+import type { Experiment, Project, Reproduction, Run, RunSummary, Study } from './types'
 
 export const keys = {
   experiments: ['experiments'] as const,
@@ -46,4 +46,45 @@ export function useDeleteProject() {
     mutationFn: (id: string) => api.del(`/api/projects/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.projects }),
   })
+}
+
+export const runKeys = {
+  studies: (pid: string) => ['studies', pid] as const,
+  runs: (pid: string, kind?: string) => ['runs', pid, kind ?? 'all'] as const,
+  run: (rid: string) => ['run', rid] as const,
+}
+
+export function useStudies(pid: string) {
+  return useQuery({ queryKey: runKeys.studies(pid), queryFn: () => api.get<Study[]>(`/api/projects/${pid}/studies`) })
+}
+
+export function useRuns(pid: string, kind?: string) {
+  return useQuery({
+    queryKey: runKeys.runs(pid, kind),
+    queryFn: () => api.get<RunSummary[]>(`/api/projects/${pid}/runs${kind ? `?study_kind=${kind}` : ''}`),
+  })
+}
+
+export function useRun(rid: string | null) {
+  return useQuery({
+    queryKey: runKeys.run(rid ?? ''),
+    queryFn: () => api.get<Run>(`/api/runs/${rid}`),
+    enabled: !!rid,
+  })
+}
+
+export function useCreateRun(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { study_kind: string; case: Record<string, unknown>; label?: string }) =>
+      api.post<Run>(`/api/projects/${pid}/runs`, body),
+    onSuccess: (run) => {
+      qc.setQueryData(runKeys.run(run.id), run)
+      void qc.invalidateQueries({ queryKey: ['runs', pid] })
+    },
+  })
+}
+
+export function useReproduce() {
+  return useMutation({ mutationFn: (rid: string) => api.post<Reproduction>(`/api/runs/${rid}/reproduce`) })
 }
