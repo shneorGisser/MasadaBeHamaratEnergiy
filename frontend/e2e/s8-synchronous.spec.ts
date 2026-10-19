@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
 const IF = [0, 0.25, 0.5, 0.7, 0.97, 1.22, 1.47, 1.73, 1.96, 2.25, 2.5]
@@ -15,7 +16,7 @@ test('D3: synchronous machine — OCC vs the student table, three short circuits
   const pid = page.url().split('/projects/')[1]!.split(/[/?]/)[0]!
 
   // open-circuit characteristic with the default (the student's) field currents
-  await page.getByRole('tab', { name: 'אופיין ריקם' }).click()
+  await openTab(page, 'אופיין ריקם')
   await page.getByTestId('run-button').click()
   const view = page.getByTestId('run-view')
   await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', 'success_with_warnings')
@@ -24,14 +25,14 @@ test('D3: synchronous machine — OCC vs the student table, three short circuits
   await expect(view.locator('[data-param="E_res"]')).toContainText('5.44')
 
   // short circuits: three faults in one table, Xs extracted
-  await page.getByRole('tab', { name: /אופייני קצר/ }).click()
+  await openTab(page, /אופייני קצר/)
   await page.getByTestId('run-button').click()
   await expect(view.getByRole('table', { name: /טבלה 6.4/ })).toBeVisible()
   await expect(view.locator('[data-param="Xs"]')).toContainText('674.0')
   await page.screenshot({ path: 'test-results/d3-short-circuit.png', fullPage: true })
 
   // 3D bench on the open-circuit circuit: the field current drives the voltmeter
-  await page.getByRole('tab', { name: 'אופיין ריקם' }).click()
+  await openTab(page, 'אופיין ריקם')
   await page.getByTestId('lab3d-section').locator('summary').click()
   await expect(page.getByTestId('lab3d').locator('canvas')).toBeVisible()
   await expect(page.getByTestId('reading-G')).toContainText('1500 rpm')
@@ -46,7 +47,7 @@ test('D3: synchronous machine — OCC vs the student table, three short circuits
   await page.screenshot({ path: 'test-results/d3-3d.png' })
 
   // V-curves: grid-connected motor, out-of-step points are shown, not hidden
-  await page.getByRole('tab', { name: /אופייני V/ }).click()
+  await openTab(page, /אופייני V/)
   await page.locator('input[name="case-points"]').fill('0@2, 0@3, 0@4, 0@5, 135@0.4, 135@4')
   await page.getByTestId('run-button').click()
   const vt = view.getByRole('table', { name: /טבלה 6.7/ })
@@ -66,8 +67,8 @@ test('D3: synchronous machine — OCC vs the student table, three short circuits
   const cmp = await (await request.get(`/api/comparison?run_id=${run.id}&set_id=${set.set.id}`)).json()
   expect(cmp.summary.unmatched_rows).toBe(0)
 
-  await page.getByRole('tab', { name: 'אופיין ריקם' }).click()
-  await page.getByRole('tab', { name: 'מדידות מעבדה והשוואה' }).click()
+  await openTab(page, 'אופיין ריקם')
+  await openTab(page, 'מדידות מעבדה והשוואה')
   await expect(page.getByTestId('comparison')).toBeVisible()
   await expect(page.getByTestId('cmp-summary')).toContainText('ללא התאמה: 0')
   await page.screenshot({ path: 'test-results/d3-compare.png', fullPage: true })

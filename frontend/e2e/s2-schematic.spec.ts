@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test, type Page } from '@playwright/test'
 
 async function newProject(page: Page, name: string) {
@@ -10,7 +11,7 @@ async function newProject(page: Page, name: string) {
 
 test('S2: load test on the template circuit, R and C loads', async ({ page }) => {
   await newProject(page, 'S2 עומס')
-  await page.getByRole('tab', { name: 'ניסוי עומס' }).click()
+  await openTab(page, 'ניסוי עומס')
   await expect(page.getByTestId('node-T')).toBeVisible()
   await expect(page.getByTestId('node-L')).toBeVisible()
   await page.screenshot({ path: 'test-results/s2-load-schematic.png', fullPage: true })
@@ -30,7 +31,7 @@ test('S2: load test on the template circuit, R and C loads', async ({ page }) =>
 
 test('S2: editing topology changes the simulation; removing an instrument fails explicitly', async ({ page, request }) => {
   const pid = await newProject(page, 'S2 עריכה')
-  await page.getByRole('tab', { name: 'ניסוי עומס' }).click()
+  await openTab(page, 'ניסוי עומס')
   await expect(page.getByTestId('node-A2')).toBeVisible()
 
   // delete the load ammeter A2 (and its wires) → save → run → invalid circuit naming A2
@@ -76,7 +77,7 @@ test('S2: editing topology changes the simulation; removing an instrument fails 
 
 test('S2: vector groups — clock number from topology', async ({ page }) => {
   await newProject(page, 'S2 שעון')
-  await page.getByRole('tab', { name: 'קבוצות חיבורים (שיטת השעון)' }).click()
+  await openTab(page, 'קבוצות חיבורים (שיטת השעון)')
   const expectations: [RegExp, string, string][] = [
     [/כוכב-כוכב, סדר a b c/, '0', '0'],
     [/כוכב-כוכב, סדר b c a/, '4', '4 או 8'],

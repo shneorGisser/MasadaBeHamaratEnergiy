@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test, type Page } from '@playwright/test'
 
 async function newProject(page: Page, name: string) {
@@ -54,7 +55,7 @@ test('S1: no-load simulation → results → reload → reproduce → spec chang
 
 test('S1: short circuit shows the manual-formula failure; invalid input is a failed run', async ({ page }) => {
   await newProject(page, 'S1 קצר')
-  await page.getByRole('tab', { name: 'ניסוי קצר' }).click()
+  await openTab(page, 'ניסוי קצר')
   await page.getByTestId('run-button').click()
   const view = page.getByTestId('run-view')
   await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', 'success')
@@ -64,7 +65,7 @@ test('S1: short circuit shows the manual-formula failure; invalid input is a fai
   await page.screenshot({ path: 'test-results/s1-short-circuit.png', fullPage: true })
 
   // invalid case → explicit failure, never shown as success
-  await page.getByRole('tab', { name: 'ניסוי ריקם' }).click()
+  await openTab(page, 'ניסוי ריקם')
   await page.locator('input[name="case-U_line_values"]').fill('380, abc')
   await page.getByTestId('run-button').click()
   await expect(page.getByTestId('run-view').getByTestId('run-status')).toHaveAttribute('data-status', 'invalid_input')
@@ -74,12 +75,12 @@ test('S1: short circuit shows the manual-formula failure; invalid input is a fai
 
 test('S1: DC resistance and insulation run', async ({ page }) => {
   await newProject(page, 'S1 DC')
-  await page.getByRole('tab', { name: 'התנגדות ליפופים בזרם ישר' }).click()
+  await openTab(page, 'התנגדות ליפופים בזרם ישר')
   await page.getByTestId('run-button').click()
   const view = page.getByTestId('run-view')
   await expect(view.getByRole('table', { name: 'התנגדות ממוצעת לליפוף' }).locator('tbody tr')).toHaveCount(6)
   await expect(view.getByRole('table', { name: 'התנגדות ממוצעת לליפוף' })).toContainText('0.7200')
-  await page.getByRole('tab', { name: 'בדיקת בידוד (מגר)' }).click()
+  await openTab(page, 'בדיקת בידוד (מגר)')
   await page.getByTestId('run-button').click()
   await expect(page.getByTestId('run-view').getByTestId('run-warnings')).toContainText('אינה סימולציה פיזיקלית')
 })
@@ -95,7 +96,10 @@ test('S6: load the preset fitted to last year\'s report and simulate its short-c
   await expect(page.getByText('המפרט נשמר')).toBeVisible()
   await expect(page.locator('span.badge', { hasText: 'חולץ ממדידות' })).toBeVisible()
   await page.getByRole('link', { name: 'ניסויים וסימולציה' }).click()
-  await page.getByRole('tab', { name: 'ניסוי קצר' }).click()
+  await openTab(page, 'ניסוי קצר')
+  // wait for the study switch to render before using its controls (fast CI runners raced here)
+  await expect(page.getByRole('tab', { name: 'ניסוי קצר' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('heading', { level: 2, name: 'ניסוי קצר' })).toBeVisible()
   await page.getByRole('button', { name: /טען מעגל לפי החוברת/ }).click()
   await page.locator('input[name="case-I_targets_pu"]').fill('1')
   await page.getByTestId('run-button').click()

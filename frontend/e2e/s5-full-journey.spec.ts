@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
 /** Master prompt §9 — the complete first-experiment journey, in a real browser, real backend. */
@@ -43,7 +44,7 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   await expect(page.getByTestId('reproduce-result')).toHaveText('שוחזר: תוצאה זהה לחלוטין')
 
   // 9. enter real laboratory measurements
-  await page.getByRole('tab', { name: 'מדידות מעבדה והשוואה' }).click()
+  await openTab(page, 'מדידות מעבדה והשוואה')
   await page.locator('input[name="set-label"]').fill('מעבדה 12.10')
   await page.getByTestId('create-set').click()
   const vals: [string, string][] = [
@@ -76,7 +77,7 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   const before = await (await request.get(`/api/reports/${reports[0].id}/html`)).text()
   const inp = page
   await inp.getByRole('link', { name: 'ניסויים וסימולציה' }).click()
-  await page.getByRole('tab', { name: 'מדידות מעבדה והשוואה' }).click()
+  await openTab(page, 'מדידות מעבדה והשוואה')
   const cell = page.getByTestId('cell-0-I0').locator('input')
   await cell.fill('0.39')
   await cell.press('Enter')

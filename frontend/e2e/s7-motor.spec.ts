@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
 test('D2: induction motor — load study with torque–speed curve, live brake on the 3D bench, measurements vs simulation', async ({
@@ -17,7 +18,7 @@ test('D2: induction motor — load study with torque–speed curve, live brake o
   await expect(page.getByRole('tab', { name: /קבוצות חיבורים/ })).toHaveCount(0)
 
   // load study: brake torques → table 4.6, Kloss/torque–speed table, curves
-  await page.getByRole('tab', { name: 'ניסוי עומס (בלם)' }).click()
+  await openTab(page, 'ניסוי עומס (בלם)')
   await page.locator('input[name="case-M_targets"]').fill('0, 1, 2, 2.56')
   await page.getByTestId('run-button').click()
   const view = page.getByTestId('run-view')

@@ -1,3 +1,4 @@
+import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
 test('S3: enter lab measurements, correct one, reload, simulate at measured points, compare', async ({ page }) => {
@@ -6,7 +7,7 @@ test('S3: enter lab measurements, correct one, reload, simulate at measured poin
   await page.getByRole('button', { name: 'צור פרויקט' }).click()
   await expect(page.getByTestId('project-title')).toHaveText('S3 מדידות')
 
-  await page.getByRole('tab', { name: 'מדידות מעבדה והשוואה' }).click()
+  await openTab(page, 'מדידות מעבדה והשוואה')
   await page.locator('input[name="set-label"]').fill('מעבדה 12.10 שולחן 4')
   await page.locator('input[name="set-instruments"]').fill('Fluke 87V, מד הספק אנלוגי')
   await page.getByTestId('create-set').click()
@@ -64,7 +65,7 @@ test('S3: incompatible unit is rejected', async ({ page }) => {
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('S3 יחידות')
   await page.getByRole('button', { name: 'צור פרויקט' }).click()
-  await page.getByRole('tab', { name: 'מדידות מעבדה והשוואה' }).click()
+  await openTab(page, 'מדידות מעבדה והשוואה')
   await page.getByTestId('create-set').click()
   const input = page.getByTestId('cell-0-U1L').locator('input')
   await input.fill('abc')
