@@ -127,6 +127,21 @@ def reset_circuit(project_id: str, kind: str, body: ResetBody, session: SessionD
     return {"kind": kind, "circuit": svc.save_circuit(session, p, kind, doc)}
 
 
+class LiveBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+
+@router.post("/projects/{project_id}/circuits/{kind}/operating-point")
+def live_operating_point(
+    project_id: str, kind: str, body: LiveBody, session: SessionDep
+) -> dict[str, Any]:
+    """One steady-state solution of the stored circuit with temporary parameter overrides
+    (variac setting, switch state) — used by the 3D bench. Not persisted."""
+    p = load_project(session, project_id)
+    return svc.live_point(session, p, kind, body.overrides)
+
+
 @router.post("/projects/{project_id}/runs", response_model=RunOut, status_code=201)
 def create_run(project_id: str, body: RunCreate, session: SessionDep) -> RunOut:
     p = load_project(session, project_id)

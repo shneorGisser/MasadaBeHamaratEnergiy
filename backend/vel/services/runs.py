@@ -137,3 +137,65 @@ def reproduce(run: SimulationRun) -> dict[str, Any]:
         "result_hash_then": sha256(original),
         "result_hash_now": sha256(now),
     }
+
+
+LIVE_OVERRIDABLE = {
+    "source3": {"U_line"},
+    "source_dc": {"U"},
+    "switch3": {"closed"},
+    "load3": {"value", "kind"},
+}
+
+
+def live_point(
+    session: Session, p: Project, kind: str, overrides: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    from vel.engine.mna import ConvergenceError, SingularCircuitError
+    from vel.engine.netlist import CircuitValidationError
+    from vel.engine.simulate import operating_point
+
+    sd = study_def(kind)
+    if not sd.editable_circuit:
+        raise ApiError(409, "not_editable", "live operating point needs an editable circuit")
+    doc = current_circuit(session, p, kind)
+    circuit = CircuitModel.model_validate(doc)
+    for cid, params in overrides.items():
+        try:
+            comp = circuit.component(cid)
+        except KeyError as exc:
+            raise ApiError(422, "unknown_component", f"no component {cid}") from exc
+        allowed = LIVE_OVERRIDABLE.get(comp.type, set())
+        bad = set(params) - allowed
+        if bad:
+            raise ApiError(422, "not_overridable", f"{cid}: cannot override {sorted(bad)}")
+        comp.params.update(params)
+    spec = project_spec(p)
+    base = {
+        "source": "simulation",
+        "persisted": False,
+        "model_version": studies.MODEL_VERSION,
+        "overrides": overrides,
+    }
+    try:
+        op = operating_point(circuit, spec)
+    except CircuitValidationError as exc:
+        return {
+            **base,
+            "status": "invalid_circuit",
+            "error": {"message": str(exc), "details": exc.issues},
+        }
+    except SingularCircuitError as exc:
+        return {**base, "status": "solver_failure", "error": {"message": str(exc)}}
+    except ConvergenceError as exc:
+        return {**base, "status": "convergence_failure", "error": {"message": str(exc)}}
+    warnings = [
+        {"code": "undefined_reading", "message": f"{k}: {v}"} for k, v in op.undefined.items()
+    ]
+    return {
+        **base,
+        "status": "success_with_warnings" if warnings else "success",
+        "readings": op.readings,
+        "warnings": warnings,
+        "internals": {k: v for k, v in op.internals.items() if not k.startswith("_")},
+        "iterations": op.iterations,
+    }

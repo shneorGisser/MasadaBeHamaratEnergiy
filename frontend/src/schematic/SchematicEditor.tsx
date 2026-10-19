@@ -11,7 +11,8 @@ import {
   type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSelection } from '../selection'
 import { api } from '../api/client'
 import { ErrorBox } from '../components/ErrorBox'
 import ComponentNode from './ComponentNode'
@@ -115,6 +116,16 @@ function Editor({
   const [saveError, setSaveError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
   const selected = nodes.find((n) => n.selected)
+  const shared = useSelection((st) => st.selected)
+  const select = useSelection((st) => st.select)
+
+  // external selection (3D bench) → schematic
+  useEffect(() => {
+    setNodes((ns) => {
+      const changed = ns.some((n) => Boolean(n.selected) !== (n.id === shared))
+      return changed ? ns.map((n) => ({ ...n, selected: n.id === shared })) : ns
+    })
+  }, [shared, setNodes])
 
   const markDirty = () => {
     setDirty(true)
@@ -133,6 +144,7 @@ function Editor({
 
   const addComponent = (t: ComponentType) => {
     const comp = newComponent(t, nodes.map((n) => n.id))
+    select(comp.id)
     setNodes((ns) => [
       ...ns.map((n) => ({ ...n, selected: false })),
       { id: comp.id, type: 'component', position: { x: 40 + 20 * (ns.length % 10), y: 40 }, data: { comp, ctype: t }, selected: true },
@@ -209,6 +221,8 @@ function Editor({
               if (ch.some((c) => c.type === 'remove')) markDirty()
             }}
             onConnect={onConnect}
+            onNodeClick={(_, n) => select(n.id)}
+            onPaneClick={() => select(null)}
             connectionMode={ConnectionMode.Loose}
             fitView
             minZoom={0.2}

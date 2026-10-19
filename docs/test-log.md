@@ -41,3 +41,13 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED
 - Simulated and measured tables now go through one derivation module (`derive.py`).
 - Playwright: 10 passed. New: enter 9 values incl. mA, correct a typo (history shown), reload, measured P0 analysis,
   simulate at measured points, relative error of I0 checked numerically for both reference choices; invalid number rejected.
+
+## S4 — 3D lab bench (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED
+- pytest: 55 passed. New: live operating point equals the study run at the same voltage (bit-identical I0 and P);
+  open switch → zero current and secondary voltage; overriding non-live parameters, unknown components and negative
+  voltages are rejected / reported as invalid_circuit.
+- Playwright: 11 passed. New: WebGL scene renders in headless Chromium; the ammeter/voltmeter labels in 3D show exactly
+  the solver's values; variac to 475 V shows the saturated I0 (> 3× rated I0) matching the API; opening S gives 0 A / 0 V;
+  selecting T in 3D selects it in the schematic and vice versa; nothing is persisted by the 3D view.
+- Limitation: equipment geometry is generic (procedural) until photographs of the lab bench are provided.

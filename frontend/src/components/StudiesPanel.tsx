@@ -6,6 +6,7 @@ import { useCreateRun, useRun, useRuns, useStudies } from '../api/hooks'
 import type { Study } from '../api/types'
 import { parseList } from '../format'
 import { fmtDate, t, type MessageKey } from '../i18n'
+import LabBench3D from '../lab3d/LabBench3D'
 import SchematicEditor from '../schematic/SchematicEditor'
 import { ErrorBox } from './ErrorBox'
 import MeasurementsPanel from './MeasurementsPanel'
@@ -113,6 +114,7 @@ function textToCase(study: Study, text: Record<string, string>): Record<string, 
 function StudyWorkspace({ projectId, study }: { projectId: string; study: Study }) {
   const [caseText, setCaseText] = useState(() => caseToText(study.default_case))
   const [label, setLabel] = useState('')
+  const [show3d, setShow3d] = useState(false)
   const [params, setParams] = useSearchParams()
   const runs = useRuns(projectId, study.kind)
   const create = useCreateRun(projectId)
@@ -173,6 +175,12 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
             <div style={{ marginTop: 10 }}>
               <SchematicEditor projectId={projectId} kind={study.kind} />
             </div>
+          </details>
+        )}
+        {study.editable_circuit && (
+          <details className="card" style={{ padding: 10 }} data-testid="lab3d-section" onToggle={(e) => setShow3d((e.target as HTMLDetailsElement).open)}>
+            <summary>שולחן מעבדה תלת-ממדי (נקודת עבודה חיה)</summary>
+            <div style={{ marginTop: 10 }}>{show3d && <LabBench3D projectId={projectId} kind={study.kind} />}</div>
           </details>
         )}
         <h3>{t('study.case')}</h3>

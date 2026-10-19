@@ -112,3 +112,44 @@ def test_all_default_studies_run(client: TestClient) -> None:
             f"/api/projects/{pid}/runs", json={"study_kind": s["kind"], "case": s["default_case"]}
         ).json()
         assert r["status"] in ("success", "success_with_warnings"), (s["kind"], r["error"])
+
+
+def test_live_operating_point_matches_study_and_validates(client: TestClient) -> None:
+    pid = _project(client)["id"]
+    live = client.post(
+        f"/api/projects/{pid}/circuits/no_load/operating-point",
+        json={"overrides": {"G": {"U_line": 380}}},
+    ).json()
+    assert live["status"] == "success" and live["persisted"] is False
+    run = client.post(
+        f"/api/projects/{pid}/runs",
+        json={"study_kind": "no_load", "case": {"U_line_values": [380]}},
+    ).json()
+    row = run["result"]["tables"][0]["rows"][0]
+    assert live["readings"]["A"]["I"] == row["I0"]
+    assert live["readings"]["W"]["P"] == row["P_W"]
+
+    opened = client.post(
+        f"/api/projects/{pid}/circuits/no_load/operating-point",
+        json={"overrides": {"S": {"closed": False}}},
+    ).json()
+    assert opened["readings"]["A"]["I"] == 0.0
+    assert opened["readings"]["V2"]["U"] == 0.0
+
+    bad = client.post(
+        f"/api/projects/{pid}/circuits/no_load/operating-point",
+        json={"overrides": {"T": {"R1": 0}}},
+    )
+    assert bad.status_code == 422
+    assert (
+        client.post(
+            f"/api/projects/{pid}/circuits/no_load/operating-point",
+            json={"overrides": {"ZZ": {"U_line": 1}}},
+        ).status_code
+        == 422
+    )
+    neg = client.post(
+        f"/api/projects/{pid}/circuits/no_load/operating-point",
+        json={"overrides": {"G": {"U_line": -5}}},
+    ).json()
+    assert neg["status"] == "invalid_circuit"
