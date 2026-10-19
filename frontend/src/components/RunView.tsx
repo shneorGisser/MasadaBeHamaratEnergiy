@@ -4,6 +4,7 @@ import type { Param, ResultTable, Run } from '../api/types'
 import { fmt } from '../format'
 import { fmtDate, t } from '../i18n'
 import Chart from './Chart'
+import { axisLabel, curveSeries, curveTable } from './curves'
 import { ErrorBox } from './ErrorBox'
 import StatusBadge from './StatusBadge'
 
@@ -86,19 +87,18 @@ export default function RunView({ run }: { run: Run }) {
 
   const charts = useMemo(() => {
     if (!res || !readings) return []
-    return res.curves.map((c) => {
-      const xc = readings.columns.find((k) => k.key === c.x)
-      const yc = readings.columns.find((k) => k.key === c.y)
-      const pts = readings.rows
-        .map((r) => [r[c.x], r[c.y]] as [unknown, unknown])
-        .filter((p): p is [number, number] => typeof p[0] === 'number' && typeof p[1] === 'number')
-      return {
-        id: c.id,
-        title: c.title_he,
-        xLabel: `${xc?.label_he ?? c.x} [${xc?.unit ?? ''}]`,
-        yLabel: `${yc?.label_he ?? c.y} [${yc?.unit ?? ''}]`,
-        series: [{ label: 'סימולציה', kind: 'sim' as const, points: pts }],
-      }
+    return res.curves.flatMap((c) => {
+      const tb = curveTable(c, res.tables)
+      if (!tb) return []
+      return [
+        {
+          id: c.id,
+          title: c.title_he,
+          xLabel: axisLabel(tb.columns, c.x),
+          yLabel: axisLabel(tb.columns, c.y),
+          series: curveSeries(c, [{ label: 'סימולציה', kind: 'sim', rows: tb.rows }], tb.columns),
+        },
+      ]
     })
   }, [res, readings])
 
@@ -184,7 +184,7 @@ export default function RunView({ run }: { run: Run }) {
       <details className="card">
         <summary>{t('run.snapshot')}</summary>
         <pre className="small" dir="ltr" style={{ maxHeight: 300, overflow: 'auto' }}>
-          {JSON.stringify({ case: run.input_snapshot.case, transformer: run.input_snapshot.transformer }, null, 2)}
+          {JSON.stringify({ case: run.input_snapshot.case, spec: run.input_snapshot.spec ?? run.input_snapshot.transformer }, null, 2)}
         </pre>
       </details>
     </div>

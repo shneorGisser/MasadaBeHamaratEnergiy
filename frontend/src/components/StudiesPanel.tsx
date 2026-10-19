@@ -24,7 +24,19 @@ const VARIANT_LABEL: Record<string, string> = {
   'Yd-abc-2': 'כוכב-משולש, סגירה x1→y2',
 }
 
-const HIDDEN_CASE_KEYS = new Set(['bindings', 'source'])
+const HIDDEN_CASE_KEYS = new Set(['bindings', 'source', 'law'])
+
+/** Inverter operating points as text: "20@0.64, 35@1.28" (frequency @ brake torque). */
+function pointsToText(v: unknown[]): string {
+  return v.map((p) => `${String((p as { f: number }).f)}@${String((p as { M: number }).M)}`).join(', ')
+}
+function parsePoints(raw: string): { f: number; M: number }[] | null {
+  const parts = raw.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean)
+  const out = parts.map((x) => x.split('@').map(Number))
+  if (!out.length || out.some((p) => p.length !== 2 || !p.every(Number.isFinite))) return null
+  return out.map((p) => ({ f: p[0] ?? NaN, M: p[1] ?? NaN }))
+}
+const isPoints = (k: string) => k === 'points'
 
 function CaseEditor({
   study,
@@ -65,7 +77,9 @@ function CaseEditor({
                 </select>
               </label>
             )
-          const bad = Array.isArray(def)
+          const bad = isPoints(k)
+            ? parsePoints(v) === null
+            : Array.isArray(def)
             ? parseList(v) === null
             : def === null
               ? v.trim() !== '' && !Number.isFinite(Number(v))
@@ -91,7 +105,7 @@ function caseToText(c: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(c)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
-    out[k] = Array.isArray(v) ? v.join(', ') : v === null || v === undefined ? '' : String(v)
+    out[k] = isPoints(k) && Array.isArray(v) ? pointsToText(v) : Array.isArray(v) ? v.join(', ') : v === null || v === undefined ? '' : String(v)
   }
   return out
 }
@@ -102,7 +116,8 @@ function textToCase(study: Study, text: Record<string, string>): Record<string, 
   for (const [k, def] of Object.entries(study.default_case)) {
     if (HIDDEN_CASE_KEYS.has(k)) continue
     const raw = text[k] ?? ''
-    if (Array.isArray(def)) out[k] = parseList(raw) ?? raw
+    if (isPoints(k)) out[k] = parsePoints(raw) ?? raw
+    else if (Array.isArray(def)) out[k] = parseList(raw) ?? raw
     else if (typeof def === 'boolean') out[k] = raw === 'true'
     else if (typeof def === 'string') out[k] = raw
     else if (def === null) out[k] = raw.trim() === '' ? null : Number(raw)

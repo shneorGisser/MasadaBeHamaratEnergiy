@@ -19,7 +19,8 @@ from vel.experiments import registry
 from vel.orm import MeasurementEntry, MeasurementSet, Project, Report, SimulationRun
 
 FORMAT = "virtual-energy-lab/project"
-VERSION = 1
+VERSION = 2  # v2: project.spec (v1: project.transformer); v1 files still import
+READABLE_VERSIONS = (1, 2)
 
 
 def _iso(d: datetime) -> str:
@@ -85,7 +86,7 @@ def export_project(session: Session, p: Project) -> dict[str, Any]:
             "name": p.name,
             "experiment_id": p.experiment_id,
             "experiment_version": p.experiment_version,
-            "transformer": p.transformer_json,
+            "spec": p.spec_json,
             "circuits": p.circuits_json,
             "notes": p.notes,
             "guide_state": p.guide_state,
@@ -128,12 +129,13 @@ def new() -> str:
 
 
 def import_project(session: Session, doc: dict[str, Any]) -> Project:
-    if doc.get("format") != FORMAT or doc.get("version") != VERSION:
-        raise ApiError(422, "bad_format", f"expected {FORMAT} v{VERSION}")
+    if doc.get("format") != FORMAT or doc.get("version") not in READABLE_VERSIONS:
+        raise ApiError(422, "bad_format", f"expected {FORMAT} v{READABLE_VERSIONS}")
     pj = doc["project"]
     try:
         module = registry.get(pj["experiment_id"])
-        module.spec_model.model_validate(pj["transformer"])
+        spec_doc = pj["spec"] if "spec" in pj else pj["transformer"]  # v1 exports
+        module.spec_model.model_validate(spec_doc)
     except Exception as exc:
         raise ApiError(422, "bad_project", f"project data is invalid: {exc}") from exc
     p = Project(
@@ -141,7 +143,7 @@ def import_project(session: Session, doc: dict[str, Any]) -> Project:
         name=f"{pj['name']} (שוחזר)",
         experiment_id=pj["experiment_id"],
         experiment_version=pj["experiment_version"],
-        transformer_json=pj["transformer"],
+        spec_json=spec_doc,
         circuits_json=pj.get("circuits") or {},
         notes=pj.get("notes", ""),
         guide_state=pj.get("guide_state") or {},

@@ -24,6 +24,8 @@ class ExperimentOut(BaseModel):
     title_he: str
     summary_he: str
     manual_ref: str
+    equipment_he: str
+    studies: list[str]
 
 
 class ProjectCreate(BaseModel):
@@ -36,7 +38,7 @@ class ProjectUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str | None = Field(default=None, min_length=1, max_length=200)
     notes: str | None = Field(default=None, max_length=20000)
-    transformer: dict[str, Any] | None = None
+    spec: dict[str, Any] | None = None
 
 
 class ProjectOut(BaseModel):
@@ -44,7 +46,7 @@ class ProjectOut(BaseModel):
     name: str
     experiment_id: str
     experiment_version: int
-    transformer: dict[str, Any]
+    spec: dict[str, Any]
     derived: dict[str, float]
     notes: str
     created_at: datetime
@@ -53,9 +55,7 @@ class ProjectOut(BaseModel):
 
 def _derived(spec_json: dict[str, Any], experiment_id: str) -> dict[str, float]:
     module = registry.get(experiment_id)
-    spec = module.spec_model.model_validate(spec_json)
-    keys = ("U1_winding", "U2_winding", "turns_ratio", "I1n_line", "I2n_line")
-    return {k: float(getattr(spec, k)) for k in keys if hasattr(spec, k)}
+    return {k: float(v) for k, v in module.derived_spec(module.spec(spec_json)).items()}
 
 
 def to_out(p: Project) -> ProjectOut:
@@ -64,8 +64,8 @@ def to_out(p: Project) -> ProjectOut:
         name=p.name,
         experiment_id=p.experiment_id,
         experiment_version=p.experiment_version,
-        transformer=p.transformer_json,
-        derived=_derived(p.transformer_json, p.experiment_id),
+        spec=p.spec_json,
+        derived=_derived(p.spec_json, p.experiment_id),
         notes=p.notes,
         created_at=p.created_at,
         updated_at=p.updated_at,
@@ -88,6 +88,8 @@ def list_experiments() -> list[ExperimentOut]:
             title_he=m.title_he,
             summary_he=m.summary_he,
             manual_ref=m.manual_ref,
+            equipment_he=m.equipment_he,
+            studies=list(m.studies),
         )
         for m in registry.all_modules()
     ]
@@ -95,13 +97,13 @@ def list_experiments() -> list[ExperimentOut]:
 
 @router.get("/experiments/{experiment_id}/presets")
 def list_presets(experiment_id: str) -> list[dict[str, Any]]:
-    from vel.experiments.transformer3ph.spec import PRESETS
-
-    if experiment_id != "transformer3ph":
-        raise ApiError(404, "not_found", f"no presets for {experiment_id}")
+    try:
+        module = registry.get(experiment_id)
+    except KeyError as exc:
+        raise ApiError(404, "not_found", f"no experiment {experiment_id}") from exc
     return [
         {"id": k, "label_he": label, "spec": fn().model_dump(mode="json")}
-        for k, (label, fn) in PRESETS.items()
+        for k, (label, fn) in module.presets.items()
     ]
 
 
@@ -121,7 +123,7 @@ def create_project(body: ProjectCreate, session: SessionDep) -> ProjectOut:
         name=body.name.strip(),
         experiment_id=module.id,
         experiment_version=module.version,
-        transformer_json=module.default_spec().model_dump(mode="json"),
+        spec_json=module.default_spec().model_dump(mode="json"),
         circuits_json={},
         notes="",
     )
@@ -143,21 +145,21 @@ def update_project(project_id: str, body: ProjectUpdate, session: SessionDep) ->
         p.name = body.name.strip()
     if body.notes is not None:
         p.notes = body.notes
-    if body.transformer is not None:
+    if body.spec is not None:
         module = registry.get(p.experiment_id)
         try:
-            spec = module.spec_model.model_validate(body.transformer)
+            spec = module.spec_model.model_validate(body.spec)
         except ValidationError as exc:
             raise ApiError(
                 422,
-                "invalid_transformer",
-                "Transformer specification is invalid",
+                "invalid_spec",
+                f"Equipment specification for {p.experiment_id} is invalid",
                 [
                     {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]}
                     for e in exc.errors(include_url=False, include_context=False)
                 ],
             ) from exc
-        p.transformer_json = spec.model_dump(mode="json")
+        p.spec_json = spec.model_dump(mode="json")
     session.commit()
     session.refresh(p)
     return to_out(p)

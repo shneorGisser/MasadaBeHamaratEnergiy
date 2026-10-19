@@ -31,7 +31,7 @@ export function useCreateProject() {
 export function useUpdateProject(id: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: Partial<Pick<Project, 'name' | 'notes' | 'transformer'>>) =>
+    mutationFn: (body: Partial<Pick<Project, 'name' | 'notes' | 'spec'>>) =>
       api.patch<Project>(`/api/projects/${id}`, body),
     onSuccess: (p) => {
       qc.setQueryData(keys.project(id), p)

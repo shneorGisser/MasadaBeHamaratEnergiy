@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom'
-import { useProject, useUpdateProject } from '../api/hooks'
+import { useExperiments, useProject, useUpdateProject } from '../api/hooks'
 import type { Project } from '../api/types'
 import { ErrorBox } from '../components/ErrorBox'
 import GuidePanel from '../components/GuidePanel'
 import ReportsPanel from '../components/ReportsPanel'
 import StudiesPanel from '../components/StudiesPanel'
-import TransformerForm from '../components/TransformerForm'
+import SpecForm from '../components/SpecForm'
 import { t } from '../i18n'
 
 function ProjectMetaForm({ project }: { project: Project }) {
@@ -43,10 +43,12 @@ function ProjectMetaForm({ project }: { project: Project }) {
 export default function ProjectPage() {
   const { projectId = '' } = useParams()
   const project = useProject(projectId)
+  const experiments = useExperiments()
 
   if (project.isLoading) return <p className="muted">{t('common.loading')}</p>
   if (project.isError) return <ErrorBox error={project.error} onRetry={() => void project.refetch()} />
   const p = project.data!
+  const experiment = experiments.data?.find((x) => x.id === p.experiment_id)
 
   return (
     <div className="stack">
@@ -56,14 +58,19 @@ export default function ProjectPage() {
         </Link>
       </div>
       <div className="page-head">
-        <h1 className="grow" data-testid="project-title">
-          {p.name}
-        </h1>
+        <div className="grow">
+          <h1 data-testid="project-title">{p.name}</h1>
+          {experiment && (
+            <div className="muted small" data-testid="project-experiment">
+              {experiment.title_he}
+            </div>
+          )}
+        </div>
         <a className="btn small" href={`/api/projects/${p.id}/export`} download={`project-${p.id.slice(0, 8)}.json`} data-testid="export">
           ייצוא גיבוי
         </a>
-        <span className={`badge ${p.transformer.provenance === 'assumed' ? 'assumed' : 'ok'}`}>
-          {t(`provenance.${p.transformer.provenance}`)}
+        <span className={`badge ${p.spec.provenance === 'assumed' ? 'assumed' : 'ok'}`}>
+          {t(`provenance.${p.spec.provenance}`)}
         </span>
       </div>
       <ProjectMetaForm key={p.id} project={p} />
@@ -75,7 +82,7 @@ export default function ProjectPage() {
           מצב מודרך
         </NavLink>
         <NavLink to={`/projects/${p.id}/spec`} className="tab">
-          {t('tabs.spec')}
+          {experiment ? `מפרט ${experiment.equipment_he}` : t('tabs.spec')}
         </NavLink>
         <NavLink to={`/projects/${p.id}/reports`} className="tab">
           דו״חות
@@ -85,7 +92,7 @@ export default function ProjectPage() {
         <Route index element={<StudiesPanel projectId={p.id} />} />
         <Route path="guide" element={<GuidePanel projectId={p.id} />} />
         <Route path="reports" element={<ReportsPanel projectId={p.id} />} />
-        <Route path="spec" element={<TransformerForm key={p.id} project={p} />} />
+        <Route path="spec" element={<SpecForm key={p.id} project={p} />} />
       </Routes>
     </div>
   )

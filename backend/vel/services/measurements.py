@@ -9,21 +9,30 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vel.errors import ApiError
-from vel.experiments.transformer3ph import derive
-from vel.experiments.transformer3ph.measure_defs import MEASURE_DEFS, MeasureDef
-from vel.experiments.transformer3ph.spec import TransformerSpec
-from vel.experiments.transformer3ph.studies import WINDINGS
+from vel.experiments import registry
+from vel.experiments.common import InputError, MeasureDef
 from vel.orm import MeasurementEntry, MeasurementSet, Project, SimulationRun
 from vel.units import UnitError, convert, units_for
 
 MATCH_TOL = 0.02  # relative tolerance for pairing a measured operating point with a simulated one
 
 
-def mdef(kind: str) -> MeasureDef:
-    d = MEASURE_DEFS.get(kind)
+def module_for(experiment_id: str) -> registry.ExperimentModule:
+    try:
+        return registry.get(experiment_id)
+    except KeyError as exc:
+        raise ApiError(422, "unknown_experiment", str(exc)) from exc
+
+
+def mdef(experiment_id: str, kind: str) -> MeasureDef:
+    d = module_for(experiment_id).measure_defs.get(kind)
     if d is None:
         raise ApiError(404, "unknown_study", f"no measurement definition for {kind}")
     return d
+
+
+def set_module(session: Session, s: MeasurementSet) -> registry.ExperimentModule:
+    return module_for(project_of(session, s).experiment_id)
 
 
 def definition_json(d: MeasureDef) -> dict[str, Any]:
@@ -69,7 +78,7 @@ def add_entry(
     instrument_range: str,
     note: str,
 ) -> MeasurementEntry:
-    d = mdef(s.study_kind)
+    d = mdef(project_of(session, s).experiment_id, s.study_kind)
     col = next((c for c in d.columns if c.key == quantity), None)
     if col is None:
         raise ApiError(422, "unknown_quantity", f"{quantity} is not recorded in {s.study_kind}")
@@ -101,7 +110,8 @@ def add_entry(
 def raw_rows(
     session: Session, s: MeasurementSet
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    d = mdef(s.study_kind)
+    module = set_module(session, s)
+    d = mdef(module.id, s.study_kind)
     current, _ = current_entries(session, s)
     rows: list[dict[str, Any]] = []
     missing: list[dict[str, Any]] = []
@@ -109,8 +119,7 @@ def raw_rows(
         r: dict[str, Any] = {"point": i + 1}
         if d.row_labels:
             r["row_label"] = d.row_labels[i] if i < len(d.row_labels) else f"#{i + 1}"
-        if s.study_kind == "dc_resistance":
-            r["winding"] = WINDINGS[i // 3][1] if i // 3 < len(WINDINGS) else "?"
+        r.update(module.row_extra(s.study_kind, i))
         for c in d.columns:
             e = current.get((i, c.key))
             r[c.key] = e.value_si if e else None
@@ -120,46 +129,10 @@ def raw_rows(
     return rows, missing
 
 
-def analyse(kind: str, rows: list[dict[str, Any]], spec: TransformerSpec) -> dict[str, Any]:
-    """Derived table + parameters for a measured table (same functions as for simulation)."""
-    out: dict[str, Any] = {"rows": rows, "parameters": [], "parameters_at": None, "warnings": []}
-    if kind == "no_load":
-        r2, params, at, w = derive.no_load(rows, spec)
-        out.update(
-            rows=r2, parameters=[p.to_json() for p in params], parameters_at=at or None, warnings=w
-        )
-    elif kind == "short_circuit":
-        r2, params, at, w = derive.short_circuit(rows, spec)
-        out.update(
-            rows=r2, parameters=[p.to_json() for p in params], parameters_at=at or None, warnings=w
-        )
-    elif kind == "load":
-        out["rows"] = derive.load(rows, spec)
-    elif kind == "vector_group":
-        out["parameters"] = [p.to_json() for p in derive.vector_group(rows)]
-    elif kind == "dc_resistance":
-        r2, summary = derive.dc_resistance(rows)
-        out.update(rows=r2, summary=summary)
-    out["warnings"] = list(out["warnings"]) + derive.plausibility(kind, rows, spec)
-    return out
-
-
-DERIVED_COLUMNS: dict[str, list[dict[str, str]]] = {
-    "no_load": [{"key": "P0", "label_he": "P0 = 3·P", "unit": "W"}],
-    "short_circuit": [{"key": "P_k", "label_he": "Pk = 3·P", "unit": "W"}],
-    "load": [
-        {"key": "P1", "label_he": "P1 = 3·P", "unit": "W"},
-        {"key": "P2", "label_he": "P2 = 3·P", "unit": "W"},
-        {"key": "beta", "label_he": "β", "unit": ""},
-        {"key": "eta", "label_he": "η", "unit": ""},
-        {"key": "dU_pct", "label_he": "ΔU%", "unit": "%"},
-    ],
-    "dc_resistance": [{"key": "R", "label_he": "R = U/I", "unit": "Ω"}],
-}
-
-
-def set_view(session: Session, s: MeasurementSet, spec: TransformerSpec) -> dict[str, Any]:
-    d = mdef(s.study_kind)
+def set_view(session: Session, s: MeasurementSet) -> dict[str, Any]:
+    module = set_module(session, s)
+    spec = module.spec(project_of(session, s).spec_json)
+    d = mdef(module.id, s.study_kind)
     current, history = current_entries(session, s)
     rows, missing = raw_rows(session, s)
     versions: dict[str, int] = {}
@@ -181,10 +154,10 @@ def set_view(session: Session, s: MeasurementSet, spec: TransformerSpec) -> dict
     return {
         "set": set_json(s),
         "definition": definition_json(d),
-        "derived_columns": DERIVED_COLUMNS.get(s.study_kind, []),
+        "derived_columns": module.derived_columns.get(s.study_kind, []),
         "cells": cells,
         "missing": missing,
-        "analysis": analyse(s.study_kind, rows, spec),
+        "analysis": module.analyse(s.study_kind, rows, spec),
         "history": [
             {
                 "id": e.id,
@@ -218,44 +191,15 @@ def set_json(s: MeasurementSet) -> dict[str, Any]:
 
 
 def matching_case(
-    s: MeasurementSet, rows: list[dict[str, Any]], spec: TransformerSpec
+    session: Session, s: MeasurementSet, rows: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Study case that simulates exactly the operating points that were measured."""
-    k = s.study_kind
-
-    def vals(key: str) -> list[float]:
-        return [float(r[key]) for r in rows if isinstance(r.get(key), (int, float))]
-
-    if k == "no_load":
-        u = vals("U1L")
-        if not u:
-            raise ApiError(422, "no_operating_points", "no measured U1 values")
-        return {"U_line_values": u}
-    if k == "short_circuit":
-        i = [x / spec.I1n_line for x in vals("I1k") if x > 0]
-        if not i:
-            raise ApiError(422, "no_operating_points", "no measured I1k values")
-        return {"I_targets_pu": i}
-    if k == "load":
-        i2 = vals("I2")
-        loaded = [x / spec.I2n_line for x in i2 if x > 1e-6]
-        if not loaded:
-            raise ApiError(422, "no_operating_points", "no measured load currents")
-        u1 = vals("U1L")
-        return {
-            "load_kind": (s.conditions or {}).get("load_kind", "R"),
-            "I2_targets_pu": loaded,
-            "include_no_load": any(abs(x) <= 1e-6 for x in i2),
-            "U_line": (sum(u1) / len(u1)) if u1 else None,
-        }
-    if k == "vector_group":
-        u = vals("U_aAB")
-        return {"U_line": u[0] if u else 100.0}
-    if k == "dc_resistance":
-        cur = [rows[i].get("I") for i in range(min(3, len(rows)))]
-        targets = [float(x) for x in cur if isinstance(x, (int, float)) and x > 0]
-        return {"I_targets": targets or [1.0, 2.0, 3.0]}
-    return {"U_test": 500.0}
+    module = set_module(session, s)
+    spec = module.spec(project_of(session, s).spec_json)
+    try:
+        return module.matching_case(s.study_kind, s.conditions or {}, rows, spec)
+    except InputError as exc:
+        raise ApiError(422, exc.code, exc.message) from exc
 
 
 # --------------------------------------------------------------------------- comparison
@@ -276,41 +220,32 @@ def _rel(
     return abs_err, abs_err / abs(ref), None
 
 
-def theory_values(spec: TransformerSpec) -> dict[str, float]:
-    """Model (equivalent-circuit) values of the extracted parameters, per-phase star-equivalent,
-    referred to the primary. Exact only within the approximations of the extraction formulas."""
-    e = spec.ecm
-    a = spec.turns_ratio
-    star = spec.nameplate.primary == "Y"
-    xm = e.Xm_unsat / (1 + e.sat_c)
-    k = 1.0 if star else 1 / 3  # delta winding → star equivalent
-    return {
-        "a_ph": a,
-        "R_fe": e.R_fe * k,
-        "X_m": xm * k,
-        "r_k": (e.R1 + a * a * e.R2) * k,
-        "x_k": (e.X1 + a * a * e.X2) * k,
-    }
-
-
 def compare(
-    run: SimulationRun, s: MeasurementSet, meas_rows: list[dict[str, Any]], reference: str
+    session: Session,
+    run: SimulationRun,
+    s: MeasurementSet,
+    meas_rows: list[dict[str, Any]],
+    reference: str,
 ) -> dict[str, Any]:
     if run.study_kind != s.study_kind:
         raise ApiError(422, "kind_mismatch", "run and measurement set belong to different studies")
     if run.result is None:
         raise ApiError(422, "failed_run", f"run status is {run.status}; nothing to compare")
-    spec = TransformerSpec.model_validate(run.input_snapshot["transformer"])
-    d = mdef(s.study_kind)
-    measured = analyse(s.study_kind, meas_rows, spec)
+    module = set_module(session, s)
+    if run.input_snapshot.get("experiment_id", "transformer3ph") != module.id:
+        raise ApiError(
+            422, "kind_mismatch", "run and measurement set belong to different experiments"
+        )
+    from vel.services.runs import snapshot_spec
+
+    spec = module.spec(snapshot_spec(run.input_snapshot))
+    d = mdef(module.id, s.study_kind)
+    measured = module.analyse(s.study_kind, meas_rows, spec)
+    derived_cols = module.derived_columns.get(s.study_kind, [])
     sim_table = run.result["tables"][0]
     sim_rows: list[dict[str, Any]] = sim_table["rows"]
-    quantities = [c.key for c in d.columns] + [
-        c["key"] for c in DERIVED_COLUMNS.get(s.study_kind, [])
-    ]
-    units = {c.key: c.unit for c in d.columns} | {
-        c["key"]: c["unit"] for c in DERIVED_COLUMNS.get(s.study_kind, [])
-    }
+    quantities = [c.key for c in d.columns] + [c["key"] for c in derived_cols]
+    units = {c.key: c.unit for c in d.columns} | {c["key"]: c["unit"] for c in derived_cols}
     pairs: list[dict[str, Any]] = []
     raw_keys = [c.key for c in d.columns]
     empty_rows = 0
@@ -322,25 +257,7 @@ def compare(
             j: int | None = i if i < len(sim_rows) else None
             reason = None if j is not None else "אין שורה מקבילה בסימולציה"
         else:
-            mv = mr.get(d.match)
-            j, reason = None, None
-            if not isinstance(mv, (int, float)):
-                reason = f"חסרה מדידת {d.match} — לא ניתן לזהות את נקודת העבודה"
-            else:
-                cands = [
-                    (abs(float(sr[d.match]) - mv), jj)
-                    for jj, sr in enumerate(sim_rows)
-                    if isinstance(sr.get(d.match), (int, float))
-                ]
-                if cands:
-                    dist, jj = min(cands)
-                    if dist <= MATCH_TOL * max(abs(mv), 1e-9) or (abs(mv) < 1e-6 and dist < 1e-6):
-                        j = jj
-                if j is None:
-                    reason = (
-                        f"אין נקודה מסומלצת בטווח ±{MATCH_TOL:.0%} מנקודת העבודה הנמדדת "
-                        "— הרץ 'סימולציה בנקודות המדידה'"
-                    )
+            j, reason = _match_row(mr, sim_rows, d.match.split(","))
         sr = sim_rows[j] if j is not None else None
         cells = []
         for q in quantities:
@@ -363,7 +280,11 @@ def compare(
                 "measured_row": i,
                 "simulated_row": j,
                 "unmatched_reason": reason,
-                "match_value": mr.get(d.match) if d.match != "row" else None,
+                "match_value": (
+                    None
+                    if d.match == "row"
+                    else ", ".join(f"{k}={_short(mr.get(k))}" for k in d.match.split(","))
+                ),
                 "cells": cells,
             }
         )
@@ -371,7 +292,7 @@ def compare(
     # parameter triad: theory (model) · simulation-extracted · measurement-extracted
     sim_params = {p["key"]: p for p in run.result.get("parameters", [])}
     meas_params = {p["key"]: p for p in measured.get("parameters", [])}
-    theory = theory_values(spec)
+    theory = module.theory_values(spec)
     params = []
     for key in list(dict.fromkeys([*sim_params, *meas_params])):
         sp, mp = sim_params.get(key), meas_params.get(key)
@@ -428,6 +349,40 @@ def compare(
             "אין מספיק מידע להפריד ביניהן ללא נתוני דיוק המכשירים",
         ],
     }
+
+
+def _short(v: Any) -> str:
+    return f"{v:.4g}" if isinstance(v, (int, float)) else "—"
+
+
+def _close(meas: float, sim: float) -> bool:
+    if abs(meas) < 1e-6:
+        return abs(sim - meas) < 1e-6
+    return abs(sim - meas) <= MATCH_TOL * abs(meas)
+
+
+def _match_row(
+    mr: dict[str, Any], sim_rows: list[dict[str, Any]], keys: list[str]
+) -> tuple[int | None, str | None]:
+    """Simulated row at the same operating point: every key within ±MATCH_TOL (relative)."""
+    missing = [k for k in keys if not isinstance(mr.get(k), (int, float))]
+    if missing:
+        return None, f"חסרה מדידת {', '.join(missing)} — לא ניתן לזהות את נקודת העבודה"
+    best: tuple[float, int] | None = None
+    for jj, sr in enumerate(sim_rows):
+        if not all(isinstance(sr.get(k), (int, float)) for k in keys):
+            continue
+        if not all(_close(float(mr[k]), float(sr[k])) for k in keys):
+            continue
+        dist = sum(abs(float(sr[k]) - float(mr[k])) / max(abs(float(mr[k])), 1e-9) for k in keys)
+        if best is None or dist < best[0]:
+            best = (dist, jj)
+    if best is None:
+        return None, (
+            f"אין נקודה מסומלצת בטווח ±{MATCH_TOL:.0%} מנקודת העבודה הנמדדת "
+            "— הרץ 'סימולציה בנקודות המדידה'"
+        )
+    return best[1], None
 
 
 def is_finite(x: Any) -> bool:

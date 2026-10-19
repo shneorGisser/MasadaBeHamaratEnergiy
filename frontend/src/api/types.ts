@@ -38,12 +38,35 @@ export interface TransformerSpec {
   insulation: Insulation
 }
 
+export interface MotorSpec {
+  schema_version: 1
+  provenance: Provenance
+  provenance_note: string
+  nameplate: {
+    P_n: number
+    U_n: number
+    I_n: number
+    f_n: number
+    n_n: number
+    poles: number
+    connection: Connection
+    cos_phi_n: number | null
+  }
+  ecm: { R1: number; X1: number; R2p: number; X2p: number; R_fe: number; Xm: number; P_fw_n: number }
+  insulation: { U_frame_Mohm: number; V_frame_Mohm: number; W_frame_Mohm: number }
+}
+
+/** Equipment spec of whichever experiment the project belongs to. */
+export type EquipmentSpec = TransformerSpec | MotorSpec
+
 export interface Experiment {
   id: string
   version: number
   title_he: string
   summary_he: string
   manual_ref: string
+  equipment_he: string
+  studies: string[]
 }
 
 export interface Project {
@@ -51,7 +74,7 @@ export interface Project {
   name: string
   experiment_id: string
   experiment_version: number
-  transformer: TransformerSpec
+  spec: EquipmentSpec
   derived: Record<string, number>
   notes: string
   created_at: string
@@ -106,6 +129,12 @@ export interface Curve {
   title_he: string
   x: string
   y: string
+  /** optional second series from the same table (e.g. Kloss formula next to the model) */
+  y2?: string
+  /** table id the curve reads from (default: the first table) */
+  table?: string
+  /** split the points into one series per value of this column (e.g. frequency) */
+  group?: string
 }
 
 export interface RunResult {
@@ -136,7 +165,9 @@ export interface RunSummary {
 
 export interface Run extends RunSummary {
   input_snapshot: {
-    transformer: TransformerSpec
+    spec?: EquipmentSpec
+    /** runs created before the multi-experiment refactor */
+    transformer?: TransformerSpec
     circuit: unknown
     case: Record<string, unknown>
     model_version: string
@@ -236,7 +267,7 @@ export interface Comparison {
     measured_row: number
     simulated_row: number | null
     unmatched_reason: string | null
-    match_value: number | null
+    match_value: string | null
     cells: CmpCell[]
   }[]
   parameters: {

@@ -23,6 +23,7 @@ from vel.engine.mna import (
     Pin,
     VSource,
 )
+from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.transformer3ph.spec import TransformerSpec
 
 ZERO_Z = 1e-12
@@ -88,6 +89,16 @@ CATALOG: dict[str, ComponentType] = {
             "שנאי תלת-פזי",
             "machine",
             ("A1", "A2", "B1", "B2", "C1", "C2", "a1", "a2", "b1", "b2", "c1", "c2"),
+        ),
+        ComponentType(
+            "motor3",
+            "מנוע השראה תלת-פזי + בלם אבקה מגנטית",
+            "machine",
+            ("U1", "U2", "V1", "V2", "W1", "W2"),
+            (
+                ParamDef("M_load", "מומנט הבלם", "N·m", default=0.0, min=0, max=1e4),
+                ParamDef("locked", "רוטור נעול", "", kind="bool", default=False),
+            ),
         ),
         ComponentType(
             "load3",
@@ -199,6 +210,8 @@ class Built:
     instruments: dict[str, dict[str, Any]] = field(default_factory=dict)
     # transformer internals per phase (for loss bookkeeping; NOT instrument readings)
     xfmr_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # induction-motor internals (slip, branch names) for the mechanical bookkeeping
+    motor_internals: dict[str, dict[str, Any]] = field(default_factory=dict)
     warnings: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -280,9 +293,17 @@ def validate_structure(circuit: CircuitModel) -> list[dict[str, Any]]:
 def build(
     circuit: CircuitModel,
     *,
-    transformer: TransformerSpec | None,
+    equipment: Any = None,
     dc: bool = False,
+    slips: dict[str, float] | None = None,
 ) -> Built:
+    """Expand a circuit into an MNA network.
+
+    `equipment` is the project's equipment spec (TransformerSpec, MotorSpec); machine
+    components take their parameters from it (single source of truth). `slips` gives the
+    operating slip of each induction motor — the mechanical balance that determines it is
+    solved one level up, in `simulate.operating_point`.
+    """
     issues = validate_structure(circuit)
     if issues:
         raise CircuitValidationError(issues)
@@ -360,11 +381,41 @@ def build(
         elif c.type == "switch3":
             pass  # handled by node merging
         elif c.type == "transformer3":
-            if transformer is None:
+            if not isinstance(equipment, TransformerSpec):
                 raise CircuitValidationError(
-                    [{"code": "no_spec", "component": c.id, "message": "transformer spec missing"}]
+                    [
+                        {
+                            "code": "no_spec",
+                            "component": c.id,
+                            "message": f"{c.id}: this project has no transformer specification",
+                        }
+                    ]
                 )
-            _expand_transformer(c, transformer, f, dc, N, new_node, series_z, net_items, built)
+            _expand_transformer(c, equipment, f, dc, N, new_node, series_z, net_items, built)
+        elif c.type == "motor3":
+            if not isinstance(equipment, MotorSpec):
+                raise CircuitValidationError(
+                    [
+                        {
+                            "code": "no_spec",
+                            "component": c.id,
+                            "message": f"{c.id}: this project has no motor specification",
+                        }
+                    ]
+                )
+            locked = bool(p.get("locked", False))
+            slip = 1.0 if locked else (slips or {}).get(c.id, 1.0)
+            if not (0.0 <= slip <= 1.0):
+                raise CircuitValidationError(
+                    [
+                        {
+                            "code": "bad_param",
+                            "component": c.id,
+                            "message": f"{c.id}: slip {slip} outside [0, 1] (motoring only)",
+                        }
+                    ]
+                )
+            _expand_motor(c, equipment, f, dc, slip, N, new_node, series_z, net_items, built)
         elif c.type == "load3":
             kind = str(p.get("kind", "R"))
             conn = str(p.get("connection", "Y"))
@@ -528,6 +579,45 @@ def _expand_transformer(
             "z2": z2,
         }
     built.xfmr_internals[c.id] = internals
+
+
+def _expand_motor(
+    c: Component,
+    spec: MotorSpec,
+    f: float,
+    dc: bool,
+    slip: float,
+    N: Callable[[str, str], int],
+    new_node: Callable[[], int],
+    series_z: Callable[[int, int, complex, str], None],
+    net_items: dict[str, list[Any]],
+    built: Built,
+) -> None:
+    """Per-winding steady-state T-equivalent with the rotor branch R2'/s + jX2'.
+
+    Valid for a balanced, positive-sequence sinusoidal supply: each winding is then an
+    independent impedance. Under unbalance the negative-sequence field sees slip (2 − s), which
+    this per-winding model does not represent; `simulate` flags that case.
+    """
+    e = spec.ecm
+    k = f / spec.nameplate.f_n  # reactances are specified at rated frequency
+    meta: dict[str, Any] = {"slip": slip, "f": f, "dc": dc, "phases": {}, "spec": spec}
+    for X in ("U", "V", "W"):
+        p, q = N(c.id, f"{X}1"), N(c.id, f"{X}2")
+        if dc:
+            # DC: inductances are shorts, nothing couples to the rotor → winding resistance only.
+            series_z(p, q, complex(e.R1, 0), f"{c.id}#{X}#R1dc")
+            meta["phases"][X] = {"dc": True}
+            continue
+        node_e = new_node()
+        series_z(p, node_e, complex(e.R1, e.X1 * k), f"{c.id}#{X}#Z1")
+        net_items["adm"].append(Admittance(node_e, q, complex(1 / e.R_fe, 0), f"{c.id}#{X}#Rfe"))
+        net_items["adm"].append(Admittance(node_e, q, 1 / complex(0, e.Xm * k), f"{c.id}#{X}#Xm"))
+        if slip > 0:
+            # s = 0 (synchronous speed): no rotor current — the branch is open.
+            series_z(node_e, q, complex(e.R2p / slip, e.X2p * k), f"{c.id}#{X}#Z2")
+        meta["phases"][X] = {"e": node_e, "q": q}
+    built.motor_internals[c.id] = meta
 
 
 def _check_voltage_loops(vsources: list[VSource], n_nodes: int) -> None:

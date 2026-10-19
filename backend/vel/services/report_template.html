@@ -33,32 +33,21 @@
 
 <h2>1. מטרת הניסוי</h2>
 <ul>
-  <li>הכרת מבנה השנאי התלת-פזי.</li>
-  <li>בדיקת מצב הבידוד ומדידת התנגדויות הליפופים.</li>
-  <li>בדיקת השנאי בריקם (יחס השנאה, ענף המגנוט), בקצר (הענף הטורי) ובעומס.</li>
-  <li>קביעת קבוצת החיבורים בשיטת השעון.</li>
+  {% for g in s.info.goals %}<li>{{ g }}</li>{% endfor %}
 </ul>
 
-<h2>2. השנאי והנחות המודל</h2>
-{% set t = s.transformer %}
-{% if t.provenance == 'assumed' %}
-<div class="warn">פרמטרי השנאי מוערכים ואינם נתוני שלט: {{ t.provenance_note }}</div>
+<h2>2. {{ s.info.equipment_title }}</h2>
+{% if s.spec.provenance == 'assumed' %}
+<div class="warn">פרמטרי {{ s.equipment_he }} מוערכים ואינם נתוני שלט: {{ s.spec.provenance_note }}</div>
+{% elif s.spec.provenance == 'fitted' %}
+<div class="warn">פרמטרי {{ s.equipment_he }} הותאמו לנתונים שלא אומתו: {{ s.spec.provenance_note }}</div>
 {% endif %}
 <table>
-  <tr><th>S<sub>n</sub> [VA]</th><th>U<sub>1n</sub> [V]</th><th>U<sub>2n</sub> [V]</th><th>f [Hz]</th><th>חיבור נקוב</th>
-      <th>R1 [Ω]</th><th>X1 [Ω]</th><th>R2 [Ω]</th><th>X2 [Ω]</th><th>R<sub>Fe</sub> [Ω]</th><th>X<sub>m,unsat</sub> [Ω]</th><th>c, n</th></tr>
-  <tr>
-    <td class="num">{{ t.nameplate.S_n|f }}</td><td class="num">{{ t.nameplate.U1n|f }}</td><td class="num">{{ t.nameplate.U2n|f }}</td>
-    <td class="num">{{ t.nameplate.f_n|f }}</td><td>{{ t.nameplate.primary }}{{ t.nameplate.secondary|lower }}</td>
-    <td class="num">{{ t.ecm.R1|f }}</td><td class="num">{{ t.ecm.X1|f }}</td><td class="num">{{ t.ecm.R2|f }}</td>
-    <td class="num">{{ t.ecm.X2|f }}</td><td class="num">{{ t.ecm.R_fe|f }}</td><td class="num">{{ t.ecm.Xm_unsat|f }}</td>
-    <td class="num">{{ t.ecm.sat_c|f }}, {{ t.ecm.sat_n|f }}</td>
-  </tr>
+  <tr>{% for h, v in s.info.spec_table %}<th>{{ h|safe }}</th>{% endfor %}</tr>
+  <tr>{% for h, v in s.info.spec_table %}<td class="num">{{ v|f }}</td>{% endfor %}</tr>
 </table>
-<p>מודל: מעגל תמורה T לכל עמוד (מודל "בנק"), במצב מתמיד סינוסי ב-f, עם ענף מגנוט רווי
-  <span class="formula">X<sub>m</sub>(E) = X<sub>m,unsat</sub> / (1 + c·(E/E<sub>n</sub>)<sup>n</sup>)</span>. מכשירים אידיאליים.</p>
-<p><strong>לא ממודל:</strong> הרמוניות של זרם המגנוט וקריאת מכשיר true-RMS, זרם התנעה ותופעות מעבר, צימוד מגנטי בין העמודים
-  (האסימטריה של העמוד האמצעי), תלות טמפרטורה, דיוק המכשירים והעמסתם. מד הבידוד מציג פרמטר מודל ולא סימולציה.</p>
+<p>{{ s.info.model_html|safe }}</p>
+<p><strong>לא ממודל:</strong> {{ s.info.not_modelled }}</p>
 
 {% for sec in s.sections %}
 <h2>{{ loop.index + 2 }}. {{ sec.title_he }} <span class="meta">({{ sec.manual_ref }})</span></h2>
@@ -149,12 +138,12 @@
 
 <h2>{{ s.sections|length + 4 }}. מגבלות ונתונים חסרים</h2>
 <ul>
-  {% if s.transformer.provenance == 'assumed' %}<li>פרמטרי השנאי מוערכים; השוואה כמותית מדויקת מחייבת נתוני שלט ומדידות ריקם וקצר.</li>{% endif %}
+  {% if s.spec.provenance == 'assumed' %}<li>{{ s.info.assumed_limitation }}</li>{% endif %}
   {% for sec in s.sections %}
     {% if not sec.run %}<li>{{ sec.title_he }}: אין סימולציה בדו״ח.</li>{% endif %}
     {% if not sec.measurements %}<li>{{ sec.title_he }}: אין מדידות בדו״ח.</li>{% elif sec.measurements.missing %}<li>{{ sec.title_he }}: חסרים {{ sec.measurements.missing|length }} ערכים.</li>{% endif %}
   {% endfor %}
-  <li>המודל אינו כולל הרמוניות, תופעות מעבר, אסימטריית ליבה ודיוק מכשירים (ראו סעיף 2).</li>
+  <li>{{ s.info.general_limitation }}</li>
 </ul>
 </body>
 </html>

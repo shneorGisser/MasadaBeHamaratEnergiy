@@ -38,7 +38,7 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   await expect(page.getByTestId('run-view')).toHaveAttribute('data-run-id', runId!)
   await expect(page.getByTestId('run-view').getByRole('table', { name: /טבלה 1.3/ }).locator('tbody tr').nth(2).locator('td').nth(5)).toHaveText(i0!)
   const run = await (await request.get(`/api/runs/${runId}`)).json()
-  expect(run.input_snapshot.transformer.nameplate.S_n).toBe(2500)
+  expect(run.input_snapshot.spec.nameplate.S_n).toBe(2500)
   await page.getByRole('button', { name: 'בדוק שחזור' }).click()
   await expect(page.getByTestId('reproduce-result')).toHaveText('שוחזר: תוצאה זהה לחלוטין')
 

@@ -7,6 +7,7 @@ import { fmt } from '../format'
 import { fmtDate } from '../i18n'
 import Chart, { type Series } from './Chart'
 import { ErrorBox } from './ErrorBox'
+import { curveSeries } from './curves'
 import { DataTable } from './RunView'
 import StatusBadge from './StatusBadge'
 
@@ -195,21 +196,24 @@ function pct(x: number | null): string {
 }
 
 function ComparisonView({ cmp, view }: { cmp: Comparison; view: MSetView }) {
-  const qcols = view.definition.columns.concat(view.derived_columns.map((c) => ({ ...c, units: [] })))
+  const qcols = useMemo(() => view.definition.columns.concat(view.derived_columns.map((c) => ({ ...c, units: [] }))), [view])
   const label = (q: string) => qcols.find((c) => c.key === q)?.label_he ?? q
   const charts = useMemo(() => {
-    return cmp.curves.map((c) => {
-      const pts = (rows: Record<string, unknown>[]) =>
-        rows
-          .map((r) => [r[c.x], r[c.y]] as [unknown, unknown])
-          .filter((p): p is [number, number] => typeof p[0] === 'number' && typeof p[1] === 'number')
-      const series: Series[] = [
-        { label: 'סימולציה', kind: 'sim', points: pts(cmp.simulated_rows) },
-        { label: 'מדידה', kind: 'meas', points: pts(cmp.measured_analysis.rows) },
-      ]
-      return { ...c, series }
-    })
-  }, [cmp])
+    // only curves of the main readings table can be compared with a measured table
+    return cmp.curves
+      .filter((c) => !c.table || c.table === 'readings')
+      .map((c) => {
+        const series: Series[] = curveSeries(
+          { ...c, y2: undefined },
+          [
+            { label: 'סימולציה', kind: 'sim', rows: cmp.simulated_rows },
+            { label: 'מדידה', kind: 'meas', rows: cmp.measured_analysis.rows },
+          ],
+          qcols,
+        )
+        return { ...c, series }
+      })
+  }, [cmp, qcols])
 
   return (
     <div className="stack" data-testid="comparison">

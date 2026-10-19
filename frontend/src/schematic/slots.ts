@@ -28,6 +28,12 @@ export function terminalSlots(type: string, terminals: string[]): Record<string,
       ;(['A2', 'B2', 'C2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.12 + 0.13 * i }))
       ;(['a2', 'b2', 'c2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.62 + 0.13 * i }))
       break
+    case 'motor3':
+      // Terminal-board convention: winding starts U1/V1/W1 face the supply, ends U2/V2/W2 on
+      // the bottom edge where the star (or delta bridges) is made.
+      spread(['U1', 'V1', 'W1'], 'left', s)
+      ;(['U2', 'V2', 'W2'] as const).forEach((t, i) => (s[t] = { side: 'bottom', at: 0.25 + 0.25 * i }))
+      break
     case 'source3':
       spread(['L1', 'L2', 'L3'], 'right', s)
       spread(['N'], 'bottom', s)

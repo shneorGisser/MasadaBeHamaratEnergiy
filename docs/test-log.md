@@ -71,3 +71,27 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=postg
 - Playwright: 14 passed. New: preset loaded and simulated at the report's rated short-circuit point; backup downloaded and restored.
 - Packaged (non-editable) install: migrations + solver + report verified.
 - NOT executed: `docker build` (Docker Hub blocked in this environment) and an actual Cloud Run deployment.
+
+## D2 — experiment 2: squirrel-cage induction motor; experiment modules generalized (2026-10-19)
+Command: `scripts/check.sh` → ALL CHECKS PASSED · plus `VEL_TEST_PG_URL=… pytest` → 98 passed on PostgreSQL 16
+- Architecture: services (runs, measurements, comparison, guide, reports, backup) now talk only to the
+  `ExperimentModule` interface; experiment 1 was moved behind it with **no change to any of its results** (all 67
+  earlier tests unchanged except the `transformer` → `spec` field rename). Migration 0005 renames the column; old run
+  snapshots (key `transformer`) still execute and reproduce identically (test_migrations); backup format v2, v1 imports.
+- pytest: 98 passed. New (test_induction_motor):
+  - M1 MNA at an imposed slip = independent closed-form T-circuit at 5 slips × 3 frequencies (≤ 1e-9);
+  - M2 energy balance P_in = P_cu1 + P_fe + P_cu2 + P_fw + P2 (≤ 1e-9) and M3 torque balance on the stable branch;
+  - M4 a Δ motor with 3× winding impedances is indistinguishable at the terminals from the Y motor (≤ 1e-8);
+  - M5 the manual's locked-rotor formulas give exactly Re/Im/|Z_in(s=1)|, Y0 = 1/|Z_in(s0)|; the R2' estimate is
+    approximate (within 15 %, stated as such);
+  - M6 brake above pull-out → `constraint_violation` (study) / stalled state with warning (live bench);
+    "cannot start under this load" warning when M_start < M_load < M_max;
+  - M7 inverter V/f: slip consistent with n_s(f), voltage limited to U_n above f_n, low-frequency start draws less current;
+  - M8 API journey: studies listed per experiment, transformer study → 404 in a motor project, reproduce, live brake,
+    measured table 3 % off → comparison reports exactly 3 %, simulate-at-measured-points, guide (27 steps), report, backup.
+- Playwright: 15 passed. New (s7-motor): motor project, load study table 4.6 + torque–speed/Kloss table and curves, 3D bench
+  reading equals the API, brake above pull-out shows the stall warning and 0 rpm, motor spec form, comparison 5 %.
+- Bug found and fixed: the first label of the 3D bench never rendered (drei `<Html>` mounted in the canvas's first commit) —
+  present since S4 for component G; S4 now asserts it.
+- NOT verified: the motor parameters are ASSUMED (no nameplate of the experiment-2 motor yet, and last year's
+  experiment-2 file is the blank manual). Skin effect, saturation and stray-load loss are not modelled (see model doc).

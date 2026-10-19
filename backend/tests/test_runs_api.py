@@ -31,18 +31,18 @@ def test_run_persisted_immutable_and_reproducible(client: TestClient) -> None:
     assert r.status_code == 201, r.text
     run = r.json()
     assert run["status"] == "success_with_warnings"  # 456 V > 1.1 Un
-    assert run["input_snapshot"]["transformer"] == p["transformer"]
+    assert run["input_snapshot"]["spec"] == p["spec"]
     rows = run["result"]["tables"][0]["rows"]
     assert [round(x["U1L"], 6) for x in rows] == [190, 380, 456]
     p0_before = rows[1]["P0"]
 
     # change the project's transformer: the stored run must not change
-    spec = p["transformer"]
+    spec = p["spec"]
     spec2 = {**spec, "ecm": {**spec["ecm"], "R_fe": 1200}}
-    assert client.patch(f"/api/projects/{pid}", json={"transformer": spec2}).status_code == 200
+    assert client.patch(f"/api/projects/{pid}", json={"spec": spec2}).status_code == 200
     again = client.get(f"/api/runs/{run['id']}").json()
     assert again["result"]["tables"][0]["rows"][1]["P0"] == p0_before
-    assert again["input_snapshot"]["transformer"]["ecm"]["R_fe"] == 2400
+    assert again["input_snapshot"]["spec"]["ecm"]["R_fe"] == 2400
 
     # a new run uses the new spec: core loss doubles (R_Fe halved)
     r2 = client.post(

@@ -64,7 +64,7 @@ def list_sets(
 @router.post("/projects/{project_id}/measurement-sets", status_code=201)
 def create_set(project_id: str, body: SetCreate, session: SessionDep) -> dict[str, Any]:
     p = load_project(session, project_id)
-    d = ms.mdef(body.study_kind)
+    d = ms.mdef(p.experiment_id, body.study_kind)
     n_rows = len(d.row_labels) if d.rows == "fixed" else body.n_rows or 6
     unknown = set(body.conditions) - set(d.condition_keys)
     if unknown:
@@ -82,20 +82,20 @@ def create_set(project_id: str, body: SetCreate, session: SessionDep) -> dict[st
     session.add(s)
     session.commit()
     session.refresh(s)
-    return ms.set_view(session, s, runs_svc.project_spec(p))
+    return ms.set_view(session, s)
 
 
 @router.get("/measurement-sets/{set_id}")
 def get_set(set_id: str, session: SessionDep) -> dict[str, Any]:
     s = ms.load_set(session, set_id)
-    return ms.set_view(session, s, runs_svc.project_spec(ms.project_of(session, s)))
+    return ms.set_view(session, s)
 
 
 @router.patch("/measurement-sets/{set_id}")
 def update_set(set_id: str, body: SetUpdate, session: SessionDep) -> dict[str, Any]:
     """Metadata only. Measured values are never edited in place (see /entries)."""
     s = ms.load_set(session, set_id)
-    d = ms.mdef(s.study_kind)
+    d = ms.mdef(ms.project_of(session, s).experiment_id, s.study_kind)
     for k in ("label", "lab_date", "instruments", "notes"):
         v = getattr(body, k)
         if v is not None:
@@ -113,7 +113,7 @@ def update_set(set_id: str, body: SetUpdate, session: SessionDep) -> dict[str, A
             raise ApiError(409, "rows_in_use", "cannot remove rows that contain measurements")
         s.n_rows = body.n_rows
     session.commit()
-    return ms.set_view(session, s, runs_svc.project_spec(ms.project_of(session, s)))
+    return ms.set_view(session, s)
 
 
 @router.post("/measurement-sets/{set_id}/entries", status_code=201)
@@ -129,7 +129,7 @@ def add_entry(set_id: str, body: EntryCreate, session: SessionDep) -> dict[str, 
         instrument_range=body.instrument_range,
         note=body.note,
     )
-    return ms.set_view(session, s, runs_svc.project_spec(ms.project_of(session, s)))
+    return ms.set_view(session, s)
 
 
 @router.post("/measurement-sets/{set_id}/simulate", response_model=RunOut, status_code=201)
@@ -137,7 +137,7 @@ def simulate_at_measured_points(set_id: str, session: SessionDep) -> RunOut:
     s = ms.load_set(session, set_id)
     p = ms.project_of(session, s)
     rows, _ = ms.raw_rows(session, s)
-    case = ms.matching_case(s, rows, runs_svc.project_spec(p))
+    case = ms.matching_case(session, s, rows)
     label = f"בנקודות המדידה של: {s.label or s.id[:8]}"
     return _full(runs_svc.create_run(session, p, s.study_kind, case, label))
 
@@ -154,4 +154,4 @@ def comparison(
     if run.project_id != s.project_id:
         raise ApiError(422, "project_mismatch", "run and set belong to different projects")
     rows, _ = ms.raw_rows(session, s)
-    return ms.compare(run, s, rows, reference)
+    return ms.compare(session, run, s, rows, reference)

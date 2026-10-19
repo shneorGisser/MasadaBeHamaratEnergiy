@@ -98,6 +98,7 @@ const PREFIX: Record<string, string> = {
   source_dc: 'G',
   switch3: 'S',
   transformer3: 'T',
+  motor3: 'M',
   load3: 'L',
   resistor: 'R',
   inductor: 'Lx',

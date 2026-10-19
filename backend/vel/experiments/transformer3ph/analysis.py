@@ -12,25 +12,13 @@ Two formula sets are reported side by side:
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass
 from typing import Any
 
+from vel.experiments.common import Param
+
+__all__ = ["Param"]
+
 SQ3 = math.sqrt(3)
-
-
-@dataclass
-class Param:
-    key: str
-    label_he: str
-    value: float | None
-    unit: str
-    formula: str
-    method: str  # consistent | manual | analytic
-    undefined_reason: str | None = None
-    note: str = ""
-
-    def to_json(self) -> dict[str, Any]:
-        return asdict(self)
 
 
 def _sqrt_diff(a2: float, b2: float) -> tuple[float | None, str | None]:

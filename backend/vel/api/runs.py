@@ -13,7 +13,6 @@ from vel.api.deps import SessionDep
 from vel.api.projects import load_project
 from vel.engine.netlist import catalog_json
 from vel.errors import not_found
-from vel.experiments.transformer3ph import studies
 from vel.orm import SimulationRun
 from vel.services import runs as svc
 
@@ -93,6 +92,7 @@ def components() -> list[dict[str, Any]]:
 def list_studies(project_id: str, session: SessionDep) -> list[StudyOut]:
     p = load_project(session, project_id)
     spec = svc.project_spec(p)
+    studies = svc.module_of(p).studies
     return [
         StudyOut(
             kind=sd.kind,
@@ -102,7 +102,7 @@ def list_studies(project_id: str, session: SessionDep) -> list[StudyOut]:
             variants=list(sd.variants),
             editable_circuit=sd.editable_circuit,
         )
-        for sd in studies.STUDIES.values()
+        for sd in studies.values()
     ]
 
 

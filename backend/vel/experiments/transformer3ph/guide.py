@@ -6,27 +6,7 @@ clicks alone — except for "read and acknowledge" steps.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Literal
-
-StepKind = Literal["ack", "spec", "simulate", "measure", "compare", "report"]
-
-
-@dataclass(frozen=True)
-class Step:
-    id: str
-    kind: StepKind
-    title_he: str
-    body_he: str
-    study: str | None = None
-
-
-SAFETY = (
-    "אין לגעת בציוד פגום · עובדים במתחים מסוכנים ובמערכות נעות · מרכיבים את המעגל רק כשמתגי "
-    "האספקה מנותקים והווריאקים במינימום · לא משתמשים בחוטים דקים או פגומים · בודקים שתקע "
-    "הבננה יושב היטב · אחרי כל הרכבה או שינוי מבקשים בדיקת מדריך ולא מפעילים לפני אישורו · "
-    "לא עוברים ערכים נומינליים (מקור: הוראות הבטיחות של המעבדה להמרת אנרגיה)."
-)
+from vel.experiments.common import SAFETY, Step, study_steps
 
 STUDY_STEPS: list[tuple[str, str, str]] = [
     (
@@ -71,7 +51,7 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
 
 
 def steps() -> list[Step]:
-    out = [
+    return [
         Step("safety", "ack", "הוראות בטיחות", SAFETY),
         Step(
             "nameplate",
@@ -80,33 +60,6 @@ def steps() -> list[Step]:
             "מעיינים בנתונים הנומינליים שעל שלט השנאי ומזינים אותם במפרט השנאי. עד שמזינים "
             "אותם, כל התוצאות מבוססות על ערכים מוערכים.",
         ),
+        *study_steps(STUDY_STEPS),
+        Step("report", "report", "דו״ח מעבדה", "מפיקים דו״ח ומוסיפים דיון משלכם על הפערים שנמצאו."),
     ]
-    for kind, title, body in STUDY_STEPS:
-        out += [
-            Step(f"{kind}.prepare", "ack", f"{title}: הכנה", body, kind),
-            Step(
-                f"{kind}.simulate",
-                "simulate",
-                f"{title}: סימולציה מקדימה",
-                "מריצים את הסימולציה כדי לדעת אילו ערכים לצפות לראות.",
-                kind,
-            ),
-            Step(
-                f"{kind}.measure",
-                "measure",
-                f"{title}: הזנת מדידות",
-                "מזינים את הערכים שנמדדו במעבדה, כולל יחידות.",
-                kind,
-            ),
-            Step(
-                f"{kind}.compare",
-                "compare",
-                f"{title}: השוואה",
-                "משווים את המדידה לסימולציה, בנקודות המדידה עצמן.",
-                kind,
-            ),
-        ]
-    out.append(
-        Step("report", "report", "דו״ח מעבדה", "מפיקים דו״ח ומוסיפים דיון משלכם על הפערים שנמצאו.")
-    )
-    return out

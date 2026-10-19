@@ -29,7 +29,7 @@ def test_create_get_list_update_delete(client: TestClient) -> None:
     assert r.status_code == 201, r.text
     p = r.json()
     assert p["name"] == "קבוצה 3"
-    assert p["transformer"]["provenance"] == "assumed"
+    assert p["spec"]["provenance"] == "assumed"
     assert abs(p["derived"]["turns_ratio"] - 380 / 220) < 1e-12
 
     r = client.get(f"/api/projects/{p['id']}")
@@ -71,19 +71,19 @@ def test_invalid_inputs(client: TestClient) -> None:
 
 def test_transformer_update_validated(client: TestClient) -> None:
     p = client.post("/api/projects", json={"name": "x", "experiment_id": "transformer3ph"}).json()
-    spec = p["transformer"]
+    spec = p["spec"]
     bad = {**spec, "nameplate": {**spec["nameplate"], "S_n": -5}}
-    r = client.patch(f"/api/projects/{p['id']}", json={"transformer": bad})
+    r = client.patch(f"/api/projects/{p['id']}", json={"spec": bad})
     assert r.status_code == 422
-    assert r.json()["error"]["code"] == "invalid_transformer"
+    assert r.json()["error"]["code"] == "invalid_spec"
     # unchanged after rejected update
-    assert client.get(f"/api/projects/{p['id']}").json()["transformer"] == spec
+    assert client.get(f"/api/projects/{p['id']}").json()["spec"] == spec
 
     implausible = {**spec, "ecm": {**spec["ecm"], "Xm_unsat": 2.0}}
-    r = client.patch(f"/api/projects/{p['id']}", json={"transformer": implausible})
+    r = client.patch(f"/api/projects/{p['id']}", json={"spec": implausible})
     assert r.status_code == 422
 
     good = {**spec, "provenance": "nameplate", "nameplate": {**spec["nameplate"], "S_n": 5000}}
-    r = client.patch(f"/api/projects/{p['id']}", json={"transformer": good})
+    r = client.patch(f"/api/projects/{p['id']}", json={"spec": good})
     assert r.status_code == 200
-    assert r.json()["transformer"]["nameplate"]["S_n"] == 5000
+    assert r.json()["spec"]["nameplate"]["S_n"] == 5000

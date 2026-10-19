@@ -1,18 +1,23 @@
 """Registry of experiment modules.
 
-An experiment module provides: metadata, a default equipment specification, and (from S1)
-study templates + analysis. New experiments register here without touching core code.
+An experiment module is everything that is specific to one lab experiment: the equipment
+specification, study definitions and their executors, the derivation formulas (shared by
+simulated and measured tables), the measurement tables, the guide and the report texts.
+The services (runs, measurements, comparison, guide, reports, backup) only talk to this
+interface, so adding an experiment means registering a module — not editing the services.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from pydantic import BaseModel
 
-from vel.experiments.transformer3ph.spec import TransformerSpec, assumed_lab_transformer
+from vel.experiments.common import MeasureDef, Outcome, Step, StudyDef
+
+Rows = list[dict[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -22,9 +27,31 @@ class ExperimentModule:
     title_he: str
     summary_he: str
     manual_ref: str
+    equipment_he: str  # "השנאי", "המנוע" — used in generic UI/report texts
     spec_model: type[BaseModel]
     default_spec: Callable[[], BaseModel]
-    studies: list[dict[str, Any]] = field(default_factory=list)
+    presets: Mapping[str, tuple[str, Callable[[], BaseModel]]]
+    model_version: str
+    studies: Mapping[str, StudyDef]
+    execute: Callable[[str, Any, Any, dict[str, Any]], Outcome]
+    measure_defs: Mapping[str, MeasureDef]
+    derived_columns: Mapping[str, list[dict[str, str]]]
+    # measured/simulated table → {"rows", "parameters", "parameters_at", "warnings", ...}
+    analyse: Callable[[str, Rows, Any], dict[str, Any]]
+    # measured table → study case that simulates exactly those operating points
+    matching_case: Callable[[str, dict[str, Any], Rows, Any], dict[str, Any]]
+    # model (equivalent-circuit) values of the extracted parameters, by parameter key
+    theory_values: Callable[[Any], dict[str, float]]
+    # extra, read-only columns for a measurement row (e.g. which winding a row belongs to)
+    row_extra: Callable[[str, int], dict[str, Any]]
+    guide_steps: Callable[[], list[Step]]
+    # derived nameplate quantities shown in the UI (rated currents, ratios, speeds)
+    derived_spec: Callable[[Any], dict[str, float]]
+    # texts and spec table for the report's opening sections
+    report_info: Callable[[Any], dict[str, Any]]
+
+    def spec(self, doc: dict[str, Any]) -> Any:
+        return self.spec_model.model_validate(doc)
 
 
 _REGISTRY: dict[str, ExperimentModule] = {}
@@ -47,14 +74,12 @@ def all_modules() -> list[ExperimentModule]:
     return list(_REGISTRY.values())
 
 
-register(
-    ExperimentModule(
-        id="transformer3ph",
-        version=1,
-        title_he="ניסוי 1: בדיקת שנאי תלת-פזי",
-        summary_he=("בידוד, התנגדות ליפופים, ריקם, קצר, עומס R/L/C וקבוצות חיבורים (שיטת השעון)"),
-        manual_ref="חוברת המעבדה בהמרת אנרגיה, ניסוי 1",
-        spec_model=TransformerSpec,
-        default_spec=assumed_lab_transformer,
-    )
-)
+def _register_builtin() -> None:
+    from vel.experiments.induction_motor import module as motor
+    from vel.experiments.transformer3ph import module as transformer
+
+    register(transformer.MODULE)
+    register(motor.MODULE)
+
+
+_register_builtin()

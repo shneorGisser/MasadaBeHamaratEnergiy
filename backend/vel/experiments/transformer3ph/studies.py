@@ -8,50 +8,28 @@ contains the bound instruments, not only on the template.
 
 from __future__ import annotations
 
-import copy
 import math
-from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from vel.engine.circuit import CircuitModel
-from vel.engine.mna import ConvergenceError, SingularCircuitError
-from vel.engine.netlist import CircuitValidationError
-from vel.engine.simulate import OperatingPoint, operating_point
+from vel.engine.simulate import OperatingPoint
+from vel.experiments.common import (
+    Outcome,
+    Status,
+    StudyDef,
+    StudyError,
+)
+from vel.experiments.common import col as _col
+from vel.experiments.common import read as _read
+from vel.experiments.common import solve as _solve_any
+from vel.experiments.common import undefined_warnings as _undefined_warnings
+from vel.experiments.common import with_param as _with_param
 from vel.experiments.transformer3ph import analysis, derive, templates
 from vel.experiments.transformer3ph.spec import TransformerSpec
 
 MODEL_VERSION = "mna-phasor-1.0+xfmr-T-sat-1.0"
-
-Status = Literal[
-    "success",
-    "success_with_warnings",
-    "invalid_input",
-    "invalid_circuit",
-    "solver_failure",
-    "convergence_failure",
-    "unsupported",
-    "constraint_violation",
-]
-
-
-class StudyError(Exception):
-    def __init__(self, status: Status, message: str, details: Any = None) -> None:
-        super().__init__(message)
-        self.status = status
-        self.message = message
-        self.details = details
-
-
-@dataclass
-class Outcome:
-    status: Status
-    result: dict[str, Any] | None = None
-    warnings: list[dict[str, Any]] = field(default_factory=list)
-    error: dict[str, Any] | None = None
-
 
 # --------------------------------------------------------------------------- cases
 
@@ -163,62 +141,11 @@ class VectorGroupCase(BaseModel):
 # --------------------------------------------------------------------------- helpers
 
 
-def _read(op: OperatingPoint, binding: str) -> float | None:
-    inst, _, qty = binding.partition(".")
-    if inst not in op.readings:
-        raise StudyError(
-            "invalid_circuit",
-            f"המכשיר {inst} שנדרש לעמודה אינו קיים במעגל",
-            {"binding": binding},
-        )
-    if qty not in op.readings[inst]:
-        raise StudyError("invalid_input", f"למכשיר {inst} אין גודל {qty}", {"binding": binding})
-    return op.readings[inst][qty]
-
-
-def _with_param(circuit: CircuitModel, cid: str, key: str, value: Any) -> CircuitModel:
-    c = copy.deepcopy(circuit)
-    try:
-        comp = c.component(cid)
-    except KeyError as exc:
-        raise StudyError("invalid_circuit", f"רכיב המקור {cid} אינו קיים במעגל") from exc
-    comp.params[key] = value
-    return c
-
-
 def _solve(circuit: CircuitModel, spec: TransformerSpec, dc: bool = False) -> OperatingPoint:
-    try:
-        return operating_point(circuit, spec, dc=dc)
-    except CircuitValidationError as exc:
-        raise StudyError("invalid_circuit", str(exc), exc.issues) from exc
-    except SingularCircuitError as exc:
-        raise StudyError(
-            "solver_failure",
-            "למעגל אין פתרון יחיד (מטריצה סינגולרית). בדוק קצר על מקור או חלק מעגל ללא הזנה.",
-            str(exc),
-        ) from exc
-    except ConvergenceError as exc:
-        raise StudyError(
-            "convergence_failure",
-            "האיטרציה הלא-ליניארית של ענף המגנוט לא התכנסה",
-            {"iterations": exc.iterations, "residual": exc.residual},
-        ) from exc
+    return _solve_any(circuit, spec, dc)
 
 
-def _undefined_warnings(
-    op: OperatingPoint, row: int, bindings: dict[str, str]
-) -> list[dict[str, Any]]:
-    out = []
-    for col, b in bindings.items():
-        if b in op.undefined:
-            out.append(
-                {"code": "undefined_reading", "row": row, "column": col, "message": op.undefined[b]}
-            )
-    return out
-
-
-def _col(key: str, label: str, unit: str) -> dict[str, str]:
-    return {"key": key, "label_he": label, "unit": unit}
+__all__ = ["Outcome", "Status", "StudyDef", "StudyError", "STUDIES", "execute", "MODEL_VERSION"]
 
 
 # --------------------------------------------------------------------------- studies
@@ -665,18 +592,6 @@ def run_insulation(spec: TransformerSpec, case: InsulationCase) -> Outcome:
 
 
 # --------------------------------------------------------------------------- registry
-
-
-@dataclass(frozen=True)
-class StudyDef:
-    kind: str
-    title_he: str
-    manual_ref: str
-    case_model: type[BaseModel]
-    default_case: Callable[[TransformerSpec], dict[str, Any]]
-    default_circuit: Callable[[TransformerSpec, str], Any] | None
-    variants: tuple[str, ...] = ()
-    editable_circuit: bool = True
 
 
 def _no_load_default(spec: TransformerSpec) -> dict[str, Any]:

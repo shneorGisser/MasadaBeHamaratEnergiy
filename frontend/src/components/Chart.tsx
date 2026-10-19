@@ -6,6 +6,8 @@ export interface Series {
   label: string
   kind: 'sim' | 'meas' | 'theory'
   points: [number, number][]
+  /** overrides the colour of the kind (grouped series); dash and marker still follow the kind */
+  color?: string
 }
 
 const COLORS: Record<Series['kind'], string> = { sim: '#1f6fb2', meas: '#a2462e', theory: '#4b6b2f' }
@@ -51,11 +53,11 @@ export default function Chart({
           { label: xLabel },
           ...series.map((s) => ({
             label: s.label,
-            stroke: COLORS[s.kind],
+            stroke: s.color ?? COLORS[s.kind],
             width: s.kind === 'meas' ? 0 : 2,
             spanGaps: true,
             dash: s.kind === 'theory' ? [6, 4] : undefined,
-            points: { show: true, size: s.kind === 'meas' ? 8 : 5, fill: COLORS[s.kind] },
+            points: { show: true, size: s.kind === 'meas' ? 8 : 5, fill: s.color ?? COLORS[s.kind] },
           })),
         ],
       },

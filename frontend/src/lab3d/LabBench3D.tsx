@@ -1,7 +1,9 @@
 import { Html, Line, OrbitControls } from '@react-three/drei'
-import { Canvas, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Group } from 'three'
 import { api } from '../api/client'
+import { useProject } from '../api/hooks'
 import type { RunStatus } from '../api/types'
 import { ErrorBox } from '../components/ErrorBox'
 import StatusBadge from '../components/StatusBadge'
@@ -27,6 +29,7 @@ const SIZE: Record<string, [number, number, number]> = {
   source_dc: [0.7, 0.4, 0.4],
   switch3: [0.6, 0.4, 0.5],
   transformer3: [1.2, 1.0, 0.8],
+  motor3: [1.6, 0.7, 0.7],
   load3: [1.0, 0.5, 0.7],
   resistor: [0.4, 0.2, 0.2],
   inductor: [0.4, 0.3, 0.3],
@@ -42,7 +45,64 @@ function readingText(c: CComponent, live: LivePoint | null): string | null {
   if (c.type === 'ammeter') return `${fmt(r.I)} A`
   if (c.type === 'voltmeter') return r.U === null ? 'לא מוגדר' : `${fmt(r.U)} V`
   if (c.type === 'wattmeter') return r.P === null ? 'לא מוגדר' : `${fmt(r.P)} W · cos φ ${fmt(r.pf, 3)}`
+  if (c.type === 'motor3') return `${fmt(r.n)} rpm · ${fmt(r.M, 3)} N·m`
   return null
+}
+
+/**
+ * Motor + magnetic-powder brake on a common base. The coupling turns at a slowed-down rate
+ * proportional to the solved speed (a visual cue only; 1500 rpm shown as 1 rev/s).
+ */
+function MotorBrake({ rpm, emissive, onClick }: { rpm: number; emissive: string; onClick: (e: ThreeEvent<MouseEvent>) => void }) {
+  const coupling = useRef<Group>(null)
+  useFrame((state, dt) => {
+    if (!coupling.current || rpm <= 0) return
+    coupling.current.rotation.x += (rpm / 1500) * 2 * Math.PI * dt
+    state.invalidate()
+  })
+  return (
+    <group onClick={onClick}>
+      <mesh position={[0, 0.05, 0]}>
+        <boxGeometry args={[1.6, 0.1, 0.7]} />
+        <meshStandardMaterial color="#3a3f42" emissive={emissive} />
+      </mesh>
+      {/* motor: finned cylinder along x */}
+      <mesh position={[-0.35, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.27, 0.27, 0.7, 32]} />
+        <meshStandardMaterial color="#5f7d95" metalness={0.3} roughness={0.6} emissive={emissive} />
+      </mesh>
+      {[-0.6, -0.45, -0.3, -0.15].map((x) => (
+        <mesh key={x} position={[x, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.03, 32]} />
+          <meshStandardMaterial color="#4f6a80" emissive={emissive} />
+        </mesh>
+      ))}
+      <mesh position={[-0.35, 0.72, 0]}>
+        <boxGeometry args={[0.26, 0.12, 0.26]} />
+        <meshStandardMaterial color="#4f6a80" emissive={emissive} />
+      </mesh>
+      {/* shaft + coupling */}
+      <group ref={coupling} position={[0.12, 0.4, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.035, 0.035, 0.3, 12]} />
+          <meshStandardMaterial color="#b9b9b9" metalness={0.8} roughness={0.3} />
+        </mesh>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.09, 0.09, 0.08, 6]} />
+          <meshStandardMaterial color="#d1a43c" />
+        </mesh>
+        <mesh position={[0, 0.09, 0]}>
+          <boxGeometry args={[0.04, 0.04, 0.04]} />
+          <meshStandardMaterial color="#c0392b" />
+        </mesh>
+      </group>
+      {/* magnetic-powder brake */}
+      <mesh position={[0.5, 0.4, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.24, 0.24, 0.4, 32]} />
+        <meshStandardMaterial color="#8c8f91" metalness={0.5} roughness={0.4} emissive={emissive} />
+      </mesh>
+    </group>
+  )
 }
 
 function Equipment({
@@ -53,6 +113,7 @@ function Equipment({
   live,
   switchClosed,
   variacFrac,
+  showLabel,
 }: {
   c: CComponent
   pos: [number, number, number]
@@ -61,6 +122,7 @@ function Equipment({
   live: LivePoint | null
   switchClosed: boolean
   variacFrac: number
+  showLabel: boolean
 }) {
   const [w, h, d] = SIZE[c.type] ?? [0.4, 0.3, 0.3]
   const click = (e: ThreeEvent<MouseEvent>) => {
@@ -71,7 +133,9 @@ function Equipment({
   const reading = readingText(c, live)
   return (
     <group position={pos}>
-      {c.type === 'transformer3' ? (
+      {c.type === 'motor3' ? (
+        <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
+      ) : c.type === 'transformer3' ? (
         <group onClick={click}>
           <mesh position={[0, 0.05, 0]}>
             <boxGeometry args={[w, 0.1, d]} />
@@ -119,7 +183,8 @@ function Equipment({
           <meshStandardMaterial color={switchClosed ? '#c0392b' : '#7f8c8d'} />
         </mesh>
       )}
-      <Html position={[0, (c.type === 'transformer3' ? 1.1 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
+      {showLabel && (
+      <Html position={[0, (c.type === 'transformer3' ? 1.1 : c.type === 'motor3' ? 0.8 : h) + 0.25, 0]} center distanceFactor={7} zIndexRange={[10, 0]}>
         <button
           className={`lab-label${selected ? ' selected' : ''}`}
           data-testid={`eq-${c.id}`}
@@ -134,6 +199,7 @@ function Equipment({
           )}
         </button>
       </Html>
+      )}
     </group>
   )
 }
@@ -151,6 +217,13 @@ function Scene({
 }) {
   const selected = useSelection((s) => s.selected)
   const select = useSelection((s) => s.select)
+  // drei <Html> labels mounted in the canvas's very first commit lose their content (the first
+  // one in the list never rendered). Mounting them after the first frame avoids that.
+  const [labels, setLabels] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setLabels(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
   const layout = circuit.layout
   const xs = Object.values(layout).map((p) => p.x)
   const ys = Object.values(layout).map((p) => p.y)
@@ -168,7 +241,7 @@ function Scene({
     const [w, h, d] = SIZE[c.type] ?? [0.4, 0.3, 0.3]
     const slot = terminalSlots(c.type, [t])[t] ?? { side: 'left', at: 0.5 }
     const along = (slot.at - 0.5) * (slot.side === 'left' || slot.side === 'right' ? d : w)
-    const top = c.type === 'transformer3' ? 0.1 : h
+    const top = c.type === 'transformer3' || c.type === 'motor3' ? 0.1 : h
     if (slot.side === 'left') return [base[0] - w / 2, top, base[2] + along]
     if (slot.side === 'right') return [base[0] + w / 2, top, base[2] + along]
     return [base[0] + along, top, base[2] + d / 2]
@@ -191,6 +264,7 @@ function Scene({
           live={live}
           switchClosed={switches[c.id] ?? Boolean(c.params.closed ?? true)}
           variacFrac={variacFrac}
+          showLabel={labels}
         />
       ))}
       {circuit.wires.map((w, i) => (
@@ -220,12 +294,21 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   const uMax = Math.max(Math.round(nominal * 1.25), 1)
 
   const switchComps = useMemo(() => circuit?.components.filter((c) => c.type === 'switch3') ?? [], [circuit])
+  const motor = circuit?.components.find((c) => c.type === 'motor3')
+  const project = useProject(projectId)
+  const mN = project.data?.derived.M_n ?? 1
+  const [brake, setBrake] = useState<number | null>(null)
+  const [locked, setLocked] = useState<boolean | null>(null)
+  const mLoad = brake ?? Number(motor?.params.M_load ?? 0)
+  const isLocked = locked ?? Boolean(motor?.params.locked ?? false)
+  const brakeMax = Math.round(3 * mN * 100) / 100
 
   useEffect(() => {
     if (!circuit) return
     const overrides: Record<string, Record<string, unknown>> = {}
     if (source) overrides[source.id] = { U_line: u }
     for (const [id, closed] of Object.entries(switches)) overrides[id] = { closed }
+    if (motor) overrides[motor.id] = { M_load: mLoad, locked: isLocked }
     const my = ++seq.current
     const t = setTimeout(() => {
       api
@@ -239,7 +322,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
         .catch((e) => my === seq.current && setError(e))
     }, 150)
     return () => clearTimeout(t)
-  }, [circuit, source, u, switches, projectId, kind])
+  }, [circuit, source, u, switches, motor, mLoad, isLocked, projectId, kind])
 
   if (circuitQ.isLoading) return <p className="muted">טוען שולחן…</p>
   if (circuitQ.isError) return <ErrorBox error={circuitQ.error} />
@@ -278,19 +361,49 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
             </label>
           )
         })}
+        {motor && (
+          <>
+            <label className="row" style={{ gap: 6 }}>
+              בלם ({motor.id}): <strong className="num" data-testid="brake-value">{fmt(mLoad, 3)} N·m</strong>
+              <input
+                type="range"
+                min={0}
+                max={brakeMax}
+                step={0.01}
+                value={mLoad}
+                disabled={isLocked}
+                onChange={(e) => setBrake(Number(e.target.value))}
+                data-testid="brake"
+                aria-label="מומנט הבלם"
+                style={{ width: 180 }}
+              />
+            </label>
+            <label className="row" style={{ gap: 4 }}>
+              <input type="checkbox" checked={isLocked} data-testid="locked" onChange={(e) => setLocked(e.target.checked)} />
+              רוטור נעול
+            </label>
+          </>
+        )}
         <span className="grow" />
         {live && <StatusBadge status={live.status} />}
         <span className="badge sim">נקודת עבודה חיה מהפותר · לא נשמרת</span>
       </div>
       {error != null && <ErrorBox error={error} />}
       {live?.error && <div className="alert error">{live.error.message}</div>}
+      {live?.warnings
+        ?.filter((w) => w.code !== 'undefined_reading')
+        .map((w) => (
+          <div key={w.code + w.message} className="alert warn" data-testid={`live-warning-${w.code}`}>
+            {w.message}
+          </div>
+        ))}
       <div className="lab-canvas" dir="ltr">
         <Canvas camera={{ position: [0, 6.5, 7.5], fov: 38 }} dpr={[1, 1.5]} frameloop="demand">
           <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} />
         </Canvas>
       </div>
       <p className="muted small">
-        הציוד נבנה מאותו מסמך מעגל שהסכמה הדו-ממדית עורכת; החוטים בשולחן הם חוטי המעגל. מכשירים אידיאליים — הקריאות הן פתרון הפותר, לא אנימציה. המראה סכמטי עד לקבלת תמונות הציוד.
+        הציוד נבנה מאותו מסמך מעגל שהסכמה הדו-ממדית עורכת; סיבוב הצימוד מואט להמחשה (1500 סל״ד = סיבוב לשנייה); החוטים בשולחן הם חוטי המעגל. מכשירים אידיאליים — הקריאות הן פתרון הפותר, לא אנימציה. המראה סכמטי עד לקבלת תמונות הציוד.
       </p>
     </div>
   )

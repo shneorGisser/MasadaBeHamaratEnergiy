@@ -19,9 +19,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vel.errors import ApiError
-from vel.experiments.transformer3ph import guide
-from vel.experiments.transformer3ph.spec import TransformerSpec
-from vel.experiments.transformer3ph.studies import MODEL_VERSION, STUDIES
 from vel.orm import MeasurementSet, Project, Report, SimulationRun
 from vel.services import measurements as ms
 
@@ -36,15 +33,16 @@ def guide_status(session: Session, p: Project) -> dict[str, Any]:
     sets = list(session.scalars(select(MeasurementSet).where(MeasurementSet.project_id == p.id)))
     n_reports = len(list(session.scalars(select(Report.id).where(Report.project_id == p.id))))
     acks = set((p.guide_state or {}).get("acknowledged", []))
+    module = ms.module_for(p.experiment_id)
     out = []
-    for st in guide.steps():
+    for st in module.guide_steps():
         done = False
         detail = ""
         if st.kind == "ack":
             done = st.id in acks
         elif st.kind == "spec":
-            done = p.transformer_json.get("provenance") != "assumed" or st.id in acks
-            if done and p.transformer_json.get("provenance") == "assumed":
+            done = p.spec_json.get("provenance") != "assumed" or st.id in acks
+            if done and p.spec_json.get("provenance") == "assumed":
                 detail = "ממשיכים עם ערכים מוערכים (אושר)"
         elif st.kind == "simulate":
             done = any(r.study_kind == st.study and r.status in OK for r in runs)
@@ -54,7 +52,7 @@ def guide_status(session: Session, p: Project) -> dict[str, Any]:
                 if s.study_kind != st.study:
                     continue
                 rows, _ = ms.raw_rows(session, s)
-                keys = [c.key for c in ms.mdef(s.study_kind).columns]
+                keys = [c.key for c in ms.mdef(module.id, s.study_kind).columns]
                 complete = max(
                     complete, sum(1 for r in rows if all(r.get(k) is not None for k in keys))
                 )
@@ -81,7 +79,8 @@ def guide_status(session: Session, p: Project) -> dict[str, Any]:
 
 
 def acknowledge(session: Session, p: Project, step_id: str) -> None:
-    valid = {s.id for s in guide.steps() if s.kind in ("ack", "spec")}
+    steps = ms.module_for(p.experiment_id).guide_steps()
+    valid = {s.id for s in steps if s.kind in ("ack", "spec")}
     if step_id not in valid:
         raise ApiError(
             422, "not_acknowledgeable", f"step {step_id} is completed by data, not by a click"
@@ -98,10 +97,12 @@ def acknowledge(session: Session, p: Project, step_id: str) -> None:
 def build_snapshot(
     session: Session, p: Project, sections: list[dict[str, Any]], title: str, discussion: str
 ) -> dict[str, Any]:
+    module = ms.module_for(p.experiment_id)
+    studies = module.studies
     out_sections = []
     for sec in sections:
-        kind = sec.get("study_kind")
-        if kind not in STUDIES:
+        kind = str(sec.get("study_kind"))
+        if kind not in studies:
             raise ApiError(422, "unknown_study", f"unknown study {kind}")
         run = session.get(SimulationRun, sec.get("run_id")) if sec.get("run_id") else None
         if run is not None and (run.project_id != p.id or run.study_kind != kind):
@@ -115,8 +116,8 @@ def build_snapshot(
             raise ApiError(422, "empty_section", f"section {kind} needs a run or a measurement set")
         entry: dict[str, Any] = {
             "study_kind": kind,
-            "title_he": STUDIES[kind].title_he,
-            "manual_ref": STUDIES[kind].manual_ref,
+            "title_he": studies[kind].title_he,
+            "manual_ref": studies[kind].manual_ref,
         }
         if run is not None:
             entry["run"] = {
@@ -128,15 +129,14 @@ def build_snapshot(
                 "created_at": run.created_at.isoformat(),
                 "case": run.input_snapshot.get("case"),
                 "circuit_summary": _circuit_summary(run.input_snapshot.get("circuit")),
-                "transformer": run.input_snapshot.get("transformer"),
+                "spec": run.input_snapshot.get("spec", run.input_snapshot.get("transformer")),
                 "warnings": run.warnings,
                 "error": run.error,
                 "result": run.result,
             }
         if mset is not None:
             rows, missing = ms.raw_rows(session, mset)
-            spec = TransformerSpec.model_validate(p.transformer_json)
-            view = ms.set_view(session, mset, spec)
+            view = ms.set_view(session, mset)
             entry["measurements"] = {
                 "set": ms.set_json(mset),
                 "columns": view["definition"]["columns"],
@@ -149,14 +149,16 @@ def build_snapshot(
             }
         if run is not None and mset is not None and run.result is not None:
             rows, _ = ms.raw_rows(session, mset)
-            entry["comparison"] = ms.compare(run, mset, rows, "simulation")
+            entry["comparison"] = ms.compare(session, run, mset, rows, "simulation")
         out_sections.append(entry)
     return {
         "title": title,
         "project": {"id": p.id, "name": p.name},
         "experiment": {"id": p.experiment_id, "version": p.experiment_version},
-        "transformer": p.transformer_json,
-        "model_version": MODEL_VERSION,
+        "spec": p.spec_json,
+        "equipment_he": module.equipment_he,
+        "info": module.report_info(module.spec(p.spec_json)),
+        "model_version": module.model_version,
         "generated_at": datetime.now(UTC).isoformat(),
         "discussion": discussion,
         "sections": out_sections,

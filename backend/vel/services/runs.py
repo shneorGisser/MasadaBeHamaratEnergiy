@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from vel.engine.circuit import CircuitModel
 from vel.engine.netlist import validate_structure
 from vel.errors import ApiError
-from vel.experiments.transformer3ph import studies
-from vel.experiments.transformer3ph.spec import TransformerSpec
+from vel.experiments import registry
+from vel.experiments.common import Outcome, StudyDef
 from vel.orm import Project, SimulationRun
 
 
@@ -26,19 +26,34 @@ def sha256(obj: Any) -> str:
     return hashlib.sha256(canonical_json(obj).encode()).hexdigest()
 
 
-def study_def(kind: str) -> studies.StudyDef:
-    sd = studies.STUDIES.get(kind)
+def module_of(p: Project) -> registry.ExperimentModule:
+    try:
+        return registry.get(p.experiment_id)
+    except KeyError as exc:
+        raise ApiError(422, "unknown_experiment", str(exc)) from exc
+
+
+def study_def(p: Project, kind: str) -> StudyDef:
+    sd = module_of(p).studies.get(kind)
     if sd is None:
-        raise ApiError(404, "unknown_study", f"study {kind} does not exist")
+        raise ApiError(404, "unknown_study", f"study {kind} does not exist in {p.experiment_id}")
     return sd
 
 
-def project_spec(p: Project) -> TransformerSpec:
-    return TransformerSpec.model_validate(p.transformer_json)
+def project_spec(p: Project) -> Any:
+    return module_of(p).spec(p.spec_json)
+
+
+def snapshot_spec(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Equipment spec stored in a run snapshot. Runs created before the multi-experiment
+    refactor stored it under "transformer"; their stored snapshot (and hash) is never rewritten."""
+    doc = snapshot.get("spec", snapshot.get("transformer"))
+    assert isinstance(doc, dict)
+    return doc
 
 
 def template_circuit(p: Project, kind: str, variant: str = "") -> Any:
-    sd = study_def(kind)
+    sd = study_def(p, kind)
     if sd.default_circuit is None:
         return None
     spec = project_spec(p)
@@ -50,7 +65,7 @@ def template_circuit(p: Project, kind: str, variant: str = "") -> Any:
 
 def current_circuit(session: Session, p: Project, kind: str) -> Any:
     """The project's stored circuit for a study; materialized from the template on first use."""
-    sd = study_def(kind)
+    sd = study_def(p, kind)
     if sd.default_circuit is None:
         return None
     if not sd.editable_circuit:
@@ -64,7 +79,7 @@ def current_circuit(session: Session, p: Project, kind: str) -> Any:
 
 
 def save_circuit(session: Session, p: Project, kind: str, doc: dict[str, Any]) -> dict[str, Any]:
-    sd = study_def(kind)
+    sd = study_def(p, kind)
     if not sd.editable_circuit:
         raise ApiError(409, "not_editable", f"the {kind} circuit is fixed by the procedure")
     try:
@@ -87,22 +102,23 @@ def build_snapshot(session: Session, p: Project, kind: str, case: dict[str, Any]
         "experiment_id": p.experiment_id,
         "experiment_version": p.experiment_version,
         "study_kind": kind,
-        "model_version": studies.MODEL_VERSION,
-        "transformer": p.transformer_json,
+        "model_version": module_of(p).model_version,
+        "spec": p.spec_json,
         "circuit": current_circuit(session, p, kind),
         "case": case,
     }
 
 
-def execute_snapshot(snapshot: dict[str, Any]) -> studies.Outcome:
-    spec = TransformerSpec.model_validate(snapshot["transformer"])
-    return studies.execute(snapshot["study_kind"], spec, snapshot["circuit"], snapshot["case"])
+def execute_snapshot(snapshot: dict[str, Any]) -> Outcome:
+    module = registry.get(snapshot.get("experiment_id", "transformer3ph"))
+    spec = module.spec(snapshot_spec(snapshot))
+    return module.execute(snapshot["study_kind"], spec, snapshot["circuit"], snapshot["case"])
 
 
 def create_run(
     session: Session, p: Project, kind: str, case: dict[str, Any], label: str
 ) -> SimulationRun:
-    study_def(kind)
+    study_def(p, kind)
     snapshot = build_snapshot(session, p, kind, case)
     outcome = execute_snapshot(snapshot)
     run = SimulationRun(
@@ -111,7 +127,7 @@ def create_run(
         label=label,
         input_snapshot=snapshot,
         input_hash=sha256(snapshot),
-        model_version=studies.MODEL_VERSION,
+        model_version=snapshot["model_version"],
         status=outcome.status,
         warnings=outcome.warnings,
         error=outcome.error,
@@ -133,7 +149,9 @@ def reproduce(run: SimulationRun) -> dict[str, Any]:
         "identical": canonical_json(original) == canonical_json(now),
         "input_hash_matches": sha256(run.input_snapshot) == run.input_hash,
         "model_version_then": run.model_version,
-        "model_version_now": studies.MODEL_VERSION,
+        "model_version_now": registry.get(
+            run.input_snapshot.get("experiment_id", "transformer3ph")
+        ).model_version,
         "result_hash_then": sha256(original),
         "result_hash_now": sha256(now),
     }
@@ -144,6 +162,7 @@ LIVE_OVERRIDABLE = {
     "source_dc": {"U"},
     "switch3": {"closed"},
     "load3": {"value", "kind"},
+    "motor3": {"M_load", "locked"},
 }
 
 
@@ -152,9 +171,9 @@ def live_point(
 ) -> dict[str, Any]:
     from vel.engine.mna import ConvergenceError, SingularCircuitError
     from vel.engine.netlist import CircuitValidationError
-    from vel.engine.simulate import operating_point
+    from vel.engine.simulate import MechanicalError, operating_point
 
-    sd = study_def(kind)
+    sd = study_def(p, kind)
     if not sd.editable_circuit:
         raise ApiError(409, "not_editable", "live operating point needs an editable circuit")
     doc = current_circuit(session, p, kind)
@@ -173,11 +192,11 @@ def live_point(
     base = {
         "source": "simulation",
         "persisted": False,
-        "model_version": studies.MODEL_VERSION,
+        "model_version": module_of(p).model_version,
         "overrides": overrides,
     }
     try:
-        op = operating_point(circuit, spec)
+        op = operating_point(circuit, spec, on_stall="stall")
     except CircuitValidationError as exc:
         return {
             **base,
@@ -188,9 +207,11 @@ def live_point(
         return {**base, "status": "solver_failure", "error": {"message": str(exc)}}
     except ConvergenceError as exc:
         return {**base, "status": "convergence_failure", "error": {"message": str(exc)}}
+    except MechanicalError as exc:
+        return {**base, "status": exc.status, "error": {"message": exc.message}}
     warnings = [
         {"code": "undefined_reading", "message": f"{k}: {v}"} for k, v in op.undefined.items()
-    ]
+    ] + op.warnings
     return {
         **base,
         "status": "success_with_warnings" if warnings else "success",

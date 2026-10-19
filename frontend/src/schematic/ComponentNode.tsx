@@ -8,6 +8,7 @@ const SYMBOL: Record<string, string> = {
   source_dc: '=',
   switch3: '⏻',
   transformer3: '⧚',
+  motor3: 'M3~',
   load3: 'Z',
   resistor: 'R',
   inductor: 'L',
@@ -35,6 +36,8 @@ function summary(type: string, p: Record<string, unknown>): string {
       return `${fmt(p.C)} F`
     case 'transformer3':
       return 'פרמטרים: מפרט השנאי'
+    case 'motor3':
+      return p.locked ? 'רוטור נעול' : `M_load = ${fmt(p.M_load ?? 0)} N·m`
     default:
       return ''
   }
@@ -44,8 +47,8 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const { comp, ctype } = data
   const terminals = ctype?.terminals ?? []
   const slots = terminalSlots(comp.type, terminals)
-  const tall = comp.type === 'transformer3' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
-  const wide = comp.type === 'transformer3' ? 180 : 110
+  const tall = comp.type === 'transformer3' || comp.type === 'motor3' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
+  const wide = comp.type === 'transformer3' ? 180 : comp.type === 'motor3' ? 150 : 110
   const instrument = ctype?.instrument
   return (
     <div

@@ -5,11 +5,14 @@ from __future__ import annotations
 import cmath
 import math
 from dataclasses import dataclass, field
+from typing import Any, Literal
 
 from vel.engine.circuit import CircuitModel
 from vel.engine.mna import Network, Solution, solve
-from vel.engine.netlist import Built, build
-from vel.experiments.transformer3ph.spec import TransformerSpec
+from vel.engine.netlist import Built, CircuitValidationError, build
+
+SLIP_SCAN = 80  # grid points used to locate the pull-out torque before root finding
+SLIP_TOL = 1e-13
 
 
 @dataclass
@@ -20,6 +23,22 @@ class OperatingPoint:
     iterations: int
     cond: float
     floating_groups: list[list[str]] = field(default_factory=list)
+    warnings: list[dict[str, Any]] = field(default_factory=list)
+
+
+class MechanicalError(Exception):
+    """The mechanical steady state requested cannot exist (e.g. brake torque above pull-out)."""
+
+    def __init__(
+        self,
+        status: Literal["constraint_violation", "convergence_failure", "unsupported"],
+        message: str,
+        details: Any = None,
+    ) -> None:
+        super().__init__(message)
+        self.status = status
+        self.message = message
+        self.details = details
 
 
 def _series_current(net: Network, sol: Solution, name: str) -> complex:
@@ -33,9 +52,141 @@ def _series_current(net: Network, sol: Solution, name: str) -> complex:
 
 
 def operating_point(
-    circuit: CircuitModel, transformer: TransformerSpec | None, *, dc: bool = False
+    circuit: CircuitModel,
+    equipment: Any = None,
+    *,
+    dc: bool = False,
+    on_stall: Literal["raise", "stall"] = "raise",
 ) -> OperatingPoint:
-    built: Built = build(circuit, transformer=transformer, dc=dc)
+    """Steady state of the circuit. For an induction motor the slip is found from the torque
+    balance M_shaft(s) = M_load on the stable branch (0 ≤ s < s_pull-out)."""
+    motors = [c for c in circuit.components if c.type == "motor3"]
+    if dc or not motors:
+        return _electrical(circuit, equipment, dc, {})
+    if len(motors) > 1:
+        raise MechanicalError(
+            "unsupported", "only one induction motor per circuit is supported (one brake)"
+        )
+    m = motors[0]
+    if bool(m.params.get("locked", False)):
+        return _electrical(circuit, equipment, dc, {m.id: 1.0})
+    try:
+        m_load = float(m.params.get("M_load", 0.0))
+    except (TypeError, ValueError) as exc:
+        raise CircuitValidationError(
+            [{"code": "bad_param", "component": m.id, "message": f"{m.id}.M_load is not a number"}]
+        ) from exc
+    if not math.isfinite(m_load) or m_load < 0:
+        raise CircuitValidationError(
+            [
+                {
+                    "code": "param_out_of_range",
+                    "component": m.id,
+                    "message": f"{m.id}.M_load must be ≥ 0 N·m (the brake only absorbs power)",
+                }
+            ]
+        )
+
+    cache: dict[float, OperatingPoint] = {}
+
+    def at(slip: float) -> OperatingPoint:
+        if slip not in cache:
+            cache[slip] = _electrical(circuit, equipment, dc, {m.id: slip})
+        return cache[slip]
+
+    def torque(slip: float) -> float:
+        val = at(slip).readings[m.id]["M"]
+        assert val is not None
+        return val
+
+    # Locate the pull-out torque on a grid dense near s = 0 (where the stable branch lies).
+    grid = [0.0] + [10 ** (-6 + 6 * i / (SLIP_SCAN - 1)) for i in range(SLIP_SCAN)]
+    values = [torque(x) for x in grid]
+    i_max = max(range(len(grid)), key=lambda i: values[i])
+    lo_i, hi_i = max(i_max - 1, 0), min(i_max + 1, len(grid) - 1)
+    a, b = grid[lo_i], grid[hi_i]
+    for _ in range(50):  # golden-section refinement of the maximum
+        c1, c2 = b - 0.618034 * (b - a), a + 0.618034 * (b - a)
+        if torque(c1) < torque(c2):
+            a = c1
+        else:
+            b = c2
+    s_max = 0.5 * (a + b)
+    m_max = torque(s_max)
+    m_start = torque(1.0)
+    warnings: list[dict[str, Any]] = []
+    if m_load > m_max:
+        if on_stall == "raise":
+            raise MechanicalError(
+                "constraint_violation",
+                f"מומנט הבלם {m_load:.4g} N·m גבוה ממומנט הפריצה {m_max:.4g} N·m — המנוע נעצר "
+                "(נקודת עבודה יציבה אינה קיימת)",
+                {"M_load": m_load, "M_max": m_max, "s_at_M_max": s_max},
+            )
+        op = at(1.0)
+        op.warnings = [
+            {
+                "code": "stalled",
+                "message": f"המנוע נעצר: מומנט הבלם {m_load:.4g} N·m > מומנט הפריצה "
+                f"{m_max:.4g} N·m. הזרם הוא זרם רוטור נעול.",
+            }
+        ]
+        op.readings[m.id]["M"] = min(m_load, m_start)
+        return op
+    if values[0] >= m_load:
+        # M_load ≤ M(s = 0) can only happen with zero friction and zero brake: ideal no-load.
+        op = at(0.0)
+    else:
+        lo, hi = 0.0, s_max
+        f_lo, f_hi = values[0] - m_load, m_max - m_load
+        side = 0
+        for _ in range(300):  # Illinois (modified regula falsi): bracketed, superlinear
+            x = hi - f_hi * (hi - lo) / (f_hi - f_lo) if f_hi != f_lo else 0.5 * (lo + hi)
+            fx = torque(x) - m_load
+            if abs(fx) <= 1e-12 * max(1.0, m_max) or (hi - lo) <= SLIP_TOL:
+                break
+            if (fx > 0) == (f_hi > 0):
+                hi, f_hi = x, fx
+                if side == 1:
+                    f_lo *= 0.5
+                side = 1
+            else:
+                lo, f_lo = x, fx
+                if side == -1:
+                    f_hi *= 0.5
+                side = -1
+        else:
+            raise MechanicalError("convergence_failure", "איזון המומנטים (חיפוש ההחלקה) לא התכנס")
+        op = at(x)
+    if m_load > m_start + 1e-12:
+        warnings.append(
+            {
+                "code": "cannot_start_under_load",
+                "message": f"מומנט הבלם ({m_load:.4g} N·m) גבוה ממומנט ההתנעה ({m_start:.4g} N·m): "
+                "הנקודה קיימת רק אם המנוע הואץ לפני שהבלם הופעל.",
+            }
+        )
+    op.warnings = warnings + op.warnings
+    # The brake unit displays the torque it applies; in steady state that IS the shaft torque.
+    # The root finder leaves |M_shaft − M_load| ≤ 1e-12·max(1, M_max) — shown as the setting
+    # instead of a meaningless 1e-12 residual (the residual stays visible in internals).
+    op.internals[f"{m.id}.mech"]["balance_residual"] = (
+        torque(op.readings[m.id]["s"] or 0.0) - m_load
+    )
+    op.readings[m.id]["M"] = m_load
+    op.internals[f"{m.id}.mech"] = {
+        **op.internals[f"{m.id}.mech"],
+        "M_max": m_max,
+        "s_at_M_max": s_max,
+        "M_start": m_start,
+    }
+    return op
+
+
+def _electrical(
+    circuit: CircuitModel, equipment: Any, dc: bool, slips: dict[str, float]
+) -> OperatingPoint:
+    built: Built = build(circuit, equipment=equipment, dc=dc, slips=slips)
     sol = solve(built.network)
     readings: dict[str, dict[str, float | None]] = {}
     undefined: dict[str, str] = {}
@@ -122,6 +273,66 @@ def operating_point(
         if meta["phases"] and not any(ph.get("dc") for ph in meta["phases"].values()):
             internals[f"{xid}.total"] = tot
 
+    op_warnings: list[dict[str, Any]] = []
+    for mid, meta in built.motor_internals.items():
+        if meta["dc"]:
+            continue
+        spec = meta["spec"]
+        e, npl = spec.ecm, spec.nameplate
+        slip, f = meta["slip"], meta["f"]
+        tot = {"P_cu1": 0.0, "P_fe": 0.0, "P_ag": 0.0}
+        e_mags = []
+        for X, ph in meta["phases"].items():
+            i1 = _series_current(built.network, sol, f"{mid}#{X}#Z1")
+            i2 = _series_current(built.network, sol, f"{mid}#{X}#Z2") if slip > 0 else 0j
+            ev = sol.vdiff(ph["e"], ph["q"])
+            e_mags.append(abs(ev))
+            p_cu1 = abs(i1) ** 2 * e.R1
+            p_fe = abs(ev) ** 2 / e.R_fe
+            p_ag = abs(i2) ** 2 * e.R2p / slip if slip > 0 else 0.0
+            internals[f"{mid}.{X}"] = {
+                "E": abs(ev),
+                "I1": abs(i1),
+                "I2p": abs(i2),
+                "P_cu1": p_cu1,
+                "P_fe": p_fe,
+                "P_ag": p_ag,
+            }
+            tot["P_cu1"] += p_cu1
+            tot["P_fe"] += p_fe
+            tot["P_ag"] += p_ag
+        n_sync = 120 * f / npl.poles
+        w_sync = 2 * math.pi * n_sync / 60
+        n = n_sync * (1 - slip)
+        w_m = 2 * math.pi * n / 60
+        p_fw = e.P_fw_n * (n / npl.n_n) ** 2
+        m_em = tot["P_ag"] / w_sync if w_sync > 0 else 0.0
+        m_fw = p_fw / w_m if w_m > 0 else 0.0  # standstill: no friction torque modelled
+        p_cu2 = slip * tot["P_ag"]
+        p_mech = (1 - slip) * tot["P_ag"]
+        internals[f"{mid}.total"] = {**tot, "P_cu2": p_cu2}
+        internals[f"{mid}.mech"] = {
+            "s": slip,
+            "n_sync": n_sync,
+            "n": n,
+            "M_em": m_em,
+            "M_fw": m_fw,
+            "P_mech": p_mech,
+            "P_fw": p_fw,
+            "P2": p_mech - p_fw,
+        }
+        # what the brake control unit displays: speed and the torque it holds
+        readings[mid] = {"n": n, "M": m_em - m_fw, "s": slip}
+        spread = (max(e_mags) - min(e_mags)) / max(max(e_mags), 1e-30)
+        if spread > 0.01:
+            op_warnings.append(
+                {
+                    "code": "unbalanced_supply",
+                    "message": f"{mid}: מתחי הליפופים אינם מאוזנים ({spread:.1%}). המודל לכל "
+                    "ליפוף תקף רק להזנה סימטרית; רכיב הסדר השלילי אינו ממודל.",
+                }
+            )
+
     # total active power delivered by AC sources (for power-balance checks)
     p_src = 0.0
     for vs in built.network.vsources:
@@ -138,4 +349,14 @@ def operating_point(
         iterations=sol.iterations,
         cond=sol.cond,
         floating_groups=built.floating_groups,
+        warnings=op_warnings,
     )
+
+
+def operating_point_at_slip(circuit: CircuitModel, equipment: Any, slip: float) -> OperatingPoint:
+    """Electrical steady state at an imposed slip (no torque balance) — for the simulation-only
+    torque–speed characteristic, including its unstable branch that no brake setting reaches."""
+    motors = [c for c in circuit.components if c.type == "motor3"]
+    if len(motors) != 1:
+        raise MechanicalError("unsupported", "the circuit must contain exactly one motor")
+    return _electrical(circuit, equipment, False, {motors[0].id: slip})

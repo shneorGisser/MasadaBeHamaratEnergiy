@@ -47,6 +47,9 @@ function ParamPanel({
         <input className="input" value={comp.label} onChange={(e) => onChange(comp.params, e.target.value)} />
       </label>
       {comp.type === 'transformer3' && <p className="muted small">הפרמטרים נלקחים ממפרט השנאי של הפרויקט (מקור אמת יחיד).</p>}
+      {comp.type === 'motor3' && (
+        <p className="muted small">פרמטרי המנוע נלקחים ממפרט המנוע של הפרויקט. כאן נקבעים רק מומנט הבלם ונעילת הרוטור; ההחלקה נפתרת מאיזון המומנטים.</p>
+      )}
       {ctype?.instrument && <p className="muted small">מכשיר אידיאלי: ללא העמסה, ללא שגיאת דיוק.</p>}
       {(ctype?.params ?? []).map((pd) => {
         const v = comp.params[pd.key] ?? pd.default
@@ -188,7 +191,11 @@ function Editor({
     <div className="stack" style={{ gap: 10 }}>
       <div className="row small">
         <span className="muted">הוסף:</span>
-        {catalog.map((t) => (
+        {catalog
+          // A machine's parameters come from the project's equipment spec, so only the machine
+          // this experiment's circuit already contains is offered.
+          .filter((t) => t.category !== 'machine' || circuit.components.some((c) => c.type === t.type))
+          .map((t) => (
           <button key={t.type} className="btn small" onClick={() => addComponent(t)} data-testid={`add-${t.type}`}>
             {t.label_he}
           </button>

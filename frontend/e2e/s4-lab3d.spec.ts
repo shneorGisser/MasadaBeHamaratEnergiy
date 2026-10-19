@@ -19,6 +19,7 @@ test('S4: 3D bench shows solver readings, variac and switch drive the model, sel
   ).json()
   await expect(page.getByTestId('reading-A')).toHaveText(`${ref.readings.A.I.toFixed(4)} A`)
   await expect(page.getByTestId('reading-V1')).toHaveText('380.0 V')
+  await expect(page.getByTestId('eq-G')).toBeVisible() // first component's label (regression)
   await page.screenshot({ path: 'test-results/s4-lab3d.png', fullPage: false })
 
   // variac to the top of its range (1.25·Un = 475 V) → saturation shows in I0

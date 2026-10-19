@@ -71,7 +71,7 @@ export const he = {
   'status.unsupported': 'לא נתמך',
   'status.constraint_violation': 'הפרת אילוץ',
   'case.U_line_values': 'מתחי קו לסוויפ [V] (מופרדים בפסיק)',
-  'case.I_targets_pu': 'זרמי מטרה ביחס ל-I1n (מופרדים בפסיק)',
+  'case.I_targets_pu': 'זרמי מטרה ביחס לזרם הנקוב (מופרדים בפסיק)',
   'case.max_U_pu': 'מתח מרבי מותר (ביחס ל-Un)',
   'case.I_targets': 'זרמי בדיקה [A] (מופרדים בפסיק)',
   'case.load_kind': 'סוג העומס (R / L / C)',
@@ -81,6 +81,11 @@ export const he = {
   'case.load': 'רכיב העומס',
   'case.load_switch': 'מפסק העומס',
   'case.U_test': 'מתח בדיקת המגר [V]',
+  'case.M_targets': 'מומנטי בלם [N·m] (מופרדים בפסיק)',
+  'case.torque_speed_curve': 'חשב גם אופיין מומנט–מהירות מלא (סימולציה בלבד)',
+  'case.points': 'נקודות עבודה תדר@מומנט [Hz@N·m] (למשל 20@0.64, 35@1.28)',
+  'case.U_boost': 'הגברת מתח בתדר אפס [V] (חוק V/f)',
+  'case.f_start': 'תדר התנעה באינוורטר [Hz]',
   'errors.network': 'השרת אינו זמין. ודא שהשרת רץ ונסה שוב.',
 } as const
 

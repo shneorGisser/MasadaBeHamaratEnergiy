@@ -16,6 +16,9 @@ DIMENSIONS: dict[str, dict[str, float]] = {
     "resistance": {"Ω": 1.0, "mΩ": 1e-3, "kΩ": 1e3, "MΩ": 1e6},
     "dimensionless": {"": 1.0},
     "angle": {"°": 1.0},
+    "speed": {"rpm": 1.0, "rps": 60.0},
+    "torque": {"N·m": 1.0, "mN·m": 1e-3},
+    "frequency": {"Hz": 1.0},
 }
 
 UNIT_DIMENSION: dict[str, str] = {u: d for d, units in DIMENSIONS.items() for u in units}

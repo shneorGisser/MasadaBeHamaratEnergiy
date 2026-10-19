@@ -33,7 +33,7 @@ class Project(Base):
     experiment_id: Mapped[str] = mapped_column(String(100))
     experiment_version: Mapped[int] = mapped_column(Integer)
     # Canonical, versioned domain documents (validated by pydantic before storage).
-    transformer_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    spec_json: Mapped[dict[str, Any]] = mapped_column(JSON)  # equipment spec of the experiment
     circuits_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     notes: Mapped[str] = mapped_column(Text, default="")
     guide_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)

@@ -87,9 +87,9 @@ def test_report_is_immutable_snapshot(client: TestClient) -> None:
         json={"row_index": 0, "quantity": "I0", "value": 0.5, "unit": "A"},
     )
     p = client.get(f"/api/projects/{pid}").json()
-    spec = p["transformer"]
+    spec = p["spec"]
     client.patch(
-        f"/api/projects/{pid}", json={"transformer": {**spec, "ecm": {**spec["ecm"], "R_fe": 999}}}
+        f"/api/projects/{pid}", json={"spec": {**spec, "ecm": {**spec["ecm"], "R_fe": 999}}}
     )
     assert client.get(f"/api/reports/{rep_id}/html").text == html
     snap = client.get(f"/api/reports/{rep_id}").json()["sources"]["snapshot"]

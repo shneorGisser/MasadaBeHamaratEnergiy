@@ -2,28 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Literal
-
+from vel.experiments.common import MCol, MeasureDef
 from vel.experiments.transformer3ph.studies import WINDINGS
 
-
-@dataclass(frozen=True)
-class MCol:
-    key: str
-    label_he: str
-    unit: str  # canonical unit of the column
-
-
-@dataclass(frozen=True)
-class MeasureDef:
-    kind: str
-    columns: tuple[MCol, ...]
-    rows: Literal["free", "fixed"]
-    match: str  # column used to pair with simulated points, or "row"
-    row_labels: tuple[str, ...] = ()
-    condition_keys: tuple[str, ...] = field(default_factory=tuple)
-
+__all__ = ["MCol", "MeasureDef", "MEASURE_DEFS"]
 
 _DC_LABELS = tuple(f"{label} · נקודה {k}" for _, label in WINDINGS for k in (1, 2, 3))
 
