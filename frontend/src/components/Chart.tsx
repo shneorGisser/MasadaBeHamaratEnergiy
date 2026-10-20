@@ -22,22 +22,26 @@ export default function Chart({
   yLabel,
   series,
   height = 260,
+  log = false,
 }: {
   title: string
   xLabel: string
   yLabel: string
   series: Series[]
   height?: number
+  /** logarithmic x and y axes (time–current characteristics); non-positive points are dropped */
+  log?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const xs = Array.from(new Set(series.flatMap((s) => s.points.map((p) => p[0])))).sort((a, b) => a - b)
+    const pts = (s: Series) => (log ? s.points.filter((p) => p[0] > 0 && p[1] > 0) : s.points)
+    const xs = Array.from(new Set(series.flatMap((s) => pts(s).map((p) => p[0])))).sort((a, b) => a - b)
     const data: (number | null)[][] = [xs]
     for (const s of series) {
-      const m = new Map(s.points.map((p) => [p[0], p[1]]))
+      const m = new Map(pts(s).map((p) => [p[0], p[1]]))
       data.push(xs.map((x) => (m.has(x) ? (m.get(x) as number) : null)))
     }
     const width = Math.max(280, el.clientWidth || 480)
@@ -46,7 +50,7 @@ export default function Chart({
         title,
         width,
         height,
-        scales: { x: { time: false } },
+        scales: log ? { x: { time: false, distr: 3 }, y: { distr: 3 } } : { x: { time: false } },
         legend: { live: false },
         axes: [{ label: xLabel }, { label: yLabel }],
         series: [
@@ -70,7 +74,7 @@ export default function Chart({
       ro.disconnect()
       plot.destroy()
     }
-  }, [title, xLabel, yLabel, series, height])
+  }, [title, xLabel, yLabel, series, height, log])
 
   return <div ref={ref} dir="ltr" className="chart" data-testid={`chart-${title}`} />
 }

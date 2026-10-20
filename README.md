@@ -16,6 +16,9 @@ Modules:
   at no load and on load, speed control by extra armature resistance and by field, compound motor; OCC, external
   characteristics with separate / shunt / compound excitation incl. shunt build-up, regulation, parallel with a DC
   network). One machine model fitted to the 2025 reports of both experiments — see `docs/model-dc-machine.md`.
+- **Experiment 8 — testing an electrical installation** (grid voltages, fault-loop impedance against regulation 22,
+  MCB time–current test, RCD and the toroid principle, megger with guard, earth resistance by the 62 % method,
+  earthing-conductor continuity) — see `docs/model-installation.md`.
 
 The planning package (vision, requirements, architecture, validation plan, roadmap) is in the
 project's planning document; `docs/` holds the engineering notes and the test log.

@@ -4,6 +4,7 @@
 * synchronous 2026 — the user's own draft report of experiment 3 (docs/lab-data-2026-exp3.md)
 * synchronous / wound-rotor / DC 2025 — the 2025 reports of experiments 3–6
   (docs/lab-data-2025-exp3.md, docs/lab-data-2025-exp4.md, docs/model-dc-machine.md)
+* installation 2025 — the 2025 report of experiment 8 (docs/model-installation.md)
 """
 
 from __future__ import annotations
@@ -654,9 +655,60 @@ DC_GEN_2025 = Dataset(
     ),
 )
 
+# --------------------------------------------------------------------------- experiment 8
+
+INSTALL_2025 = Dataset(
+    "installation_2025",
+    "installation",
+    "דוח 2025 — ניסוי 8 (בדיקות במתקן)",
+    "טבלאות בכתב יד בדוח (עמ׳ 5 ו-10); שאר הטבלאות בדוח ריקות",
+    (
+        _t(
+            "grid_voltages",
+            "מתחי רשת המעבדה (עמ׳ 5)",
+            "U:V",
+            [(234,), (234,), (235,), (405,), (407,), (405,)],
+        ),
+        _t(
+            "fault_loop",
+            "לולאת התקלה ברשת המעבדה (עמ׳ 5)",
+            "Z:Ω",
+            [(0,), (0,), (0,), (0.16,), (0.16,), (0.15,), (0.12,)],
+            note="היחידה לא נרשמה; הוזן כ-Ω (תצוגת Z של MI 3125). L-N נרשם 0 בשלוש הפאזות",
+            row_notes={i: "0 אינו אפשרי: הלולאה כוללת מוליך פאזה (≥ ½·Z L1-L2)" for i in range(3)},
+        ),
+        _t(
+            "mcb_trip",
+            "בדיקת מא״ז (עמ׳ 10)",
+            "In:A I:A t:s",
+            [
+                (1, 4.9, 2.57),
+                (1, 3.3, 8.1),
+                (3, 18.4, 2.8),
+                (3, 12.7, 3.8),
+                (3, 8.3, 9.8),
+                (6, 45, 2.2),
+                (6, 41, 1.81),
+                (6, 38, 2.02),
+                (6, 18, 12.5),
+            ],
+            note="שורות: 'סוג מא״ז [A]', 'זמן עד קפיצה', 'זרם הקפיצה'. הוזנו משמאל לימין כפי "
+            "שנכתבו; סדר הביצוע בפועל לא נרשם",
+        ),
+    ),
+)
+
 DATASETS: dict[str, Dataset] = {
     d.id: d
-    for d in (TRANSFORMER_2025, SYNC_2026, SYNC_2025, WOUND_2025, DC_MOTOR_2025, DC_GEN_2025)
+    for d in (
+        TRANSFORMER_2025,
+        SYNC_2026,
+        SYNC_2025,
+        WOUND_2025,
+        DC_MOTOR_2025,
+        DC_GEN_2025,
+        INSTALL_2025,
+    )
 }
 
 

@@ -99,6 +99,7 @@ export default function RunView({ run }: { run: Run }) {
             ? axisLabel(tb.columns, c.y).replace(/^[^[]*/, [c.y, c.y2, c.y3].map((k) => axisLabel(tb.columns, k ?? '').replace(/ \[.*\]$/, '')).join(', ') + ' ')
             : axisLabel(tb.columns, c.y),
           series: curveSeries(c, [{ label: 'סימולציה', kind: 'sim', rows: tb.rows }], tb.columns),
+          log: c.log ?? false,
         },
       ]
     })
@@ -161,7 +162,7 @@ export default function RunView({ run }: { run: Run }) {
         <div className="grid-2">
           {charts.map((c) => (
             <section key={c.id} className="card">
-              <Chart title={c.title} xLabel={c.xLabel} yLabel={c.yLabel} series={c.series} />
+              <Chart title={c.title} xLabel={c.xLabel} yLabel={c.yLabel} series={c.series} log={c.log} />
             </section>
           ))}
         </div>

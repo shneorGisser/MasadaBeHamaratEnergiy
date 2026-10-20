@@ -16,6 +16,5 @@ Order agreed with the user on 2026-10-20. Done items move to `test-log.md`.
 4. ~~Word export of the report~~ Done: `services/report_docx.py`.: Hebrew RTL, David 11, line spacing 1.15, MATLAB/Python code in an appendix.
 5. ~~Hysteresis (falling OCC branch)~~ Done: `F_h` for the DC machine (fitted); for the synchronous machine the data do not resolve one, so `F_h` = 0 — for the synchronous and DC machines.
 6. 3D bench modelled on the real equipment. Waits for the photos.
-7. Experiment 8 (installation testing: RCD, loop impedance, earthing). The manual is available;
-   nothing is started without approval.
+7. ~~Experiment 8 (installation testing)~~ Done: module `installation`, see `docs/model-installation.md`. RCD, insulation, earth and continuity run on assumed values until the lab measures them.
 8. Cloud deployment. **Ready:** CI builds the image and smoke-tests it against PostgreSQL 16 on every push. **Left:** the deployment itself needs the user's Google Cloud account (`docs/deploy-cloud-run.md`).

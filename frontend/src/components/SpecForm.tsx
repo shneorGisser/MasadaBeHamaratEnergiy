@@ -4,10 +4,10 @@ import { api } from '../api/client'
 import { useUpdateProject } from '../api/hooks'
 import type { EquipmentSpec, Project, Provenance } from '../api/types'
 import { fmt } from '../format'
-import { t } from '../i18n'
+import { t, type MessageKey } from '../i18n'
 import { ErrorBox } from './ErrorBox'
 
-type Section = 'nameplate' | 'ecm' | 'occ' | 'insulation'
+type Section = 'nameplate' | 'ecm' | 'occ' | 'network' | 'mcb' | 'rcd' | 'insulation' | 'earth'
 interface FieldDef {
   section: Section
   key: string
@@ -61,6 +61,60 @@ const DC_FORM: FormDef = {
   ],
   modelNote:
     'מודל: E = (n/n_ref)·OCC(F), F = I_f + ρ_s·I_s − k_ar·|I_a| + F_res; מתח ההדקים U = E − I_a·R_a − ΔU_brush. מחולל מקבילי נבנה מהשטף השיורי, ולכן חיבור הפוך של העירור או התנגדות מעל הקריטית מונעים בנייה. אין היסטרזיס.',
+}
+
+const CURVES = ['B', 'C', 'D'].map((c) => ({ value: c, label: `אופיין ${c}` }))
+
+const INSTALL_FORM: FormDef = {
+  fields: [
+    { section: 'network', key: 'U0', label: 'מתח פאזה נקוב U0', unit: 'V' },
+    { section: 'network', key: 'U1', label: 'U L1-N בפועל', unit: 'V' },
+    { section: 'network', key: 'U2', label: 'U L2-N בפועל', unit: 'V' },
+    { section: 'network', key: 'U3', label: 'U L3-N בפועל', unit: 'V' },
+    { section: 'network', key: 'Z_L', label: 'Z_L מוליך פאזה + מקור (לפאזה)', unit: 'Ω' },
+    { section: 'network', key: 'Z_N', label: 'Z_N מוליך האפס', unit: 'Ω' },
+    { section: 'network', key: 'Z_PE', label: 'Z_PE מסלול מוליך ההגנה', unit: 'Ω' },
+    { section: 'network', key: 'In_prot', label: 'זרם נקוב של המא״ז המגן', unit: 'A' },
+    { section: 'network', key: 'curve_prot', label: 'אופיין המא״ז המגן', unit: '', choices: CURVES },
+    { section: 'network', key: 't_disc', label: 'זמן ניתוק נדרש (תקנה 22)', unit: 's' },
+    { section: 'mcb', key: 'curve', label: 'אופיין המא״זים הנבדקים', unit: '', choices: CURVES },
+    { section: 'mcb', key: 'tau', label: 'τ קבוע זמן תרמי', unit: 's' },
+    { section: 'mcb', key: 'k_t', label: 'k_t סף תרמי (1.13–1.45)', unit: '×In' },
+    { section: 'mcb', key: 'k_m', label: 'k_m סף מגנטי', unit: '×In' },
+    { section: 'mcb', key: 't_mag', label: 'זמן שחרור מגנטי', unit: 's' },
+    { section: 'rcd', key: 'I_dn', label: 'IΔn זרם דלף נקוב', unit: 'A' },
+    { section: 'rcd', key: 'k_trip', label: 'זרם ניתוק בפועל (חלק מ-IΔn)', unit: '' },
+    { section: 'rcd', key: 't0', label: 'זמן המנגנון', unit: 's' },
+    { section: 'rcd', key: 't1', label: 'תוספת זמן בסף הניתוק', unit: 's' },
+    { section: 'rcd', key: 't_delay', label: 'השהיה (סוג S; 0 = רגיל)', unit: 's' },
+    { section: 'rcd', key: 'R_body', label: 'התנגדות גוף האדם', unit: 'Ω' },
+    { section: 'insulation', key: 'R_pf', label: 'ראשוני – ערכה (נפחית)', unit: 'MΩ' },
+    { section: 'insulation', key: 'R_sf', label: 'משני – ערכה (נפחית)', unit: 'MΩ' },
+    { section: 'insulation', key: 'R_ps', label: 'ראשוני – משני (נפחית)', unit: 'MΩ' },
+    { section: 'insulation', key: 'R_su', label: 'התנגדות פני הבידוד (לכל זוג)', unit: 'MΩ' },
+    { section: 'insulation', key: 'C_nF', label: 'קיבול הבידוד (לכל זוג)', unit: 'nF' },
+    { section: 'insulation', key: 'R_s_kohm', label: 'התנגדות פנימית של המגר', unit: 'kΩ' },
+    { section: 'insulation', key: 'display_max', label: 'גבול התצוגה של המגר', unit: 'MΩ' },
+    { section: 'insulation', key: 'R_min', label: 'ערך מינימלי מותר', unit: 'MΩ' },
+    { section: 'earth', key: 'rho', label: 'ρ התנגדות סגולית של הקרקע', unit: 'Ω·m' },
+    { section: 'earth', key: 'rod_L', label: 'אורך מוט ההארקה', unit: 'm' },
+    { section: 'earth', key: 'rod_d', label: 'קוטר המוט', unit: 'm' },
+    { section: 'earth', key: 'U_touch_max', label: 'מתח מגע מותר', unit: 'V' },
+    { section: 'earth', key: 'pe_L', label: 'אורך מוליך ההארקה', unit: 'm' },
+    { section: 'earth', key: 'pe_A', label: 'חתך מוליך ההארקה', unit: 'mm²' },
+    { section: 'earth', key: 'R_contact', label: 'התנגדות מגע בהדקים', unit: 'Ω' },
+    { section: 'earth', key: 'R_pe_max', label: 'התנגדות רציפות מותרת', unit: 'Ω' },
+  ],
+  derived: [
+    { key: 'Z_LPE', label: 'Z לולאת L-PE', unit: 'Ω', digits: 3 },
+    { key: 'I_pf_LPE', label: 'זרם קצר צפוי L-PE', unit: 'A' },
+    { key: 'Z_max', label: 'Z מרבי מותר (ניתוק מגנטי)', unit: 'Ω', digits: 3 },
+    { key: 'I_5s', label: 'זרם לניתוק תרמי ב-5 s (מקור)', unit: '×In', digits: 3 },
+    { key: 'R_g', label: 'התנגדות מוט ההארקה', unit: 'Ω' },
+    { key: 'R_pe', label: 'התנגדות מוליך ההארקה', unit: 'Ω', digits: 4 },
+  ],
+  modelNote:
+    'מודל: לולאות = סכום טורי של מוליכי פאזה, אפס ו-PE. מא״ז: דו-מתכת מסדר ראשון (τ, k_t) ושחרור מגנטי ב-k_m·In. מפסק פחת מנתק כש-|I_L + I_N| ≥ k_trip·IΔn. מגר: R נפחית ‖ R פנים ‖ C. הארקה: מוט בקרקע אחידה.',
 }
 
 /** One form definition per experiment; the backend validates the same fields (single source). */
@@ -140,6 +194,7 @@ const FORMS: Record<string, FormDef> = {
   },
   dc_motor: DC_FORM,
   dc_generator: DC_FORM,
+  installation: INSTALL_FORM,
   wound_rotor: {
     fields: [
       { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },
@@ -252,12 +307,17 @@ function fromDraft(form: FormDef, base: EquipmentSpec, d: Draft, provenance: Pro
   return out
 }
 
-const SECTION_TITLE: Record<Section, 'spec.nameplate' | 'spec.ecm' | 'spec.occ' | 'spec.insulation'> = {
+const SECTION_TITLE: Record<Section, MessageKey> = {
   nameplate: 'spec.nameplate',
   ecm: 'spec.ecm',
   occ: 'spec.occ',
+  network: 'spec.network',
+  mcb: 'spec.mcb',
+  rcd: 'spec.rcd',
   insulation: 'spec.insulation',
+  earth: 'spec.earth',
 }
+const SECTIONS = Object.keys(SECTION_TITLE) as Section[]
 
 export default function SpecForm({ project }: { project: Project }) {
   const form = FORMS[project.experiment_id]
@@ -320,7 +380,7 @@ function SpecFormInner({ project, form }: { project: Project; form: FormDef }) {
         {presetMsg && <span className="badge warn">{presetMsg}</span>}
       </div>
       <div className="grid-2">
-        {(['nameplate', 'ecm', 'occ', 'insulation'] as Section[]).filter((sec) => form.fields.some((f) => f.section === sec)).map((sec) => (
+        {SECTIONS.filter((sec) => form.fields.some((f) => f.section === sec)).map((sec) => (
           <section key={sec} className="card stack">
             <h2>{t(SECTION_TITLE[sec])}</h2>
             <div className="grid-2" style={{ gap: 10 }}>

@@ -100,8 +100,20 @@ export interface DCSpec {
   insulation: Record<string, number>
 }
 
+/** Experiment 8: the supply, its protective devices, a megger test object and an earth rod. */
+export interface InstallSpec {
+  schema_version: 1
+  provenance: Provenance
+  provenance_note: string
+  network: Record<string, number | string>
+  mcb: Record<string, number | string>
+  rcd: Record<string, number>
+  insulation: Record<string, number>
+  earth: Record<string, number>
+}
+
 /** Equipment spec of whichever experiment the project belongs to. */
-export type EquipmentSpec = TransformerSpec | MotorSpec | SyncSpec | WoundSpec | DCSpec
+export type EquipmentSpec = TransformerSpec | MotorSpec | SyncSpec | WoundSpec | DCSpec | InstallSpec
 
 export interface Experiment {
   id: string
@@ -182,6 +194,8 @@ export interface Curve {
   table?: string
   /** split the points into one series per value of this column (e.g. frequency) */
   group?: string
+  /** logarithmic axes (time–current characteristics) */
+  log?: boolean
 }
 
 export interface RunResult {

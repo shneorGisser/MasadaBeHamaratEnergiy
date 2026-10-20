@@ -209,3 +209,21 @@ CI green on 41d304a, both jobs: `check` and the new `container`.
   - `scripts/smoke-container.sh` checks UI served, simulation at the 2025 points (median
     error 0.26 %), Word export and wiring guide.
   - Earlier, `docker build` was listed as "not tested".
+
+## Experiment 8 — installation tests (2026-10-20)
+- Backend `test_installation.py` I1–I10:
+  - I1: line voltages predicted from the phase voltages, within 1.5 V of the 2025 report. This
+    is a real prediction.
+  - I2–I3: loop impedances and MCB times. These are fit regressions; the MCB scatter is ±24 %.
+    The report's L-N = 0 readings are flagged as physically impossible.
+  - I4–I8: IEC 60898-1 points, the RCD criteria and the toroid principle, megger charging /
+    guard / display limit, the 62 % rule (exact far from the rod, drifting near it), and the
+    continuity and regulation-22 criteria.
+  - I9–I10: every study for every preset, and the API journey (import 2025 → simulate →
+    compare, report HTML + Word, backup, explicit 422 without r13).
+- Playwright `s13-installation`: MCB run on log axes, 2025 import and compare (0 unmatched),
+  loop warnings ×3, RCD principle table, spec form. Screenshots inspected.
+- New units: time (s, ms, min) and length (m, cm, km). The measurement analysis now also shows
+  its warnings when a table has no derived columns.
+- **Not tested against data:** RCD, insulation, earth and continuity. Their spec values are
+  assumed because the 2025 tables are empty.

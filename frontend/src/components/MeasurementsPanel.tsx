@@ -523,7 +523,7 @@ function ComparisonView({ cmp, view }: { cmp: Comparison; view: MSetView }) {
         <div className="grid-2">
           {charts.map((c) => (
             <section key={c.id} className="card">
-              <Chart title={c.title_he} xLabel={label(c.x)} yLabel={label(c.y)} series={c.series} />
+              <Chart title={c.title_he} xLabel={label(c.x)} yLabel={label(c.y)} series={c.series} log={c.log ?? false} />
             </section>
           ))}
         </div>
@@ -598,11 +598,11 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
         {view.data && <MeasurementTable key={view.data.set.id} view={view.data} onSaved={onSaved} />}
       </section>
 
-      {view.data && (view.data.analysis.parameters.length > 0 || view.data.derived_columns.length > 0) && (
+      {view.data && (view.data.analysis.parameters.length > 0 || view.data.derived_columns.length > 0 || view.data.analysis.warnings.length > 0) && (
         <section className="card stack">
           <h2>ניתוח המדידות (אותן משוואות כמו בסימולציה)</h2>
-          {view.data.analysis.warnings.map((w) => (
-            <div key={w.code} className="alert warn small">
+          {view.data.analysis.warnings.map((w, i) => (
+            <div key={`${w.code}-${i}`} className="alert warn small" data-testid="analysis-warning" data-code={w.code}>
               {w.message}
             </div>
           ))}
