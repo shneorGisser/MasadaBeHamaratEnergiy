@@ -12,7 +12,7 @@ Modelica Standard Library (BSD-3) and motulator (MIT); the solver is SciPy `solv
 | T1.1 | Induction motor, direct-on-line start (5th-order dq, synchronous frame) | **done** |
 | T1.2 | Star-delta start, wound-rotor starter steps (event-segmented integration) | **done** |
 | T1.3 | DC machine: start through a starter, shunt-generator voltage build-up (using the fitted OCC) | **done** |
-| T1.4 | Transformer energisation and inrush (saturation curve + remanence, switching angle) | |
+| T1.4 | Transformer energisation and inrush (saturation curve + remanence, switching angle) | **done** |
 | T1.5 | Synchronous machine: sudden 3-phase short circuit (checked against the analytic IEEE 115 envelope), synchronisation | |
 | T1.6 | Inverter-fed motor (average model, V/f ramp) | |
 
@@ -151,3 +151,38 @@ backwards for a few rpm.
   * the starter halves the inrush;
   * the speed never goes negative.
 * **TD4:** the studies report their assumptions, and the engines agree.
+
+## T1.4 — transformer energisation (inrush)
+
+`vel/engine/transient/transformer.py`, study `inrush` (experiment 1). Per-limb bank model,
+secondary open, states i_k (series current) and λ_k (limb flux).
+
+* **Star primary without a neutral (the lab feed).** Σi = 0, so the star point is solved
+  algebraically. A delta primary has each winding across its line voltage.
+* **Magnetising curve.** i_m(λ) = λ/L_m0·(1 + c'·|λ/λ_n|^n), the same shape as the
+  steady-state X_m(E). c' is chosen so that the fundamental at rated flux equals the
+  steady-state magnetising current (the steady state is a describing function, the
+  instantaneous curve is not).
+* **Remanence.** The initial flux pattern is (+r, −r, 0)·λ_n on the single-valued curve, i.e.
+  no hysteresis loop. With no hysteresis loss, the decay is somewhat slower than measured.
+
+**A physical finding the tests pin down.** With a star primary WITHOUT a neutral, the
+third-harmonic magnetising current cannot flow. The flux is then not sinusoidal, and the
+fundamental of the no-load current is 3.7 % higher than the phasor model, which assumes
+sinusoidal flux. With the neutral connected the two engines agree to 0.16 %; with a linear
+core they agree exactly. The study reports this as `I0_check`.
+
+**Tests (`test_transient_transformer.py`):**
+
+* **TT1:** with a linear core, the no-load current equals the phasor model (1e-4).
+* **TT2:** with the saturating core and a neutral, it agrees within 0.5 %; without a neutral
+  it differs by more than 1 %.
+* **TT3:**
+  * switching phase A at its voltage peak gives no inrush (< 1.5× the steady no-load peak);
+  * at the voltage zero the inrush is more than 5× larger;
+  * remanence in the same direction adds more than another 50 %.
+* **TT4:** the study: the default case (60 % remanence, switching at the zero) gives an inrush
+  of about 13× the rated peak current and 99× the no-load peak, decaying within about 0.26 s.
+
+There is no measured inrush yet. The external check is the IPST 2011 inrush benchmark
+(Chiesa et al.).

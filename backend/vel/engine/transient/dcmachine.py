@@ -86,6 +86,7 @@ def shunt_buildup(
         ]
 
     t_eval = np.arange(0.0, t_end + 0.5 * dt_out, dt_out)
+    t_eval = np.minimum(t_eval, t_end)  # float rounding must not overshoot the span
     sol = solve_ivp(rhs, (0.0, t_end), [0.0], method="Radau", t_eval=t_eval, rtol=1e-8, atol=1e-9)
     if not sol.success:
         raise RuntimeError(f"transient solver failed: {sol.message}")

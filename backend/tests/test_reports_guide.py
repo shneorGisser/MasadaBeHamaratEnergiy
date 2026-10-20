@@ -44,7 +44,7 @@ def test_guide_progress_follows_data(client: TestClient) -> None:
         "/api/projects", json={"name": "G", "experiment_id": "transformer3ph"}
     ).json()["id"]
     g = client.get(f"/api/projects/{pid}/guide").json()
-    assert g["done"] == 0 and g["total"] == 2 + 6 * 4 + 1
+    assert g["done"] == 0 and g["total"] == 2 + 7 * 4 + 1
     ids = [s["id"] for s in g["steps"]]
     assert ids[0] == "safety" and ids[-1] == "report"
     # data-driven steps cannot be ticked by a click

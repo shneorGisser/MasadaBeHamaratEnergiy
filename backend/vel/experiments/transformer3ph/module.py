@@ -92,6 +92,8 @@ def matching_case(
         cur = [rows[i].get("I") for i in range(min(3, len(rows)))]
         targets = [float(x) for x in cur if isinstance(x, (int, float)) and x > 0]
         return {"I_targets": targets or [1.0, 2.0, 3.0]}
+    if kind == "inrush":
+        return {"U_line": None, "angle_deg": 0.0, "remanence": 0.6, "t_end": 0.5}
     return {"U_test": 500.0}
 
 

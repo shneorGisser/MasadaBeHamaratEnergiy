@@ -13,6 +13,17 @@ MEASURE_DEFS: dict[str, MeasureDef] = {
     d.kind: d
     for d in [
         MeasureDef(
+            "inrush",
+            (
+                MCol("I_peak", "שיא זרם הכניסה (סקופ)", "A"),
+                MCol("I0_peak", "שיא זרם הריקם", "A"),
+                MCol("t_decay", "זמן דעיכה", "s"),
+            ),
+            "fixed",
+            "row",
+            row_labels=("חיבור לרשת",),
+        ),
+        MeasureDef(
             "no_load",
             (
                 MCol("U1L", "U1 קווי", "V"),

@@ -28,6 +28,7 @@ from vel.experiments.common import undefined_warnings as _undefined_warnings
 from vel.experiments.common import with_param as _with_param
 from vel.experiments.transformer3ph import analysis, derive, templates
 from vel.experiments.transformer3ph.spec import TransformerSpec
+from vel.experiments.transformer3ph.transient import InrushCase, run_inrush
 
 MODEL_VERSION = "mna-phasor-1.0+xfmr-T-sat-1.0"
 
@@ -667,6 +668,23 @@ STUDIES: dict[str, StudyDef] = {
 }
 
 
+STUDIES["inrush"] = StudyDef(
+    "inrush",
+    "חיבור לרשת: זרם כניסה (סימולציה בזמן)",
+    "הרחבה: מדוע מבטח השנאי חייב להיות איטי",
+    InrushCase,
+    lambda spec: {
+        "U_line": None,
+        "angle_deg": 0.0,
+        "remanence": 0.6,
+        "t_end": 0.5,
+        "neutral": False,
+    },
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(
     kind: str, spec: TransformerSpec, circuit_doc: Any, case_doc: dict[str, Any]
 ) -> Outcome:
@@ -684,6 +702,9 @@ def execute(
         if kind == "insulation":
             assert isinstance(case, InsulationCase)
             return run_insulation(spec, case)
+        if kind == "inrush":
+            assert isinstance(case, InrushCase)
+            return run_inrush(spec, case)
         if kind == "dc_resistance":
             assert isinstance(case, DcResistanceCase)
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}

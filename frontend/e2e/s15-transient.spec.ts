@@ -73,3 +73,18 @@ test('T3: DC — shunt generator build-up and motor start through the armature s
   await expect(view.getByRole('table', { name: 'אירועי מיתוג' }).locator('tbody tr')).toHaveCount(2)
   await page.screenshot({ path: 'test-results/t3-motor.png', fullPage: true })
 })
+
+test('T4: transformer inrush — three line currents and limb fluxes', async ({ page }) => {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill('T4 זרם כניסה')
+  await page.locator('select[name="experiment"]').selectOption('transformer3ph')
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-experiment')).toBeVisible()
+  await openTab(page, /זרם כניסה/)
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', /success/, { timeout: 30_000 })
+  await expect(view.locator('[data-param="I_peak_pu_rated"]')).toBeVisible()
+  await expect(view.locator('.chart canvas')).toHaveCount(2)
+  await page.screenshot({ path: 'test-results/t4-inrush.png', fullPage: true })
+})
