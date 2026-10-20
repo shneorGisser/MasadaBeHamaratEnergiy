@@ -184,3 +184,28 @@ Command: `scripts/check.sh` → ALL CHECKS PASSED (Playwright 21)
   report_2025; DC motor conditions imported and edited.
 - Limits: detectors are heuristics (thresholds documented in the module); a finding is a hypothesis to check
   against the lab record, never an automatic correction.
+
+## Backlog 3–5, 8 (2026-10-20)
+CI green on 41d304a, both jobs: `check` and the new `container`.
+- **Wiring guide** (`services/wiring.py`, test_wiring, s12-wiring):
+  - Every one of the 68 template circuits is covered: each cable appears exactly once, and the
+    voltage leads come last.
+  - Current paths are traced from + / L1 through the series instruments to the machine, then
+    the returns and the star or series bridges.
+  - IEC supply colours, instrument polarity advice, and the cable currently guided is
+    highlighted on the schematic and on the 3D bench.
+- **Word report** (`services/report_docx.py`, test_report_docx, s5):
+  - Hebrew RTL paragraphs and tables, David 11, line spacing 1.15, 8 pt after, repeating
+    table headers.
+  - Includes the automatic explanations and a MATLAB appendix that redraws the curves.
+  - Checked visually after conversion to PDF with LibreOffice. David is not installed there,
+    so a fallback font was used.
+- **Hysteresis:** `F_h` (descending-branch MMF shift 4·F_h·x(1−x)).
+  - DC machine: fitted to 6/2.3; the falling-branch rms drops from 5.4 V to 1.6 V (test D13,
+    a fit regression).
+  - Synchronous machine: the tables do not resolve a hysteresis, so F_h = 0 and the run warns.
+- **Container:**
+  - CI builds the Dockerfile and runs the image against a PostgreSQL 16 service.
+  - `scripts/smoke-container.sh` checks UI served, simulation at the 2025 points (median
+    error 0.26 %), Word export and wiring guide.
+  - Earlier, `docker build` was listed as "not tested".
