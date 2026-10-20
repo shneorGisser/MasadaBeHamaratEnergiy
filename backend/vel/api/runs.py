@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
+from sqlalchemy.orm import defer
 
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
@@ -173,7 +174,12 @@ def list_runs(
     project_id: str, session: SessionDep, study_kind: str | None = None
 ) -> list[RunSummary]:
     load_project(session, project_id)
-    q = select(SimulationRun).where(SimulationRun.project_id == project_id)
+    # the result payload (a transient run carries thousands of samples) is not needed for a list
+    q = (
+        select(SimulationRun)
+        .options(defer(SimulationRun.result))
+        .where(SimulationRun.project_id == project_id)
+    )
     if study_kind:
         q = q.where(SimulationRun.study_kind == study_kind)
     rows = session.scalars(q.order_by(SimulationRun.created_at.desc())).all()

@@ -18,3 +18,51 @@ Order agreed with the user on 2026-10-20. Done items move to `test-log.md`.
 6. 3D bench modelled on the real equipment. Waits for the photos.
 7. ~~Experiment 8 (installation testing)~~ Done: module `installation`, see `docs/model-installation.md`. RCD, insulation, earth and continuity run on assumed values until the lab measures them.
 8. Cloud deployment. **Ready:** CI builds the image and smoke-tests it against PostgreSQL 16 on every push. **Left:** the deployment itself needs the user's Google Cloud account (`docs/deploy-cloud-run.md`).
+
+## From the external review (Gemini, 2026-10-20) — checked against the code
+
+Accepted and done:
+* Build output tracked in git (`backend/build/`, `*.egg-info`, an old snapshot with only
+  experiment 1). Untracked, and ignored in `.gitignore` and `.dockerignore`.
+* The run list loaded every run's full result. It is now deferred, which matters for
+  transient runs with thousands of samples.
+
+Accepted, queued (after the time-domain steps T1.4–T1.6):
+1. Scope tools in the charts: Δt/ΔY cursors, RMS over a window, FFT/THD of a trace.
+2. Charts in the Word report. Today it has tables and the MATLAB appendix; the curves are
+   only in HTML.
+3. Winding temperature: R(T) = R20·(1 + α_Cu·(T − 20 °C)) as a spec field, for the load tests.
+4. "Calibrate the model to my measurements": turn the fit scripts into a service on a
+   measurement set.
+5. Front-end unit tests (Vitest) for curves.ts, CurrentEdge, PhasorDiagram, SpecForm. Split
+   LabBench3D into equipment/instrument files.
+6. Move `experiments/installation/physics.py` to `engine/`, so all physics lives in the engine.
+7. Wiring check of a student's own circuit against the template, by comparing nets (the
+   union-find `nets()` already exists in the front end and the back end).
+
+Checked and rejected, or already the case:
+* "MNA has no nonlinear iteration": wrong. The magnetising branch is solved iteratively
+  (`NonlinearShunt`, `ConvergenceError`). Rectifiers are not supported; that is out of the
+  course's scope.
+* "Machines are linear, 15–25 % error at high field": wrong. The DC and synchronous OCCs
+  saturate and are fitted to the 2025/2026 data, and the transformer magnetising branch
+  saturates.
+* Automatic Gmin stepping: rejected. It turns a wrong circuit (a floating part, a
+  source/ammeter loop) into a plausible-looking answer. The project's rule is that failures
+  are explicit. Floating parts are already pinned and reported (`floating_groups`), and
+  source loops are explicit errors.
+* "Measured points are not overlaid on the model curves": they already are, in every
+  comparison view.
+* "Brush drop not modelled": it is, in the DC machine (U_b·tanh). Slip-ring brushes of the
+  wound rotor carry small currents, so the effect there is negligible.
+* "Unbalanced loads / neutral shift": the MNA is a full three-phase abc network, so unbalance
+  is native. Symmetrical-component readings could be added if a lab table needs them.
+* "Transient for only 1 of 6 experiments": out of date. The DC machine is done (T1.3); the
+  transformer and synchronous machine are next (T1.4, T1.5).
+* Renaming `dc_machine/modules.py`: it defines two modules (experiments 5 and 6), so the
+  plural is accurate. Cosmetic.
+* The missing e2e number s6, an English translation, and datasets as JSON instead of typed
+  Python (the Python form is type-checked and tested): low value for a one-course Hebrew tool.
+* Deep-bar effect and saturation of leakage at starting current: real, and listed as not
+  modelled in model-transient.md. It needs a measured locked-rotor test at several
+  frequencies before a model can be fitted.

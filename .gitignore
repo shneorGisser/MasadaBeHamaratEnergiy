@@ -13,3 +13,7 @@ test-results/
 playwright-report/
 coverage/
 .coverage
+# Python build/packaging output (pip install -e . writes these)
+backend/build/
+backend/dist/
+*.egg-info/
