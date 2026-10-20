@@ -51,12 +51,28 @@ class DCOcc(BaseModel):
     I_s: float = Field(gt=0, le=1e3, description="saturation knee [field A]")
     m: float = Field(ge=1, le=50)
     F_res: float = Field(ge=-10, le=10, description="remanence as field-current offset [A]")
+    F_h: float = Field(
+        default=0.0,
+        ge=0,
+        le=10,
+        description="hysteresis: largest MMF shift of the descending branch [field A]",
+    )
 
     def emf(self, f: float) -> float:
         """Signed EMF at n_ref for a resultant MMF of f shunt-field amperes."""
         x = abs(f)
         mag = self.a * x / (1 + (x / self.I_s) ** self.m) ** (1 / self.m)
         return float(math.copysign(mag, f))
+
+    def descending_shift(self, i_f: float, i_f_max: float) -> float:
+        """MMF shift of the descending branch at i_f, coming down from i_f_max: zero at both
+        ends (it starts at the turning point and returns to the remanence) and largest half
+        way — δ = 4·F_h·x·(1 − x), x = i_f / i_f_max. A one-parameter shape, fitted to the
+        2025 DC-machine table; it is not a magnetic hysteresis model (no minor loops)."""
+        if self.F_h <= 0 or i_f_max <= 0:
+            return 0.0
+        x = min(max(i_f / i_f_max, 0.0), 1.0)
+        return 4 * self.F_h * x * (1 - x)
 
 
 class DCInsulation(BaseModel):
@@ -110,7 +126,7 @@ def fitted_lab_dc_machine() -> DCSpec:
             P_rot_n=63.9,
             k_rot=1.0,
         ),
-        occ=DCOcc(n_ref=2000, a=612.0, I_s=0.2912, m=2.571, F_res=0.005),
+        occ=DCOcc(n_ref=2000, a=612.0, I_s=0.2912, m=2.571, F_res=0.005, F_h=0.013),
         insulation=DCInsulation(armature_Mohm=462, shunt_Mohm=999, series_Mohm=999),
     )
 

@@ -299,3 +299,25 @@ def test_D12_api_journey(client: TestClient) -> None:
     assert imp.status_code == 201 and imp.json()["experiment_id"] == "dc_motor"
     presets = client.get("/api/experiments/dc_generator/presets").json()
     assert [x["id"] for x in presets] == ["lab_2025_fit", "assumed_03kw"]
+
+
+def test_D13_descending_occ_branch_reproduces_table_6_2_3() -> None:
+    """Hysteresis shape (one parameter, fitted to this table — a fit regression): the falling
+    branch lies above the rising one in the middle and meets it at both ends."""
+    mod = registry.get("dc_generator")
+    i_f = [0, 0.1, 0.15, 0.17, 0.19, 0.2, 0.22, 0.25, 0.27]
+    down = [7, 86.2, 120.2, 132, 142, 144, 155, 163, 169]
+    circ = templates.generator(2550.0, 0.0, studies.R_OPEN, closed=False).model_dump()
+    out = mod.execute("occ", SPEC, circ, {"n": 2550.0, "If_values": i_f})
+    rows = out.result["tables"][0]["rows"]  # type: ignore[index]
+    sim = [r["E_down"] for r in rows]
+    assert max(abs(a - b) for a, b in zip(sim, down, strict=True)) < 4.0
+    assert rows[0]["E_down"] == pytest.approx(rows[0]["E_up"])  # back to the remanence
+    assert rows[-1]["E_down"] == pytest.approx(rows[-1]["E_up"])  # turning point
+    assert rows[3]["E_down"] > rows[3]["E_up"] + 3
+    assert any(w["code"] == "hysteresis_shape" for w in out.warnings)
+    # without the parameter: one branch and an explicit warning
+    flat = SPEC.model_copy(update={"occ": SPEC.occ.model_copy(update={"F_h": 0.0})})
+    out0 = mod.execute("occ", flat, circ, {"n": 2550.0, "If_values": i_f})
+    assert "E_down" not in out0.result["tables"][0]["rows"][1]  # type: ignore[index]
+    assert any(w["code"] == "no_hysteresis" for w in out0.warnings)

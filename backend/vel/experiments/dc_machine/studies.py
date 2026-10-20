@@ -602,14 +602,24 @@ GEN_COLUMNS = [
 
 def run_occ(spec: DCSpec, circuit: CircuitModel, case: OccCase) -> Outcome:
     base = with_param(_gen(circuit, case.n), "S4", "closed", False)
+    i_max = max(case.If_values)
+    hyst = spec.occ.F_h > 0
     rows = []
     for i_f in case.If_values:
         if i_f <= 0:
-            op = solve(with_param(base, "Rf", "R", R_OPEN), spec, dc=True)
+            c = with_param(base, "Rf", "R", R_OPEN)
         else:
-            op = solve(with_param(base, "Rf", "R", _field_rheostat(base, spec, i_f)), spec, dc=True)
-        row = _gen_row(op)
-        rows.append({"If": row["If"] if i_f > 0 else 0.0, "E_up": row["U1"], "n": case.n})
+            c = with_param(base, "Rf", "R", _field_rheostat(base, spec, i_f))
+        row = _gen_row(solve(c, spec, dc=True))
+        r: dict[str, Any] = {"If": row["If"] if i_f > 0 else 0.0, "E_up": row["U1"], "n": case.n}
+        if hyst:
+            # descending branch: same field current, MMF shifted by the hysteresis offset
+            d = spec.occ.descending_shift(max(i_f, 0.0), i_max)
+            down = spec.model_copy(
+                update={"occ": spec.occ.model_copy(update={"F_res": spec.occ.F_res + d})}
+            )
+            r["E_down"] = _gen_row(solve(c, down, dc=True))["U1"]
+        rows.append(r)
     e0 = rows[0]["E_up"] if case.If_values and case.If_values[0] <= 0 else None
     params = [
         Param(
@@ -623,30 +633,49 @@ def run_occ(spec: DCSpec, circuit: CircuitModel, case: OccCase) -> Outcome:
         ),
         Param("U_n", "מתח נקוב (שלט)", spec.nameplate.U_n, "V", "שלט", "consistent"),
     ]
+    warn = (
+        {
+            "code": "hysteresis_shape",
+            "message": f"ענף הירידה מחושב בהיסט ממ״כ δ = 4·F_h·x(1−x), F_h = {spec.occ.F_h:g} A, "
+            f"x = If/{i_max:g} A (נקודת המפנה = זרם העירור הגדול בטבלה). צורה חד-פרמטרית "
+            "שהותאמה לדוח 2025 — לא מודל היסטרזיס מגנטי",
+        }
+        if hyst
+        else {
+            "code": "no_hysteresis",
+            "message": "במודל אין היסטרזיס (F_h = 0): עקומת הירידה זהה לעקומת העלייה",
+        }
+    )
+    cols = [col("If", "If", "A"), col("E_up", "E בעלייה (מודל)", "V")]
+    if hyst:
+        cols.append(col("E_down", "E בירידה (מודל)", "V"))
+    cols.append(col("n", "n", "rpm"))
     return Outcome(
         status="success_with_warnings",
-        warnings=[
-            {
-                "code": "no_hysteresis",
-                "message": "במודל אין היסטרזיס: עקומת הירידה זהה לעקומת העלייה. במעבדה עקומת "
-                "הירידה גבוהה במעט (מגנטיות שיורית)",
-            }
-        ],
+        warnings=[warn],
         result={
             "tables": [
                 {
                     "id": "readings",
                     "title_he": f"טבלה 2.3 — אופיין ריקם בעירור זר (n = {case.n:g} סל״ד)",
-                    "columns": [
-                        col("If", "If", "A"),
-                        col("E_up", "E (מודל ללא היסטרזיס)", "V"),
-                        col("n", "n", "rpm"),
-                    ],
+                    "columns": cols,
                     "rows": rows,
                 }
             ],
             "parameters": [p.to_json() for p in params],
-            "curves": [{"id": "occ", "title_he": "E = f(If)", "x": "If", "y": "E_up"}],
+            "curves": [{"id": "occ", "title_he": "E↑ = f(If) — ענף העלייה", "x": "If", "y": "E_up"}]
+            + (
+                [
+                    {
+                        "id": "occ_down",
+                        "title_he": "E↓ = f(If) — ענף הירידה",
+                        "x": "If",
+                        "y": "E_down",
+                    }
+                ]
+                if hyst
+                else []
+            ),
         },
     )
 

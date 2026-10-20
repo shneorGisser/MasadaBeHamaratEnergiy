@@ -276,25 +276,35 @@ def run_dc_resistance(
 
 
 HYST = (
-    "עקומת הריקם במודל חד-ערכית: ההיסטרזיס (ענף עלייה מול ירידה) אינו ממודל, ולכן בסימולציה "
-    "Ef↑ = Ef↓. השטף השיורי ממודל כהיסט קבוע בזרם העירור."
+    "עקומת הריקם במודל חד-ערכית (F_h = 0): ההיסטרזיס אינו ממודל, ולכן בסימולציה Ef↑ = Ef↓. "
+    "במדידות 2025 ו-2026 ההפרש בין הענפים (±2–6 V, בשני הכיוונים) אינו גדול מפיזור הקריאה, "
+    "ולכן לא הותאם לו פרמטר. השטף השיורי ממודל כהיסט קבוע בזרם העירור."
 )
 
 
 def run_open_circuit(spec: SyncSpec, circuit: CircuitModel, case: OpenCircuitCase) -> Outcome:
     base = with_param(_gen_base(spec, circuit, case.n_drive), "S", "closed", False)
     rows: list[dict[str, Any]] = []
-    warnings: list[dict[str, Any]] = [{"code": "no_hysteresis", "message": HYST}]
+    hyst = spec.occ.F_h > 0
+    warnings: list[dict[str, Any]] = [] if hyst else [{"code": "no_hysteresis", "message": HYST}]
+    i_max = max(case.If_values) if case.If_values else 0.0
     for k, i_f in enumerate(case.If_values):
         op = _at(base, spec, G__I_f=i_f)
         ef = read(op, case.bindings["Ef"])
+        ef_down = ef
+        if hyst:
+            d = spec.occ.descending_shift(max(i_f, 0.0), i_max)
+            down = spec.model_copy(
+                update={"occ": spec.occ.model_copy(update={"F_res": spec.occ.F_res + d})}
+            )
+            ef_down = read(_at(base, down, G__I_f=i_f), case.bindings["Ef"])
         rows.append(
             {
                 "point": k + 1,
                 "If": i_f,
                 "Ef": ef,
                 "Ef_up": ef,
-                "Ef_down": ef,
+                "Ef_down": ef_down,
                 "f": read(op, case.bindings["f"]),
             }
         )

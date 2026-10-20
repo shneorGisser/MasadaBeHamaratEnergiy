@@ -59,11 +59,27 @@ class OpenCircuitCurve(BaseModel):
     I_s: float = Field(gt=0, le=1e4, description="saturation knee [field A]")
     m: float = Field(ge=1, le=50, description="knee sharpness")
     F_res: float = Field(ge=0, le=100, description="remanence as field-current offset [A]")
+    F_h: float = Field(
+        default=0.0,
+        ge=0,
+        le=10,
+        description="hysteresis: largest MMF shift of the descending branch [field A]",
+    )
 
     def emf(self, f_field: float) -> float:
         """Per-winding EMF magnitude at rated speed for a resultant MMF of |f_field| field A."""
         x = abs(f_field)
         return float(self.a * x / (1 + (x / self.I_s) ** self.m) ** (1 / self.m))
+
+    def descending_shift(self, i_f: float, i_f_max: float) -> float:
+        """MMF shift of the descending branch at i_f, coming down from i_f_max: zero at both
+        ends (it starts at the turning point and returns to the remanence) and largest half
+        way — δ = 4·F_h·x·(1 − x), x = i_f / i_f_max. A one-parameter shape, fitted to the
+        2025 DC-machine table; it is not a magnetic hysteresis model (no minor loops)."""
+        if self.F_h <= 0 or i_f_max <= 0:
+            return 0.0
+        x = min(max(i_f / i_f_max, 0.0), 1.0)
+        return 4 * self.F_h * x * (1 - x)
 
     def d_emf(self, f_field: float) -> float:
         x = abs(f_field)

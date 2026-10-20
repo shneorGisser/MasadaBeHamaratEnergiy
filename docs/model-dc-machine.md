@@ -87,9 +87,23 @@ D1–D3 test the fit against the same data it was made from. They are **regressi
   2058 rpm. This is the largest relative deviation (≈ 13 %). Rotational loss as a constant torque
   is only an approximation: the lab's no-load loss rises slightly with flux.
 
+## Hysteresis (descending OCC branch)
+
+The descending branch is the rising one with the MMF shifted by δ = 4·F_h·x·(1 − x), where
+x = I_f / I_f,max and the turning point is the largest field current of the table.
+
+* The shift is zero at both ends: the branch starts at the turning point and returns to the
+  remanence.
+* F_h = 0.013 A, fitted to the falling column of 6/2.3 at the implied 2550 rpm. The rms error
+  of that column drops from 5.4 V to 1.6 V; test D13 checks it.
+* It is a one-parameter shape, not a magnetic hysteresis model: there are no minor loops and
+  no dependence on the previous excursion.
+* For the synchronous machine the 2025 and 2026 tables do not resolve a hysteresis. The
+  differences between the branches are ±2–6 V, in both directions. F_h therefore stays 0, and
+  the run says so.
+
 ## Not modelled
 
-* Hysteresis: the falling OCC branch is not computed, and the run warns about it.
 * Commutation.
 * Temperature.
 * Transients: starting current, build-up time.
