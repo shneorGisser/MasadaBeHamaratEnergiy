@@ -281,3 +281,10 @@ CI green on 41d304a, both jobs: `check` and the new `container`.
   postponed: the bench has no cable dragging yet, so physics would add a WASM dependency
   without adding behaviour. Revisit with the equipment photos.
 - s4, s10 and s12 pass; screenshots inspected.
+
+## 3D bench lighting (2026-10-20)
+- Studio lighting built from drei `Lightformer` panels inside `Environment`: no HDR download, so
+  it works offline. A `ContactShadows` under the equipment. Both are rendered once and memoised.
+- On a software renderer (SwiftShader / llvmpipe: VMs, CI) they are skipped. Measured: the DC
+  bench test took 25 s with or without them once skipped. With them active on SwiftShader the
+  brake-slider test timed out.

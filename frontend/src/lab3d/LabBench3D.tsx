@@ -1,7 +1,7 @@
-import { Html, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Environment, Html, Lightformer, OrbitControls } from '@react-three/drei'
 import { useQuery } from '@tanstack/react-query'
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { api } from '../api/client'
 import { useProject } from '../api/hooks'
@@ -250,6 +250,34 @@ function Equipment({
   )
 }
 
+/**
+ * Studio lighting built from light panels (soft reflections on the equipment without downloading
+ * an HDR file — the bench must work offline) and a contact shadow under the equipment. Both are
+ * rendered once and memoised: the scene re-renders on every slider step.
+ */
+const Studio = memo(function Studio() {
+  // A software renderer (no GPU: SwiftShader/llvmpipe, e.g. a VM or CI) cannot afford the
+  // environment map at the frame rate of a turning machine; it keeps the plain lights.
+  const gl = useThree((s) => s.gl)
+  const software = useMemo(() => {
+    const ctx = gl.getContext()
+    const ext = ctx.getExtension('WEBGL_debug_renderer_info')
+    const name = String(ext ? ctx.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER))
+    return /swiftshader|llvmpipe|software/i.test(name)
+  }, [gl])
+  if (software) return null
+  return (
+    <>
+      <Environment resolution={64} frames={1}>
+        <Lightformer intensity={2} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[12, 6, 1]} />
+        <Lightformer intensity={0.8} position={[-8, 3, 4]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer intensity={0.8} position={[8, 3, -4]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
+      </Environment>
+      <ContactShadows position={[0, 0.002, 0]} scale={30} opacity={0.45} blur={2.4} far={3} resolution={256} frames={1} />
+    </>
+  )
+})
+
 function Scene({
   circuit,
   live,
@@ -298,8 +326,9 @@ function Scene({
   }
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[4, 8, 5]} intensity={1.2} />
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[4, 8, 5]} intensity={1.0} />
+      <Studio />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} onClick={() => select(null)}>
         <planeGeometry args={[30, 16]} />
         <meshStandardMaterial color="#c9b48f" />
