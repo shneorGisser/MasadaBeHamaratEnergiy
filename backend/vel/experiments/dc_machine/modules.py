@@ -160,6 +160,31 @@ def plausibility(kind: str, rows: Rows) -> list[dict[str, Any]]:
     """Checks a teaching assistant would make by eye. They never change the data."""
     w: list[dict[str, Any]] = []
 
+    if kind == "dc_resistance":
+        # within one winding the three U/I values should agree (the armature's falls slowly
+        # with current because of the brush drop — far less than a misread value)
+        for start, stop in ((0, 3), (3, 6)):
+            pts = [
+                (i, _f(rows[i].get("U")), _f(rows[i].get("I")))
+                for i in range(start, min(stop, len(rows)))
+            ]
+            rs = [(i, u / c) for i, u, c in pts if u is not None and c]
+            if len(rs) < 3:
+                continue
+            med = sorted(x for _, x in rs)[1]
+            for i, rv in rs:
+                if abs(rv / med - 1) > 0.3:
+                    tenfold = any(abs(rv / med / f - 1) < 0.2 for f in (10.0, 0.1))
+                    w.append(
+                        {
+                            "code": "resistance_outlier",
+                            "row": i,
+                            "message": f"שורה {i + 1}: U/I = {rv:.3g} Ω מול ≈ {med:.3g} Ω בשאר "
+                            "הנקודות של אותו ליפוף"
+                            + (" — כנראה נקודה עשרונית שגויה בקריאה" if tenfold else ""),
+                        }
+                    )
+
     if kind == "shunt_load":
         pts = [(i, _f(r.get("If")), _f(r.get("Ia"))) for i, r in enumerate(rows)]
         good = [(i, a, b) for i, a, b in pts if a is not None and b is not None]

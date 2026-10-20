@@ -12,7 +12,9 @@ from vel.api.deps import SessionDep
 from vel.api.projects import load_project
 from vel.api.runs import RunOut, _full, load_run
 from vel.errors import ApiError
+from vel.labdata import by_experiment
 from vel.orm import MeasurementSet
+from vel.services import labdata as labdata_svc
 from vel.services import measurements as ms
 from vel.services import runs as runs_svc
 
@@ -155,3 +157,42 @@ def comparison(
         raise ApiError(422, "project_mismatch", "run and set belong to different projects")
     rows, _ = ms.raw_rows(session, s)
     return ms.compare(session, run, s, rows, reference)
+
+
+class DatasetImport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    study_kind: str | None = None
+    table_index: int | None = Field(default=None, ge=0)
+
+
+@router.get("/experiments/{experiment_id}/datasets")
+def list_datasets(experiment_id: str) -> list[dict[str, Any]]:
+    """Transcribed lab reports (previous years, the user's own) that can be imported."""
+    return [labdata_svc.dataset_json(d) for d in by_experiment(experiment_id)]
+
+
+@router.post("/projects/{project_id}/datasets/{dataset_id}/import", status_code=201)
+def import_dataset(
+    project_id: str, dataset_id: str, body: DatasetImport, session: SessionDep
+) -> dict[str, Any]:
+    p = load_project(session, project_id)
+    sets = labdata_svc.import_dataset(session, p, dataset_id, body.study_kind, body.table_index)
+    return {"sets": [ms.set_json(s) for s in sets]}
+
+
+@router.post("/measurement-sets/{set_id}/probe")
+def probe(set_id: str, session: SessionDep) -> dict[str, Any]:
+    """Simulate the measured points with every parameter set of the experiment and rank them
+    (nothing is persisted: the probe answers "which machine/setup fits this table")."""
+    from vel.services.diagnose import probe_presets
+
+    s = ms.load_set(session, set_id)
+    p = ms.project_of(session, s)
+    rows, _ = ms.raw_rows(session, s)
+    circuit = runs_svc.current_circuit(session, p, s.study_kind)
+    return {
+        "set_id": s.id,
+        "candidates": probe_presets(
+            p.experiment_id, s.study_kind, s.conditions or {}, rows, p.spec_json, circuit
+        ),
+    }

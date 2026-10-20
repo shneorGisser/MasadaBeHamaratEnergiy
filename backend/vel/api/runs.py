@@ -26,6 +26,8 @@ class StudyOut(BaseModel):
     default_case: dict[str, Any]
     variants: list[str]
     editable_circuit: bool
+    # operating conditions a measurement set of this study records (U, If, load kind …)
+    condition_keys: list[str] = []
 
 
 class RunCreate(BaseModel):
@@ -101,6 +103,9 @@ def list_studies(project_id: str, session: SessionDep) -> list[StudyOut]:
             default_case=sd.default_case(spec),
             variants=list(sd.variants),
             editable_circuit=sd.editable_circuit,
+            condition_keys=list(
+                getattr(svc.module_of(p).measure_defs.get(sd.kind), "condition_keys", ())
+            ),
         )
         for sd in studies.values()
     ]

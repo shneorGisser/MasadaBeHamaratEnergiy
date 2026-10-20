@@ -1,10 +1,10 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
-import { mKeys, useComparison, useMeasurementSet, useMeasurementSets, useRuns } from '../api/hooks'
-import type { Comparison, MColumn, MSetView, Run, Study } from '../api/types'
+import { mKeys, useComparison, useMeasurementSet, useMeasurementSets, useProject, useRuns } from '../api/hooks'
+import type { Comparison, Finding, LabDataset, MColumn, MSetView, ProbeCandidate, Run, Study } from '../api/types'
 import { fmt } from '../format'
-import { fmtDate } from '../i18n'
+import { fmtDate, t, type MessageKey } from '../i18n'
 import Chart, { type Series } from './Chart'
 import { ErrorBox } from './ErrorBox'
 import { curveSeries } from './curves'
@@ -145,11 +145,214 @@ function MeasurementTable({ view, onSaved }: { view: MSetView; onSaved: (v: MSet
   )
 }
 
+/** Label of an operating condition of a measurement set (the same words as the study form). */
+function condLabel(k: string): string {
+  const v = t(`case.${k}` as MessageKey)
+  return v === `case.${k}` ? k : v
+}
+/** Conditions are stored as typed: numbers when the text is a number, otherwise the text. */
+function parseCond(v: string): string | number {
+  const n = Number(v)
+  return v.trim() !== '' && Number.isFinite(n) ? n : v
+}
+
+function LoadKindSelect({ value, onChange, name }: { value: string; onChange: (v: string) => void; name: string }) {
+  return (
+    <select className="input" name={name} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="R">R — התנגדותי</option>
+      <option value="L">L — השראותי</option>
+      <option value="C">C — קיבולי</option>
+    </select>
+  )
+}
+
+function ConditionInputs({ keys, value, onChange, prefix }: { keys: string[]; value: Record<string, string>; onChange: (v: Record<string, string>) => void; prefix: string }) {
+  return (
+    <>
+      {keys.map((k) => (
+        <label key={k} className="field">
+          {condLabel(k)}
+          {k === 'load_kind' ? (
+            <LoadKindSelect name={`${prefix}-${k}`} value={value[k] ?? 'R'} onChange={(v) => onChange({ ...value, [k]: v })} />
+          ) : (
+            <input className="input num" style={{ width: 110 }} name={`${prefix}-${k}`} value={value[k] ?? ''} onChange={(e) => onChange({ ...value, [k]: e.target.value })} placeholder="לא נרשם" />
+          )}
+        </label>
+      ))}
+    </>
+  )
+}
+
+function toConditions(keys: string[], v: Record<string, string>): Record<string, string | number> {
+  const out: Record<string, string | number> = {}
+  for (const k of keys) {
+    const x = v[k] ?? (k === 'load_kind' ? 'R' : '')
+    if (x.trim() !== '') out[k] = parseCond(x)
+  }
+  return out
+}
+
+/** Operating conditions of the active set (supply voltage, field current, speed …), editable. */
+function ConditionsEditor({ view, onSaved }: { view: MSetView; onSaved: (v: MSetView) => void }) {
+  const keys = view.definition.condition_keys
+  const initial = Object.fromEntries(keys.map((k) => [k, view.set.conditions[k] === undefined ? '' : String(view.set.conditions[k])]))
+  const [value, setValue] = useState<Record<string, string>>(initial)
+  const [err, setErr] = useState<unknown>(null)
+  const dirty = keys.some((k) => (value[k] ?? '') !== (initial[k] ?? ''))
+  if (!keys.length) return null
+  const save = async () => {
+    setErr(null)
+    try {
+      onSaved(await api.patch<MSetView>(`/api/measurement-sets/${view.set.id}`, { conditions: toConditions(keys, value) }))
+    } catch (e) {
+      setErr(e)
+    }
+  }
+  return (
+    <div className="row" data-testid="set-conditions">
+      <span className="small muted" style={{ alignSelf: 'center' }}>
+        תנאי המדידה:
+      </span>
+      <ConditionInputs keys={keys} value={value} onChange={setValue} prefix="cond" />
+      <button className="btn small" style={{ alignSelf: 'end' }} disabled={!dirty} onClick={() => void save()} data-testid="save-conditions">
+        שמור תנאים
+      </button>
+      {err != null && <ErrorBox error={err} />}
+    </div>
+  )
+}
+
+/** Tables transcribed from real lab reports (previous years, your own) that fit this study. */
+function ImportFromReport({ projectId, study, onImported }: { projectId: string; study: Study; onImported: (id: string) => void }) {
+  const project = useProject(projectId)
+  const exp = project.data?.experiment_id
+  const ds = useQuery({ queryKey: ['datasets', exp], queryFn: () => api.get<LabDataset[]>(`/api/experiments/${exp}/datasets`), enabled: Boolean(exp) })
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [err, setErr] = useState<unknown>(null)
+  const items = (ds.data ?? []).flatMap((d) => d.tables.filter((tb) => tb.study_kind === study.kind).map((tb) => ({ d, tb })))
+  if (!items.length) return null
+  const doImport = async (dsId: string, index: number) => {
+    setBusy(`${dsId}-${index}`)
+    setErr(null)
+    try {
+      const r = await api.post<{ sets: { id: string }[] }>(`/api/projects/${projectId}/datasets/${dsId}/import`, { table_index: index })
+      await qc.invalidateQueries({ queryKey: mKeys.sets(projectId, study.kind) })
+      if (r.sets[0]) onImported(r.sets[0].id)
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+  return (
+    <details className="card" style={{ padding: 10 }} data-testid="import-report">
+      <summary>ייבוא מדוח מעבדה קיים ({items.length})</summary>
+      <p className="muted small">הערכים מוזנים כמדידות רגילות (ניתנים לתיקון, ההיסטוריה נשמרת), וכל ערך מסומן במקורו. פרשנות שמשנה ערך מתועדת בהערת הטבלה.</p>
+      <ul className="stack" style={{ gap: 6, margin: 0, paddingInlineStart: 18 }}>
+        {items.map(({ d, tb }) => (
+          <li key={`${d.id}-${tb.index}`}>
+            <div className="row" style={{ gap: 8 }}>
+              <strong>{d.title_he}</strong>
+              <span>· {tb.label}</span>
+              <span className="muted small">({tb.n_rows} שורות)</span>
+              <button className="btn small" disabled={busy !== null} onClick={() => void doImport(d.id, tb.index)} data-testid={`import-${d.id}-${tb.index}`}>
+                {busy === `${d.id}-${tb.index}` ? 'מייבא…' : 'ייבא כסט מדידות'}
+              </button>
+            </div>
+            {tb.note && <div className="muted small">{tb.note}</div>}
+          </li>
+        ))}
+      </ul>
+      {err != null && <ErrorBox error={err} />}
+    </details>
+  )
+}
+
+function Diagnosis({ findings }: { findings: Finding[] }) {
+  if (!findings.length) return null
+  return (
+    <section className="stack" style={{ gap: 6 }} data-testid="diagnosis">
+      <h3>הסברים אפשריים לפערים</h3>
+      <p className="muted small" style={{ margin: 0 }}>
+        השערות שזוהו אוטומטית מתוך דפוס הפערים — הן לא משנות את הנתונים; כדאי לבדוק כל אחת מול הרישום במעבדה.
+      </p>
+      {findings.map((f, i) => (
+        <div key={`${f.code}-${i}`} className={`alert ${f.severity === 'warn' ? 'warn' : 'info'} small`} data-code={f.code}>
+          {f.message}
+        </div>
+      ))}
+    </section>
+  )
+}
+
+/** Re-simulate the measured points with every parameter set of the experiment and rank them. */
+function Probe({ setId }: { setId: string }) {
+  const [res, setRes] = useState<ProbeCandidate[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<unknown>(null)
+  const run = async () => {
+    setBusy(true)
+    setErr(null)
+    try {
+      setRes((await api.post<{ candidates: ProbeCandidate[] }>(`/api/measurement-sets/${setId}/probe`)).candidates)
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="card stack" data-testid="probe-section">
+      <div className="row">
+        <h2 className="grow">בדיקת הגדרות חלופיות</h2>
+        <button className="btn" onClick={() => void run()} disabled={busy} data-testid="probe">
+          {busy ? 'מריץ…' : 'הרץ את נקודות המדידה עם כל ההגדרות'}
+        </button>
+      </div>
+      <p className="muted small" style={{ margin: 0 }}>
+        מריץ את נקודות העבודה שנמדדו עם ההגדרה הנוכחית ועם כל הגדרה מוכנה של הניסוי (מכונה אחרת, חיבור אחר, התאמה לדוח אחר), בלי לשמור ריצות. הגדרה שמתאימה בבירור טוב יותר מרמזת על מה נמדד בפועל; אפשר לטעון אותה במסך המפרט.
+      </p>
+      {err != null && <ErrorBox error={err} />}
+      {res && (
+        <table className="data" aria-label="הגדרות חלופיות" data-testid="probe-table">
+          <thead>
+            <tr>
+              <th>הגדרה</th>
+              <th>מצב</th>
+              <th className="num">שגיאה יחסית חציונית</th>
+              <th className="num">שגיאה מרבית</th>
+              <th className="num">שורות ללא התאמה</th>
+            </tr>
+          </thead>
+          <tbody>
+            {res.map((c, i) => (
+              <tr key={c.id} data-candidate={c.id} style={i === 0 && c.median_abs_rel_error != null ? { background: 'var(--sim-soft)' } : undefined}>
+                <td>
+                  {c.label_he} {i === 0 && c.median_abs_rel_error != null && <span className="badge ok">הכי מתאימה</span>}
+                </td>
+                <td>
+                  <StatusBadge status={c.status === 'invalid_input' ? 'invalid_input' : c.status} />
+                  {c.error && <div className="muted small">{c.error}</div>}
+                </td>
+                <td className="num">{c.median_abs_rel_error == null ? '—' : pct(c.median_abs_rel_error)}</td>
+                <td className="num">{c.max_abs_rel_error == null ? '—' : pct(c.max_abs_rel_error)}</td>
+                <td className="num">{c.unmatched_rows ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  )
+}
+
 function NewSetForm({ projectId, study, onCreated }: { projectId: string; study: Study; onCreated: (id: string) => void }) {
   const [label, setLabel] = useState('')
   const [date, setDate] = useState('')
   const [instruments, setInstruments] = useState('')
-  const [loadKind, setLoadKind] = useState('R')
+  const condKeys = study.condition_keys ?? (study.kind === 'load' ? ['load_kind'] : [])
+  const [cond, setCond] = useState<Record<string, string>>({})
   const [err, setErr] = useState<unknown>(null)
   const qc = useQueryClient()
   const submit = async (e: FormEvent) => {
@@ -160,7 +363,7 @@ function NewSetForm({ projectId, study, onCreated }: { projectId: string; study:
         label,
         lab_date: date,
         instruments,
-        conditions: study.kind === 'load' ? { load_kind: loadKind } : {},
+        conditions: toConditions(condKeys, cond),
       })
       void qc.invalidateQueries({ queryKey: mKeys.sets(projectId, study.kind) })
       onCreated(v.set.id)
@@ -182,16 +385,7 @@ function NewSetForm({ projectId, study, onCreated }: { projectId: string; study:
         מכשירים
         <input className="input" name="set-instruments" value={instruments} onChange={(e) => setInstruments(e.target.value)} placeholder="דגם, תחום, דיוק" />
       </label>
-      {study.kind === 'load' && (
-        <label className="field">
-          סוג עומס
-          <select className="input" name="set-load-kind" value={loadKind} onChange={(e) => setLoadKind(e.target.value)}>
-            <option>R</option>
-            <option>L</option>
-            <option>C</option>
-          </select>
-        </label>
-      )}
+      <ConditionInputs keys={condKeys} value={cond} onChange={setCond} prefix="set" />
       <button className="btn primary" type="submit" style={{ alignSelf: 'end' }} data-testid="create-set">
         צור סט מדידות
       </button>
@@ -227,6 +421,7 @@ function ComparisonView({ cmp, view }: { cmp: Comparison; view: MSetView }) {
 
   return (
     <div className="stack" data-testid="comparison">
+      <Diagnosis findings={cmp.diagnosis ?? []} />
       <div className="row small">
         <span className="badge meas">מדידה</span>
         <span className="badge sim">סימולציה</span>
@@ -378,6 +573,7 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
         <h2>מדידות אמת מהמעבדה</h2>
         <p className="muted small">ערכים שנמדדו בפועל במעבדה הפיזית. הם מסומנים כמדידה ואינם מתערבבים עם תוצאות סימולציה.</p>
         <NewSetForm projectId={projectId} study={study} onCreated={setSetId} />
+        <ImportFromReport projectId={projectId} study={study} onImported={setSetId} />
         {sets.isError && <ErrorBox error={sets.error} />}
         {(sets.data?.length ?? 0) > 0 && (
           <label className="field">
@@ -393,6 +589,12 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
           </label>
         )}
         {view.isError && <ErrorBox error={view.error} />}
+        {view.data?.set.notes && (
+          <div className="muted small" style={{ whiteSpace: 'pre-line' }} data-testid="set-notes">
+            {view.data.set.notes}
+          </div>
+        )}
+        {view.data && <ConditionsEditor key={`c-${view.data.set.id}`} view={view.data} onSaved={onSaved} />}
         {view.data && <MeasurementTable key={view.data.set.id} view={view.data} onSaved={onSaved} />}
       </section>
 
@@ -463,6 +665,7 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
           {cmp.data && <ComparisonView cmp={cmp.data} view={view.data} />}
         </section>
       )}
+      {view.data && <Probe key={`p-${view.data.set.id}`} setId={view.data.set.id} />}
     </div>
   )
 }

@@ -164,3 +164,23 @@ Command: ruff, mypy, pytest (backend) → all pass; CI green on the previous com
   plate; the report's wattmeter column is used inconsistently between tables. docs/lab-data-2025-exp4.md.
 - CI: the D4 commit's run had failed on a real race (run started while a circuit variant was still loading) —
   the run button is now disabled during the load.
+
+## R1/R2 — real reports as measurement sets; automatic explanation of differences (2026-10-20)
+Command: `scripts/check.sh` → ALL CHECKS PASSED (Playwright 21)
+- `vel/labdata`: 6 transcribed reports, 41 tables (experiment 1 2025, experiment 3 2026 and 2025, experiments 4–6 2025),
+  values as written, every interpretation in a table/row note. API: list per experiment, import (all / per study /
+  one table) through the normal append-only entry path, each entry noted with its source.
+- Studies list now carries each study's condition keys; the measurement panel edits a set's conditions (U, If, n,
+  load kind …) — before, only `load_kind` of experiment 1 could be set from the UI.
+- `services/diagnose.py`: per-comparison detectors (systematic factor incl. √3 / 3 / 1000 / −1 meanings, factor
+  common to several quantities, constant offset, row outlier and decimal point, swapped columns, unreachable
+  operating points; per-row tables skipped) and a parameter-set probe (re-simulates the measured points with the
+  project's spec and every preset, template circuit per preset, nothing persisted).
+- pytest: new test_labdata (every table fits its measurement definition; every table imports, simulates at its own
+  points and compares), test_diagnose (detectors on synthetic tables; on the real 2025 short circuits the common
+  factor is found and the probe ranks `report_2025` first at 2.3 %; the 2025 experiment-4 load table fails with
+  the default Y machine and the probe finds the Δ 2025 fit at < 5 %); DC resistance outlier check (6/2.2: 0.016 A).
+- Playwright: s11-lab-reports — import, notes, simulate at measured points, diagnosis shown, probe ranks
+  report_2025; DC motor conditions imported and edited.
+- Limits: detectors are heuristics (thresholds documented in the module); a finding is a hypothesis to check
+  against the lab record, never an automatic correction.

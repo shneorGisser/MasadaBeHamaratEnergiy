@@ -142,6 +142,7 @@ export interface Study {
   default_case: Record<string, unknown>
   variants: string[]
   editable_circuit: boolean
+  condition_keys?: string[]
 }
 
 export interface Column {
@@ -341,4 +342,36 @@ export interface Comparison {
   simulated_rows: Record<string, unknown>[]
   measured_analysis: MSetView['analysis']
   notes: string[]
+  diagnosis?: Finding[]
+}
+
+/** An automatic hypothesis about why measurement and simulation differ (never changes data). */
+export interface Finding {
+  code: string
+  severity: 'info' | 'warn'
+  message: string
+  quantity?: string
+  rows?: number[]
+  factor?: number
+  known?: string | null
+}
+
+export interface ProbeCandidate {
+  id: string
+  label_he: string
+  status: RunStatus | 'invalid_input'
+  error?: string | null
+  rows?: number
+  unmatched_rows?: number
+  median_abs_rel_error?: number | null
+  max_abs_rel_error?: number | null
+}
+
+/** A transcribed lab report that can be imported as measurement sets. */
+export interface LabDataset {
+  id: string
+  experiment_id: string
+  title_he: string
+  source_he: string
+  tables: { index: number; study_kind: string; label: string; n_rows: number; conditions: Record<string, unknown>; note: string }[]
 }

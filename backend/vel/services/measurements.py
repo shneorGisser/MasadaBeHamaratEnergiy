@@ -241,57 +241,9 @@ def compare(
     spec = module.spec(snapshot_spec(run.input_snapshot))
     d = mdef(module.id, s.study_kind)
     measured = module.analyse(s.study_kind, meas_rows, spec)
-    derived_cols = module.derived_columns.get(s.study_kind, [])
     sim_table = run.result["tables"][0]
     sim_rows: list[dict[str, Any]] = sim_table["rows"]
-    # the operating-point key(s) are equal by construction of the pairing — not compared
-    match_keys = set() if d.match == "row" else set(d.match.split(","))
-    quantities = [c.key for c in d.columns if c.key not in match_keys] + [
-        c["key"] for c in derived_cols
-    ]
-    units = {c.key: c.unit for c in d.columns} | {c["key"]: c["unit"] for c in derived_cols}
-    pairs: list[dict[str, Any]] = []
-    raw_keys = [c.key for c in d.columns]
-    empty_rows = 0
-    for i, mr in enumerate(measured["rows"]):
-        if all(not isinstance(mr.get(k), (int, float)) for k in raw_keys):
-            empty_rows += 1  # nothing measured in this row; not a comparison failure
-            continue
-        if d.match == "row":
-            j: int | None = i if i < len(sim_rows) else None
-            reason = None if j is not None else "אין שורה מקבילה בסימולציה"
-        else:
-            j, reason = _match_row(mr, sim_rows, d.match.split(","))
-        sr = sim_rows[j] if j is not None else None
-        cells = []
-        for q in quantities:
-            mval = mr.get(q) if isinstance(mr.get(q), (int, float)) else None
-            sval = sr.get(q) if (sr is not None and isinstance(sr.get(q), (int, float))) else None
-            a, r, why = _rel(mval, sval, reference) if sr is not None else (None, None, reason)
-            cells.append(
-                {
-                    "quantity": q,
-                    "unit": units.get(q, ""),
-                    "measured": mval,
-                    "simulated": sval,
-                    "abs_error": a,
-                    "rel_error": r,
-                    "undefined_reason": why,
-                }
-            )
-        pairs.append(
-            {
-                "measured_row": i,
-                "simulated_row": j,
-                "unmatched_reason": reason,
-                "match_value": (
-                    None
-                    if d.match == "row"
-                    else ", ".join(f"{k}={_short(mr.get(k))}" for k in d.match.split(","))
-                ),
-                "cells": cells,
-            }
-        )
+    pairs, empty_rows = pair_rows(module, d, s.study_kind, measured["rows"], sim_rows, reference)
 
     # parameter triad: theory (model) · simulation-extracted · measurement-extracted
     sim_params = {p["key"]: p for p in run.result.get("parameters", [])}
@@ -346,6 +298,10 @@ def compare(
         },
         "curves": run.result.get("curves", []),
         "simulated_rows": sim_rows,
+        # a per-row table of independent windings has no common pattern to look for
+        "diagnosis": []
+        if d.match == "row"
+        else _explain(pairs, module.id, s.conditions or {}, [c.key for c in d.columns]),
         "notes": [
             "שגיאה = נמדד − מסומלץ; שגיאה יחסית מחושבת ביחס ל-"
             + ("ערך הסימולציה" if reference == "simulation" else "ערך המדידה"),
@@ -353,6 +309,79 @@ def compare(
             "אין מספיק מידע להפריד ביניהן ללא נתוני דיוק המכשירים",
         ],
     }
+
+
+def _explain(
+    pairs: list[dict[str, Any]],
+    experiment_id: str,
+    conditions: dict[str, Any],
+    quantities: list[str],
+) -> list[dict[str, Any]]:
+    from vel.services.diagnose import explain
+
+    return explain(pairs, experiment_id=experiment_id, conditions=conditions, quantities=quantities)
+
+
+def pair_rows(
+    module: registry.ExperimentModule,
+    d: MeasureDef,
+    kind: str,
+    measured_rows: list[dict[str, Any]],
+    sim_rows: list[dict[str, Any]],
+    reference: str = "simulation",
+) -> tuple[list[dict[str, Any]], int]:
+    """Measured rows (already analysed) paired with simulated rows at the same operating point,
+    cell by cell. Returns (pairs, number of empty measured rows skipped)."""
+    derived_cols = module.derived_columns.get(kind, [])
+    # the operating-point key(s) are equal by construction of the pairing — not compared
+    match_keys = set() if d.match == "row" else set(d.match.split(","))
+    quantities = [c.key for c in d.columns if c.key not in match_keys] + [
+        c["key"] for c in derived_cols
+    ]
+    units = {c.key: c.unit for c in d.columns} | {c["key"]: c["unit"] for c in derived_cols}
+    pairs: list[dict[str, Any]] = []
+    raw_keys = [c.key for c in d.columns]
+    empty_rows = 0
+    for i, mr in enumerate(measured_rows):
+        if all(not isinstance(mr.get(k), (int, float)) for k in raw_keys):
+            empty_rows += 1  # nothing measured in this row; not a comparison failure
+            continue
+        if d.match == "row":
+            j: int | None = i if i < len(sim_rows) else None
+            reason = None if j is not None else "אין שורה מקבילה בסימולציה"
+        else:
+            j, reason = _match_row(mr, sim_rows, d.match.split(","))
+        sr = sim_rows[j] if j is not None else None
+        cells = []
+        for q in quantities:
+            mval = mr.get(q) if isinstance(mr.get(q), (int, float)) else None
+            sval = sr.get(q) if (sr is not None and isinstance(sr.get(q), (int, float))) else None
+            a, r, why = _rel(mval, sval, reference) if sr is not None else (None, None, reason)
+            cells.append(
+                {
+                    "quantity": q,
+                    "unit": units.get(q, ""),
+                    "measured": mval,
+                    "simulated": sval,
+                    "abs_error": a,
+                    "rel_error": r,
+                    "undefined_reason": why,
+                }
+            )
+        pairs.append(
+            {
+                "measured_row": i,
+                "simulated_row": j,
+                "unmatched_reason": reason,
+                "match_value": (
+                    None
+                    if d.match == "row"
+                    else ", ".join(f"{k}={_short(mr.get(k))}" for k in d.match.split(","))
+                ),
+                "cells": cells,
+            }
+        )
+    return pairs, empty_rows
 
 
 def _short(v: Any) -> str:

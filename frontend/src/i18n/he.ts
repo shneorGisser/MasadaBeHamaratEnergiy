@@ -106,6 +106,7 @@ export const he = {
   'case.R_values': 'ערכי הנגד הנוסף [Ω] (מופרדים בפסיק)',
   'case.n': 'מהירות מנוע הסרוו [rpm]',
   'case.Ia': 'זרם עומס קבוע Ia [A]',
+  'case.variant': 'תצורת החיבור',
   'errors.network': 'השרת אינו זמין. ודא שהשרת רץ ונסה שוב.',
 } as const
 
