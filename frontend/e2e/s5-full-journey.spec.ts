@@ -11,9 +11,9 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   const pid = page.url().split('/projects/')[1]!.split(/[/?]/)[0]!
 
   await page.getByRole('link', { name: 'מצב מודרך' }).click()
-  await expect(page.getByTestId('guide-progress')).toHaveText('0 / 27')
+  await expect(page.getByTestId('guide-progress')).toHaveText('0 / 31')
   await page.getByTestId('ack-safety').click()
-  await expect(page.getByTestId('guide-progress')).toHaveText('1 / 27')
+  await expect(page.getByTestId('guide-progress')).toHaveText('1 / 31')
 
   // 2. enter valid transformer parameters (as if from the nameplate)
   await page.getByTestId('go-nameplate').click()
