@@ -269,3 +269,15 @@ CI green on 41d304a, both jobs: `check` and the new `container`.
   each other.
 - Playwright `s14`: the dial value equals the API reading, and the AC phasors exist;
   screenshots inspected.
+
+## 3D bench: banana patch cords (2026-10-20)
+- Straight lines are replaced by patch cords, drawn as a tube with a banana plug and a brass
+  pin at each end:
+  - the cord rises out of the plug, then hangs with a sag proportional to the span, never
+    through the bench top;
+  - it is coloured by the wiring guide (IEC 60445 for supply nets);
+  - the guided cable is thick and red.
+- The shape is static. Rapier rope joints (the R3F "lanyard" approach) were considered and
+  postponed: the bench has no cable dragging yet, so physics would add a WASM dependency
+  without adding behaviour. Revisit with the equipment photos.
+- s4, s10 and s12 pass; screenshots inspected.

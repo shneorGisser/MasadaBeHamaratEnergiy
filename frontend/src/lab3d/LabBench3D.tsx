@@ -1,4 +1,5 @@
-import { Html, Line, OrbitControls } from '@react-three/drei'
+import { Html, OrbitControls } from '@react-three/drei'
+import { useQuery } from '@tanstack/react-query'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
@@ -12,6 +13,7 @@ import { useCircuit } from '../schematic/hooks'
 import type { CComponent, CircuitModel } from '../schematic/model'
 import { terminalSlots } from '../schematic/slots'
 import { useSelection } from '../selection'
+import BananaCable from './BananaCable'
 
 /** Live operating point returned by the solver (never a scripted animation). */
 interface LivePoint {
@@ -253,11 +255,14 @@ function Scene({
   live,
   switches,
   variacFrac,
+  colours,
 }: {
   circuit: CircuitModel
   live: LivePoint | null
   switches: Record<string, boolean>
   variacFrac: number
+  /** IEC 60445 colour of each cable, from the wiring guide */
+  colours: Record<string, string>
 }) {
   const selected = useSelection((s) => s.selected)
   const select = useSelection((s) => s.select)
@@ -312,12 +317,13 @@ function Scene({
           showLabel={labels}
         />
       ))}
-      {circuit.wires.map((w, i) => (
-        <Line
+      {circuit.wires.map((w) => (
+        <BananaCable
           key={w.id}
-          points={[terminalPos(w.a.component, w.a.terminal), terminalPos(w.b.component, w.b.terminal)]}
-          color={w.id === wire ? '#e74c3c' : ['#8b4513', '#111111', '#777777', '#1f4fa3'][i % 4]}
-          lineWidth={w.id === wire ? 6 : 2}
+          a={terminalPos(w.a.component, w.a.terminal)}
+          b={terminalPos(w.b.component, w.b.terminal)}
+          color={colours[w.id] ?? '#5d6d7e'}
+          highlight={w.id === wire}
         />
       ))}
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.1} />
@@ -328,6 +334,13 @@ function Scene({
 export default function LabBench3D({ projectId, kind }: { projectId: string; kind: string }) {
   const circuitQ = useCircuit(projectId, kind)
   const circuit = circuitQ.data?.circuit ?? null
+  // cable colours from the wiring guide (same query as the guide itself; IEC 60445 supply colours)
+  const wiringQ = useQuery({
+    queryKey: ['circuit', projectId, kind, 'wiring'],
+    queryFn: () => api.get<{ steps: { wire_id: string; colour: string }[] }>(`/api/projects/${projectId}/circuits/${kind}/wiring`),
+    retry: false,
+  })
+  const colours = useMemo(() => Object.fromEntries((wiringQ.data?.steps ?? []).map((s) => [s.wire_id, s.colour])), [wiringQ.data])
   const source = circuit?.components.find((c) => c.type === 'source3')
   const nominal = Number(source?.params.U_line ?? 380)
   const [uLine, setULine] = useState<number | null>(null)
@@ -595,7 +608,7 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
         ))}
       <div className="lab-canvas" dir="ltr">
         <Canvas camera={{ position: [0, 6.5, 7.5], fov: 38 }} dpr={[1, 1.5]} frameloop="demand">
-          <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} />
+          <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} colours={colours} />
         </Canvas>
       </div>
       <p className="muted small">
