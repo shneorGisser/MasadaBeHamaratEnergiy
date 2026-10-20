@@ -288,3 +288,52 @@ t_end).
 * **TS9:** the study agrees with the phasor engine for P_drive = 0 and ±100 W.
 * **TS10:** an overload slips poles and is reported, with no false check.
 * **E2E T6:** the study runs with a 60° phase error.
+
+## T1.6 — induction motor started on the inverter (V/f ramp, average model)
+
+`vf_start()` and `VfRamp` in `vel/engine/transient/induction.py`; study `vf_start`
+(experiment 2).
+
+**Model.** The dq model is the same as T1.1. The frame turns with the supply frequency, which
+now varies in time, so v_s = √2·U(f(t)) stays real.
+
+* The frequency rises linearly from f_start to f_target in t_ramp.
+* The voltage follows the same V/f law as the steady-state inverter study (`_vf`):
+  U = U_boost + (U_n − U_boost)·f/f_n, capped at U_n above f_n (field weakening).
+* The run is integrated in two pieces, the ramp and then constant frequency, so the solver never
+  steps across the kink at the end of the ramp.
+* Line currents are rebuilt with the supply angle θ = ∫2πf dt, which is computed analytically.
+
+**Not modelled (average model):**
+
+* PWM ripple and its losses;
+* dead time;
+* the DC-link voltage limit;
+* the drive's current limit. The computed current is what the motor asks for, and a real drive
+  may clip it.
+
+**Warnings.**
+
+* `average_model` appears on every run.
+* `above_drive_limit` appears when the peak exceeds 150 % of the rated peak.
+* `ramp_not_finished` appears when the run ends before the ramp does.
+
+**Checks in every run.**
+
+* `dn_check`: the final speed against the phasor solver at f_target and U(f_target), using
+  `load_test`, which accepts any frequency.
+* `iron_effect`: as in T1.1.
+* The direct-on-line peak, for comparison (`I_ratio_dol`).
+
+**Tests.**
+
+* **TI9:** with t_ramp = 0 the run is a direct-on-line start, identical to `dol_start`.
+* **TI10:** the run settles on the phasor point at 50 Hz, at 25 Hz with load, and at 60 Hz
+  (field weakening). Speed agrees within 0.01 rpm and current within 1e-4.
+* **TI11:** a longer ramp gives a smaller peak current, about 0.19 × DOL for 1 s. The warnings
+  and invalid boost are also covered.
+* **E2E T7.**
+
+Reference for later work: motulator (MIT) provides inverter and control models, including
+current-limited and vector-controlled drives. That remains the next step if the course needs
+it.

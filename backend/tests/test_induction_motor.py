@@ -206,6 +206,7 @@ def test_M8_api_journey(client: TestClient) -> None:
         "inverter",
         "dol_start",
         "star_delta",
+        "vf_start",
     ]
     # a transformer study does not exist here
     r = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "vector_group", "case": {}})
@@ -270,7 +271,7 @@ def test_M8_api_journey(client: TestClient) -> None:
     assert sim2.json()["input_snapshot"]["case"]["M_targets"] == [r["M"] for r in sim_rows]
 
     guide = client.get(f"/api/projects/{pid}/guide").json()
-    assert guide["total"] == 3 + 4 * 8
+    assert guide["total"] == 3 + 4 * 9
     rp = client.post(
         f"/api/projects/{pid}/reports",
         json={

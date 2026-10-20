@@ -14,7 +14,14 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vel.engine.simulate import operating_point
-from vel.engine.transient.induction import StartResult, dol_start, star_delta_start
+from vel.engine.transient.induction import (
+    ImParams,
+    StartResult,
+    VfRamp,
+    dol_start,
+    star_delta_start,
+    vf_start,
+)
 from vel.experiments.common import Outcome, Param, StudyError
 from vel.experiments.induction_motor import templates
 from vel.experiments.induction_motor.spec import MotorSpec
@@ -52,11 +59,11 @@ class StarDeltaCase(BaseModel):
 
 
 def _reference(
-    spec: MotorSpec, u: float, conn: Literal["Y", "D"], m: float
+    spec: MotorSpec, u: float, conn: Literal["Y", "D"], m: float, f: float | None = None
 ) -> tuple[dict[str, float], list[dict[str, Any]]]:
     """Steady state of the same machine from the phasor solver, without and with iron loss."""
     no_fe = spec.model_copy(update={"ecm": spec.ecm.model_copy(update={"R_fe": 1e9})})
-    circ = templates.load_test(u, spec.nameplate.f_n, conn, m_load=m)
+    circ = templates.load_test(u, f or spec.nameplate.f_n, conn, m_load=m)
     ref: dict[str, float] = {}
     warnings: list[dict[str, Any]] = []
     for key, sp in (("no_fe", no_fe), ("full", spec)):
@@ -167,5 +174,104 @@ def run_star_delta(spec: MotorSpec, case: StarDeltaCase) -> Outcome:
                 "analytic",
                 note="תלוי בזמן הניתוק ובפאזה של שטף הרוטור שנשאר",
             ),
+        ],
+    )
+
+
+class VfStartCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    f_target: float | None = Field(default=None, gt=0, le=200, description="None = f_n")
+    t_ramp: float = Field(default=1.0, ge=0, le=20)
+    U_boost: float = Field(default=10.0, ge=0, le=1e4, description="line voltage at 0 Hz [V]")
+    f_start: float = Field(default=0.0, ge=0, le=50)
+    J: float = Field(default=J_ASSUMED, gt=0, le=1e4)
+    M_brake: float = Field(default=0.0, ge=0, le=1e4)
+    t_end: float = Field(default=2.0, gt=0, le=30)
+
+    @model_validator(mode="after")
+    def _order(self) -> VfStartCase:
+        if self.f_target is not None and self.f_start > self.f_target:
+            raise ValueError("f_start must not exceed f_target")
+        return self
+
+
+def run_vf_start(spec: MotorSpec, case: VfStartCase) -> Outcome:
+    """Start on the inverter with a V/f ramp — the same V/f law as the steady-state inverter
+    study, so the final state is checked against the phasor solver at f_target."""
+    npl = spec.nameplate
+    f_t = case.f_target or npl.f_n
+    if case.U_boost >= npl.U_n:
+        raise StudyError("invalid_input", "מתח ה-boost חייב להיות קטן מהמתח הנקוב")
+    conn = npl.connection
+    u_n_w = npl.U_n if conn == "D" else npl.U_n / math.sqrt(3)
+    ramp = VfRamp(
+        U_n=u_n_w,
+        f_n=npl.f_n,
+        f_target=f_t,
+        t_ramp=case.t_ramp,
+        boost=case.U_boost / npl.U_n,
+        f_start=case.f_start,
+    )
+    try:
+        r = vf_start(
+            ImParams.of_motor(spec),
+            ramp,
+            connection=conn,
+            J=case.J,
+            M_brake=case.M_brake,
+            t_end=case.t_end,
+        )
+        dol = dol_start(
+            spec, U_line=npl.U_n, f=npl.f_n, connection=conn, J=case.J, M_brake=case.M_brake,
+            t_end=0.1,
+        )  # fmt: skip
+    except RuntimeError as exc:
+        raise StudyError("convergence_failure", str(exc)) from exc
+    u_line_t = ramp.u(f_t) * (1.0 if conn == "D" else math.sqrt(3))
+    ref, ref_w = _reference(spec, u_line_t, conn, case.M_brake, f=f_t)
+    extra_w: list[dict[str, Any]] = [
+        {
+            "code": "average_model",
+            "message": "מודל ממוצע: האינוורטר הוא מקור סינוסי במתח ובתדר הרגעיים של חוק V/f. "
+            "לא ממודלים אדוות PWM, זמן מת, גבול מתח ה-DC וגבול הזרם של הממיר — הזרם המחושב "
+            "הוא מה שהמנוע דורש",
+        }
+    ]
+    if case.t_end <= case.t_ramp:
+        extra_w.append(
+            {
+                "code": "ramp_not_finished",
+                "message": "הסימולציה מסתיימת לפני סוף הרמפה — אין מצב סופי להשוואה",
+            }
+        )
+    i_rated_pk = math.sqrt(2) * npl.I_n
+    if r.i_peak > 1.5 * i_rated_pk:
+        extra_w.append(
+            {
+                "code": "above_drive_limit",
+                "message": f"שיא הזרם {r.i_peak:.2f} A הוא פי {r.i_peak / i_rated_pk:.1f} משיא "
+                "הזרם הנקוב. ממיר טיפוסי מגביל ל-150 % — רמפה ארוכה יותר או boost קטן יותר",
+            }
+        )
+    return start_outcome(
+        r,
+        title=f"התנעה במהפך: 0→{f_t:g} Hz ב-{case.t_ramp:g} s, boost {case.U_boost:g} V",
+        t_end=case.t_end,
+        J=case.J,
+        J_assumed=J_ASSUMED,
+        ref=ref,
+        ref_warnings=ref_w,
+        extra_warnings=extra_w,
+        extra_params=[
+            Param("I_peak_dol", "שיא זרם בהתנעה ישירה (להשוואה)", dol.i_peak, "A", "", "analytic"),
+            Param(
+                "I_ratio_dol",
+                "שיא הזרם ביחס להתנעה ישירה",
+                r.i_peak / dol.i_peak,
+                "",
+                "I_peak,V/f / I_peak,DOL",
+                "analytic",
+            ),
+            Param("U_final", "מתח קו סופי של הממיר", u_line_t, "V", "חוק V/f", "analytic"),
         ],
     )

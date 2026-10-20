@@ -257,3 +257,126 @@ def star_delta_start(
         segs.append(Segment(t_switch + t_dead, None, 0.0, "D", label="מעבר (מנותק)"))
     segs.append(Segment(t_end, U_line, angle_deg + 30.0, "D", label="משולש"))
     return simulate(ImParams.of_motor(spec), segs, f=f, J=J, M_brake=M_brake, dt_out=dt_out)
+
+
+@dataclass(frozen=True)
+class VfRamp:
+    """Scalar V/f control of an inverter, fundamental (average) model.
+
+    f(t) rises linearly from f_start to f_target in t_ramp, then stays. The winding voltage
+    follows U(f) = U_boost + (U_n − U_boost)·f/f_n (IR-compensation boost at low frequency),
+    capped at U_n above f_n (field weakening)."""
+
+    U_n: float  # RMS winding voltage at f_n
+    f_n: float
+    f_target: float
+    t_ramp: float
+    boost: float = 0.0  # U_boost / U_n
+    f_start: float = 0.0
+
+    def f(self, t: float) -> float:
+        if self.t_ramp <= 0 or t >= self.t_ramp:
+            return self.f_target
+        return self.f_start + (self.f_target - self.f_start) * t / self.t_ramp
+
+    def u(self, f: float) -> float:
+        ub = self.boost * self.U_n
+        return min(self.U_n, ub + (self.U_n - ub) * abs(f) / self.f_n)
+
+    def theta(self, t: FArray) -> FArray:
+        """Supply angle ∫2πf dt (rad)."""
+        tr = self.t_ramp
+        a = (self.f_target - self.f_start) / tr if tr > 0 else 0.0
+        in_ramp = 2 * math.pi * (self.f_start * t + 0.5 * a * t * t)
+        th_r = 2 * math.pi * (self.f_start * tr + 0.5 * a * tr * tr) if tr > 0 else 0.0
+        after = th_r + 2 * math.pi * self.f_target * (t - max(tr, 0.0))
+        return np.where(t < tr, in_ramp, after)
+
+
+def vf_start(
+    m: ImParams,
+    ramp: VfRamp,
+    *,
+    connection: Literal["Y", "D"],
+    J: float,
+    M_brake: float = 0.0,
+    t_end: float = 2.0,
+    dt_out: float = 2.5e-4,
+) -> StartResult:
+    """Start on an inverter with a V/f ramp. Same dq model as `simulate`, in a frame turning
+    with the (time-varying) supply frequency, so v_s = √2·U(f(t)) is real. Integrated in two
+    pieces (ramp, then constant frequency) so the solver never steps across the kink.
+
+    NOT modelled (average model): PWM ripple and its harmonic losses, dead time, the DC-link
+    voltage limit and the inverter's current limit — the computed current is what the motor
+    asks for, which a real drive may clip."""
+    wb = 2 * math.pi * m.f_n
+    lm = m.Xm / wb
+    ls, lr = m.X1 / wb + lm, m.X2p / wb + lm
+    d = ls * lr - lm * lm
+    pp = m.poles / 2
+
+    def rhs(t: float, y: FArray) -> list[float]:
+        ps, pr, wm = complex(y[0], y[1]), complex(y[2], y[3]), y[4]
+        fe = ramp.f(t)
+        we = 2 * math.pi * fe
+        v = math.sqrt(2) * ramp.u(fe)
+        i_s = (lr * ps - lm * pr) / d
+        i_r = (ls * pr - lm * ps) / d
+        dps = v - m.R1 * i_s - 1j * we * ps
+        dpr = -m.R2p * i_r - 1j * (we - pp * wm) * pr
+        m_em = 1.5 * pp * (ps.conjugate() * i_s).imag
+        m_load = M_brake * math.tanh(wm / W_EPS) + m.k_fw * wm
+        return [dps.real, dps.imag, dpr.real, dpr.imag, (m_em - m_load) / J]
+
+    psi_b = math.sqrt(2) * ramp.U_n / wb
+    atol = [1e-7 * psi_b] * 4 + [1e-6 * wb]
+    pieces = [(0.0, min(ramp.t_ramp, t_end))] if ramp.t_ramp > 0 else []
+    if t_end > ramp.t_ramp:
+        pieces.append((max(ramp.t_ramp, 0.0), t_end))
+    x = np.zeros(5)
+    ts: list[FArray] = []
+    ys: list[FArray] = []
+    nfev = 0
+    for k, (a, b) in enumerate(pieces):
+        grid = np.arange(a, b, dt_out)
+        grid = grid[grid > a] if k else grid
+        sol = solve_ivp(
+            rhs, (a, b), x, method="Radau", t_eval=np.append(grid, b), rtol=1e-7, atol=atol
+        )
+        if not sol.success:
+            raise RuntimeError(f"transient solver failed: {sol.message}")
+        nfev += int(sol.nfev)
+        ts.append(sol.t)
+        ys.append(sol.y)
+        x = np.array(sol.y[:, -1], dtype=float)
+    t = np.concatenate(ts)
+    y = np.concatenate(ys, axis=1)
+    ps, pr, wm = y[0] + 1j * y[1], y[2] + 1j * y[3], y[4]
+    i_s = (lr * ps - lm * pr) / d
+    i_ab = i_s * np.exp(1j * ramp.theta(t))
+    i_a = i_ab.real
+    i_c = (i_ab * A120).real
+    is_d = connection == "D"
+    i_line = i_a - i_c if is_d else i_a
+    i_rms = np.abs(i_s) / math.sqrt(2) * (SQ3 if is_d else 1.0)
+    n_rpm = wm * 60 / (2 * math.pi)
+    m_em = 1.5 * pp * (np.conj(ps) * i_s).imag
+    n_fin = float(n_rpm[-1])
+    above = np.nonzero(n_rpm >= 0.95 * n_fin)[0]
+    events: list[dict[str, float | str]] = []
+    if 0 < ramp.t_ramp < t_end:
+        events.append({"t": ramp.t_ramp, "label": f"סוף הרמפה ({ramp.f_target:g} Hz)"})
+    return StartResult(
+        t=t,
+        i_line=i_line,
+        i_line_rms=i_rms,
+        n=n_rpm,
+        M_em=m_em,
+        n_final=n_fin,
+        i_line_rms_final=float(i_rms[-1]),
+        i_peak=float(np.max(np.abs(i_line))),
+        t_95=float(t[above[0]]) if n_fin > 1 and above.size else None,
+        solver={"method": "Radau", "rtol": 1e-7, "nfev": nfev, "steps_out": int(t.size)},
+        events=events,
+    )

@@ -118,3 +118,50 @@ def test_TI6_star_delta_study_warns_on_early_changeover(client: TestClient) -> N
     assert "winding_overvoltage" in {w["code"] for w in over.warnings}
     bad = mod.execute("star_delta", spec, None, {"t_switch": 1.0, "t_end": 1.0})
     assert bad.status == "invalid_input"
+
+
+# --- T1.6: start on the inverter, V/f ramp (average model) --------------------------------
+
+
+def test_TI9_zero_ramp_is_a_direct_on_line_start() -> None:
+    from vel.engine.transient.induction import ImParams, VfRamp, vf_start
+
+    ramp = VfRamp(U_n=380.0 / math.sqrt(3), f_n=50.0, f_target=50.0, t_ramp=0.0)
+    v = vf_start(ImParams.of_motor(SPEC), ramp, connection="Y", J=0.003, t_end=0.6)
+    d = dol_start(SPEC, U_line=380.0, f=50.0, connection="Y", J=0.003, t_end=0.6)
+    assert v.i_peak == pytest.approx(d.i_peak, rel=1e-6)
+    assert np.allclose(v.n, d.n, atol=1e-3)
+
+
+@pytest.mark.parametrize(("f_t", "m"), [(50.0, 0.0), (25.0, 1.0), (60.0, 0.5)])
+def test_TI10_vf_start_settles_on_the_phasor_point_at_the_target_frequency(
+    f_t: float, m: float
+) -> None:
+    from vel.engine.transient.induction import ImParams, VfRamp, vf_start
+
+    ramp = VfRamp(U_n=380.0 / math.sqrt(3), f_n=50.0, f_target=f_t, t_ramp=0.8, boost=10 / 380)
+    r = vf_start(ImParams.of_motor(SPEC), ramp, connection="Y", J=0.003, M_brake=m, t_end=2.0)
+    u_line = ramp.u(f_t) * math.sqrt(3)  # 60 Hz: capped at U_n (field weakening)
+    op = operating_point(templates.load_test(u_line, f_t, "Y", m_load=m), NO_FE)
+    assert r.n_final == pytest.approx(op.readings["M"]["n"], abs=0.01)
+    assert r.i_line_rms_final == pytest.approx(op.readings["A"]["I"], rel=1e-4)
+
+
+def test_TI11_ramp_cuts_the_starting_current() -> None:
+    mod = registry.get("induction_motor")
+    spec = mod.default_spec()
+    base = mod.studies["vf_start"].default_case(spec)
+    peaks = []
+    for t_ramp in (0.1, 0.5, 1.0):
+        out = mod.execute("vf_start", spec, None, base | {"t_ramp": t_ramp})
+        assert out.status == "success_with_warnings", out.error
+        p = {x["key"]: x["value"] for x in out.result["parameters"]}  # type: ignore[index]
+        assert abs(p["dn_check"]) < 0.01
+        peaks.append(p["I_ratio_dol"])
+    assert peaks[0] > peaks[1] > peaks[2] and peaks[2] < 0.3
+    codes = {
+        w["code"] for w in mod.execute("vf_start", spec, None, base | {"t_ramp": 0.1}).warnings
+    }
+    assert {"average_model", "above_drive_limit"} <= codes
+    bad = mod.execute("vf_start", spec, None, base | {"U_boost": 500.0})
+    assert bad.status == "invalid_input"

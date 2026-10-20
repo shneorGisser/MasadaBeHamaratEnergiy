@@ -28,8 +28,10 @@ from vel.experiments.induction_motor.transient import (
     J_ASSUMED,
     DolStartCase,
     StarDeltaCase,
+    VfStartCase,
     run_dol_start,
     run_star_delta,
+    run_vf_start,
 )
 
 MODEL_VERSION = "mna-phasor-1.0+im-T-slip-1.0+im-dq5-1.0"
@@ -721,6 +723,25 @@ STUDIES["star_delta"] = StudyDef(
 )
 
 
+STUDIES["vf_start"] = StudyDef(
+    "vf_start",
+    "התנעה במהפך V/f (סימולציה בזמן)",
+    "ציור 4-5: התנעה ברמפת תדר מול התנעה ישירה",
+    VfStartCase,
+    lambda spec: {
+        "f_target": None,
+        "t_ramp": 1.0,
+        "U_boost": 10.0,
+        "f_start": 0.0,
+        "J": J_ASSUMED,
+        "M_brake": 0.0,
+        "t_end": 2.0,
+    },
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     """Run a study. Never raises for engineering failures: they become explicit statuses."""
     sd = STUDIES.get(kind)
@@ -739,6 +760,8 @@ def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, An
             return run_dol_start(spec, case)
         if isinstance(case, StarDeltaCase):
             return run_star_delta(spec, case)
+        if isinstance(case, VfStartCase):
+            return run_vf_start(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case)
