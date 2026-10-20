@@ -148,7 +148,8 @@ def run_star_delta(spec: MotorSpec, case: StarDeltaCase) -> Outcome:
     ref, ref_w = _reference(spec, u, "D", case.M_brake)
     return start_outcome(
         r,
-        title=f"כוכב-משולש ב-{u:.0f} V: מעבר ב-{case.t_switch:g} s, ניתוק {case.t_dead * 1000:g} ms",
+        title=f"כוכב-משולש ב-{u:.0f} V: מעבר ב-{case.t_switch:g} s, "
+        f"ניתוק {case.t_dead * 1000:g} ms",
         t_end=case.t_end,
         J=case.J,
         J_assumed=J_ASSUMED,
