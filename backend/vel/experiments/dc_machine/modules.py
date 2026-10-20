@@ -68,6 +68,17 @@ MOTOR_DEFS: dict[str, MeasureDef] = {
         condition_keys=("U", "M_load"),
     ),
     "compound": MeasureDef("compound", _MOTOR_LOAD_COLS, "free", "M", condition_keys=("U", "If")),
+    "motor_start": MeasureDef(
+        "motor_start",
+        (
+            MCol("Ia_peak", "שיא זרם עוגן", "A"),
+            MCol("t_95", "זמן התנעה", "s"),
+            MCol("n_final", "מהירות סופית", "rpm"),
+        ),
+        "fixed",
+        "row",
+        row_labels=("התנעה דרך מתנע",),
+    ),
 }
 
 GEN_DEFS: dict[str, MeasureDef] = {
@@ -110,6 +121,18 @@ GEN_DEFS: dict[str, MeasureDef] = {
         "free",
         "pol,Ia",
         condition_keys=("n",),
+    ),
+    "buildup": MeasureDef(
+        "buildup",
+        (
+            MCol("U_res", "מתח שיורי", "V"),
+            MCol("U_final", "מתח סופי", "V"),
+            MCol("t_90", "זמן בנייה", "s"),
+        ),
+        "fixed",
+        "row",
+        row_labels=("בנייה ללא עומס",),
+        condition_keys=("n", "R_rheo"),
     ),
     "grid": MeasureDef(
         "grid",
@@ -361,6 +384,8 @@ def matching_motor(
         }
     if kind == "dc_resistance":
         return _res_case(rows)
+    if kind == "motor_start":
+        return studies.MOTOR_STUDIES["motor_start"].default_case(spec)
     return {"U_test": 500.0}
 
 
@@ -394,6 +419,12 @@ def matching_generator(
         }
     if kind == "dc_resistance":
         return _res_case(rows)
+    if kind == "buildup":
+        return {
+            **studies.GEN_STUDIES["buildup"].default_case(spec),
+            "n": n,
+            "R_rheo": _cond(conditions, "R_rheo", 0.0),
+        }
     return {"U_test": 500.0}
 
 
@@ -504,6 +535,12 @@ MOTOR_STEPS: list[tuple[str, str, str]] = [
         "מוסיפים את הליפוף הטורי S1–S2 לענף העוגן (ציור 3.6) ומעמיסים. אם המהירות קופצת מיד — "
         "הטורי מחליש את השדה (מנוגד). טבלה 2.8.",
     ),
+    (
+        "motor_start",
+        "התנעה דרך מתנע עוגן",
+        "סוגרים את הספק כשמתנע העוגן בדרגה הגבוהה, ומקטינים אותו בשלבים. בסימולציה רואים את "
+        "שיא זרם העוגן בכל שלב ואת עליית זרם העירור (קבוע הזמן של הליפוף המקבילי).",
+    ),
 ]
 
 
@@ -603,6 +640,12 @@ GEN_STEPS: list[tuple[str, str, str]] = [
         "מחולל במקביל לרשת",
         "מחברים לרשת DC כשהמתחים שווים; מגדילים את If — הזרם לרשת עולה (מחולל); מקטינים — "
         "המכונה צורכת (מנוע).",
+    ),
+    (
+        "buildup",
+        "בניית המתח מהשטף השיורי",
+        "מחולל מקבילי בריקם: המתח עולה מהשטף השיורי עד נקודת החיתוך של עקומת הריקם עם קו "
+        "ההתנגדות של מעגל העירור. מעל ההתנגדות הקריטית — אין בנייה.",
     ),
 ]
 

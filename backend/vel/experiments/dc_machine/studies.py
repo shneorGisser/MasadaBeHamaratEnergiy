@@ -28,6 +28,7 @@ from vel.experiments.common import (
     with_param,
 )
 from vel.experiments.dc_machine import templates
+from vel.experiments.dc_machine import transient as tr
 from vel.experiments.dc_machine.spec import DCSpec
 from vel.experiments.dc_machine.templates import WINDINGS, Series
 
@@ -1105,6 +1106,41 @@ MOTOR_TITLES = {
 }
 
 
+MOTOR_STUDIES["motor_start"] = StudyDef(
+    "motor_start",
+    "התנעה דרך מתנע עוגן (סימולציה בזמן)",
+    "הרחבה: התנעת מנוע מקבילי",
+    tr.MotorStartCase,
+    lambda spec: {
+        "U": LAB_U,
+        "R_rheo": 0.0,
+        "points": tr.default_motor_steps(spec, LAB_U),
+        "M_brake": 0.0,
+        "field_first": True,
+        "J": tr.J_ASSUMED,
+        "L_a": tr.L_A_ASSUMED,
+        "L_f0": tr.L_F0_ASSUMED,
+    },
+    None,
+    editable_circuit=False,
+)
+GEN_STUDIES["buildup"] = StudyDef(
+    "buildup",
+    "בניית מתח במחולל מקבילי (סימולציה בזמן)",
+    "ציור 2.6: הבנייה מהשטף השיורי",
+    tr.BuildupCase,
+    lambda spec: {
+        "n": GEN_N,
+        "R_rheo": 0.0,
+        "L_a": tr.L_A_ASSUMED,
+        "L_f0": tr.L_F0_ASSUMED,
+        "t_end": 5.0,
+    },
+    None,
+    editable_circuit=False,
+)
+
+
 def execute_motor(kind: str, spec: DCSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     case = _validate(MOTOR_STUDIES.get(kind), kind, case_doc)
     if isinstance(case, Outcome):
@@ -1112,6 +1148,10 @@ def execute_motor(kind: str, spec: DCSpec, circuit_doc: Any, case_doc: dict[str,
     try:
         if isinstance(case, InsulationCase):
             return run_insulation(spec, case, "2.1")
+        if isinstance(case, tr.MotorStartCase):
+            return tr.run_motor_start(spec, case)
+        if isinstance(case, tr.BuildupCase):
+            return tr.run_buildup(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case, "2.2")
@@ -1153,6 +1193,10 @@ def execute_generator(
     try:
         if isinstance(case, InsulationCase):
             return run_insulation(spec, case, "2.1")
+        if isinstance(case, tr.MotorStartCase):
+            return tr.run_motor_start(spec, case)
+        if isinstance(case, tr.BuildupCase):
+            return tr.run_buildup(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case, "2.2")

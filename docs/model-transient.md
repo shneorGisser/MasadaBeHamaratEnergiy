@@ -11,7 +11,7 @@ Modelica Standard Library (BSD-3) and motulator (MIT); the solver is SciPy `solv
 |---|---|---|
 | T1.1 | Induction motor, direct-on-line start (5th-order dq, synchronous frame) | **done** |
 | T1.2 | Star-delta start, wound-rotor starter steps (event-segmented integration) | **done** |
-| T1.3 | DC machine: start through a starter, shunt-generator voltage build-up (using the fitted OCC) | |
+| T1.3 | DC machine: start through a starter, shunt-generator voltage build-up (using the fitted OCC) | **done** |
 | T1.4 | Transformer energisation and inrush (saturation curve + remanence, switching angle) | |
 | T1.5 | Synchronous machine: sudden 3-phase short circuit (checked against the analytic IEEE 115 envelope), synchronisation | |
 | T1.6 | Inverter-fed motor (average model, V/f ramp) | |
@@ -98,3 +98,56 @@ The solver therefore never steps across a switching instant.
   * with a finite J the slowly creeping rotor biases that comparison by ≈ 0.5 %, so the test
     holds the rotor with J = 1e9.
 * **TW2:** the stepped start settles on the phasor point; two switching events are listed.
+
+## T1.3 — DC machine: shunt-generator build-up, shunt-motor start
+
+`vel/engine/transient/dcmachine.py`; studies `buildup` (experiment 6) and `motor_start`
+(experiment 5). Both use the fitted machine of the 2025 reports.
+
+**Field inductance.** It follows the OCC: L_f(F) = L_f0·OCC'(F)/a. The field therefore gets
+"faster" as it saturates.
+
+**Assumed values (not on the nameplate):**
+
+* L_f0 = 92 H (τ_f ≈ 0.25 s);
+* L_a = 0.08 H;
+* J = 0.003 kg·m².
+
+The runs warn about them. They set the speed of the transient, not where it settles.
+
+**Build-up.**
+
+* Short-shunt, no load, servo speed. The circuit starts from the remanence.
+* Built or not: the same criterion as the steady-state solver (resultant MMF ≥ 2·F_res).
+* Just above the critical resistance the remanent voltage is amplified, but there is no
+  build-up.
+* The linear critical field-rheostat value is reported: (n/n_ref)·a − R_a − R_f.
+
+**Motor start.**
+
+* Armature starter in steps.
+* The field is energised first by default. Optionally it is switched on together with the
+  armature, and then it rises with τ_f.
+
+**A model limit found in this step.** The steady-state armature-reaction term −k_ar·|I_a|
+reversed the main flux when the field was still near zero at switch-on, and the motor turned
+backwards for a few rpm.
+
+* Physically, armature reaction is cross-magnetising: it weakens an existing field through
+  saturation but cannot reverse it.
+* The transient engine now caps the term at half the main-field MMF.
+* At every steady operating point of the fit, k_ar·I_n ≈ 0.05 A ≪ I_f, so the cap is
+  inactive there. The steady state is unchanged and the tests agree to 1e-6.
+
+**Tests (`test_transient_dc.py`):**
+
+* **TD1:** the build-up ends on the DC solver's voltage (1e-6) for four rheostat settings, and
+  rises monotonically.
+* **TD2:** the critical resistance separates build-up from none, and near it the build-up is
+  > 2× slower.
+* **TD3:**
+  * the motor start ends on the DC solver's speed and current, with and without the starter
+    and with the field switched on late;
+  * the starter halves the inrush;
+  * the speed never goes negative.
+* **TD4:** the studies report their assumptions, and the engines agree.
