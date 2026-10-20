@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
-from vel.errors import not_found
+from vel.errors import ApiError, not_found
 from vel.orm import Report
 from vel.services import reports as svc
 
@@ -100,6 +100,22 @@ def get_report(report_id: str, session: SessionDep) -> dict[str, Any]:
 @router.get("/reports/{report_id}/html", response_class=HTMLResponse)
 def report_html(report_id: str, session: SessionDep) -> HTMLResponse:
     return HTMLResponse(_load(session, report_id).html)
+
+
+@router.get("/reports/{report_id}/docx")
+def report_docx(report_id: str, session: SessionDep) -> Response:
+    """Word export of the same immutable snapshot (Hebrew RTL, David 11, MATLAB appendix)."""
+    from vel.services.report_docx import build_docx
+
+    r = _load(session, report_id)
+    snap = (r.sources or {}).get("snapshot")
+    if not isinstance(snap, dict):
+        raise ApiError(409, "no_snapshot", "this report has no stored snapshot")
+    return Response(
+        build_docx(snap),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="report-{r.id[:8]}.docx"'},
+    )
 
 
 @router.get("/reports/{report_id}/pdf")

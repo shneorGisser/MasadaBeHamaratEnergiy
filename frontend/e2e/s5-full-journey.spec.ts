@@ -92,6 +92,11 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   const pdf = await request.get(`/api/reports/${reports[0].id}/pdf`)
   expect(pdf.status()).toBe(200)
   expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-')
+  // Word export of the same snapshot: a zip (docx) offered from the reports list
+  await expect(page.getByTestId('report-docx').first()).toBeVisible()
+  const docx = await request.get(`/api/reports/${reports[0].id}/docx`)
+  expect(docx.status()).toBe(200)
+  expect((await docx.body()).subarray(0, 2).toString()).toBe('PK')
 
   await page.getByRole('link', { name: 'מצב מודרך' }).click()
   await expect(page.locator('[data-step="no_load.compare"]')).toHaveAttribute('data-done', 'true')

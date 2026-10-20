@@ -132,6 +132,10 @@ export default function ReportsPanel({ projectId }: { projectId: string }) {
               ·{' '}
               <a href={`/api/reports/${r.id}/pdf`} data-testid="report-pdf">
                 PDF
+              </a>{' '}
+              ·{' '}
+              <a href={`/api/reports/${r.id}/docx`} data-testid="report-docx" title="עברית מימין לשמאל, David 11, נספח קוד MATLAB">
+                Word
               </a>
             </li>
           ))}
