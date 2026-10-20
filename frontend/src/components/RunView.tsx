@@ -6,6 +6,7 @@ import { fmtDate, t } from '../i18n'
 import Chart from './Chart'
 import { axisLabel, curveSeries, curveTable } from './curves'
 import { ErrorBox } from './ErrorBox'
+import SingleLine from './SingleLine'
 import StatusBadge from './StatusBadge'
 
 const LONG_TABLE = 60 // time series (transients) are shown as curves; the table starts folded
@@ -160,6 +161,8 @@ export default function RunView({ run }: { run: Run }) {
           </ul>
         </div>
       )}
+
+      {res && <SingleLine tables={res.tables} />}
 
       {res &&
         res.tables.map((tb) => (

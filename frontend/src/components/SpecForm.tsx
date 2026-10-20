@@ -7,7 +7,20 @@ import { fmt } from '../format'
 import { t, type MessageKey } from '../i18n'
 import { ErrorBox } from './ErrorBox'
 
-type Section = 'nameplate' | 'ecm' | 'occ' | 'network' | 'mcb' | 'rcd' | 'insulation' | 'earth'
+type Section =
+  | 'nameplate'
+  | 'ecm'
+  | 'occ'
+  | 'network'
+  | 'mcb'
+  | 'rcd'
+  | 'insulation'
+  | 'earth'
+  | 'grid'
+  | 'trafo'
+  | 'cable1'
+  | 'cable2'
+  | 'loads'
 interface FieldDef {
   section: Section
   key: string
@@ -117,6 +130,48 @@ const INSTALL_FORM: FormDef = {
     'מודל: לולאות = סכום טורי של מוליכי פאזה, אפס ו-PE. מא״ז: דו-מתכת מסדר ראשון (τ, k_t) ושחרור מגנטי ב-k_m·In. מפסק פחת מנתק כש-|I_L + I_N| ≥ k_trip·IΔn. מגר: R נפחית ‖ R פנים ‖ C. הארקה: מוט בקרקע אחידה.',
 }
 
+const NETWORK_FORM: FormDef = {
+  fields: [
+    { section: 'grid', key: 'U_n_kV', label: 'מתח נקוב', unit: 'kV' },
+    { section: 'grid', key: 'Sk_max_MVA', label: "S''k מרבי", unit: 'MVA' },
+    { section: 'grid', key: 'Sk_min_MVA', label: "S''k מזערי", unit: 'MVA' },
+    { section: 'grid', key: 'RX', label: 'R/X של הרשת', unit: '' },
+    { section: 'grid', key: 'f', label: 'תדירות', unit: 'Hz' },
+    { section: 'trafo', key: 'S_n_kVA', label: 'הספק נקוב', unit: 'kVA' },
+    { section: 'trafo', key: 'U1_kV', label: 'מתח ראשוני', unit: 'kV' },
+    { section: 'trafo', key: 'U2_V', label: 'מתח משני (קווי)', unit: 'V' },
+    { section: 'trafo', key: 'uk', label: 'מתח קצר u_k', unit: '%' },
+    { section: 'trafo', key: 'P_cu_kW', label: 'הפסדי נחושת בעומס נקוב', unit: 'kW' },
+    { section: 'trafo', key: 'P_0_kW', label: 'הפסדי ריקם', unit: 'kW' },
+    { section: 'trafo', key: 'i0', label: 'זרם ריקם', unit: '%' },
+    { section: 'cable1', key: 'L_m', label: 'אורך', unit: 'm' },
+    { section: 'cable1', key: 'r', label: "R' ב-20 °C", unit: 'Ω/km' },
+    { section: 'cable1', key: 'x', label: "X'", unit: 'Ω/km' },
+    { section: 'cable1', key: 'r0_r', label: "R0'/R' (סדר אפס)", unit: '' },
+    { section: 'cable1', key: 'x0_x', label: "X0'/X' (סדר אפס)", unit: '' },
+    { section: 'cable1', key: 'I_max', label: 'זרם מותר', unit: 'A' },
+    { section: 'cable2', key: 'L_m', label: 'אורך', unit: 'm' },
+    { section: 'cable2', key: 'r', label: "R' ב-20 °C", unit: 'Ω/km' },
+    { section: 'cable2', key: 'x', label: "X'", unit: 'Ω/km' },
+    { section: 'cable2', key: 'r0_r', label: "R0'/R' (סדר אפס)", unit: '' },
+    { section: 'cable2', key: 'x0_x', label: "X0'/X' (סדר אפס)", unit: '' },
+    { section: 'cable2', key: 'I_max', label: 'זרם מותר', unit: 'A' },
+    { section: 'loads', key: 'P2_kW', label: 'עומס בלוח המעבדה P', unit: 'kW' },
+    { section: 'loads', key: 'pf2', label: 'cos φ בלוח המעבדה', unit: '' },
+    { section: 'loads', key: 'P3_kW', label: 'עומס בעמדה P', unit: 'kW' },
+    { section: 'loads', key: 'pf3', label: 'cos φ בעמדה', unit: '' },
+  ],
+  derived: [
+    { key: 'I_n_lv', label: 'זרם נקוב של השנאי (מ״נ)', unit: 'A' },
+    { key: 'Z_T', label: 'עכבת השנאי (מ״נ)', unit: 'Ω', digits: 5 },
+    { key: 'Ik_T', label: 'זרם קצר בהדקי השנאי (רשת אינסופית)', unit: 'kA', digits: 2 },
+    { key: 'R_C1', label: 'R כבל ראשי', unit: 'Ω', digits: 4 },
+    { key: 'R_C2', label: 'R כבל לעמדה', unit: 'Ω', digits: 4 },
+  ],
+  modelNote:
+    "מודל: הזנה רדיאלית — רשת מ״ג (S''k) → שנאי Dyn → כבל ראשי → לוח המעבדה → כבל → העמדה. זרימת עומסים בהספק קבוע; קצרים לפי IEC 60909-0. כל חישוב נפתר ב-pandapower ובפותר ישיר, ומוצג ההפרש ביניהם.",
+}
+
 /** One form definition per experiment; the backend validates the same fields (single source). */
 const FORMS: Record<string, FormDef> = {
   transformer3ph: {
@@ -195,6 +250,7 @@ const FORMS: Record<string, FormDef> = {
   dc_motor: DC_FORM,
   dc_generator: DC_FORM,
   installation: INSTALL_FORM,
+  network: NETWORK_FORM,
   wound_rotor: {
     fields: [
       { section: 'nameplate', key: 'P_n', label: 'הספק נקוב בציר P_n', unit: 'W' },
@@ -316,6 +372,11 @@ const SECTION_TITLE: Record<Section, MessageKey> = {
   rcd: 'spec.rcd',
   insulation: 'spec.insulation',
   earth: 'spec.earth',
+  grid: 'spec.grid',
+  trafo: 'spec.trafo',
+  cable1: 'spec.cable1',
+  cable2: 'spec.cable2',
+  loads: 'spec.loads',
 }
 const SECTIONS = Object.keys(SECTION_TITLE) as Section[]
 
