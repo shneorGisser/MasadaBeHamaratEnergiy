@@ -1,0 +1,21 @@
+import { openTab } from './helpers'
+import { expect, test } from '@playwright/test'
+
+test('T1: direct-on-line start in the time domain — curves, folded trace table, self-consistency', async ({ page }) => {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill('T1 התנעה')
+  await page.locator('select[name="experiment"]').selectOption('induction_motor')
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-experiment')).toBeVisible()
+  await openTab(page, /התנעה ישירה/)
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', /success/)
+  await expect(view.getByTestId('run-warnings')).toContainText('מוערך')
+  // the 4000-point trace is folded; the curves carry it
+  const trace = view.getByRole('table', { name: /התנעה ישירה ב-/ })
+  await expect(trace.locator('tbody tr')).toHaveCount(15)
+  await expect(view.locator('.chart canvas')).toHaveCount(3)
+  await expect(view.locator('[data-param="dn_check"]')).toBeVisible()
+  await page.screenshot({ path: 'test-results/t1-dol.png', fullPage: true })
+})

@@ -10,6 +10,7 @@ from vel.experiments.induction_motor.derive import MotorLike
 from vel.experiments.induction_motor.spec import PRESETS, MotorSpec, assumed_lab_motor
 from vel.experiments.induction_motor.studies import MODEL_VERSION, STUDIES, execute
 from vel.experiments.induction_motor.templates import WINDINGS
+from vel.experiments.induction_motor.transient import J_ASSUMED
 from vel.experiments.registry import ExperimentModule
 
 Rows = list[dict[str, Any]]
@@ -68,6 +69,18 @@ MEASURE_DEFS: dict[str, MeasureDef] = {
             ),
             "free",
             "M",
+        ),
+        MeasureDef(
+            "dol_start",
+            (
+                MCol("I_peak", "שיא זרם רגעי (סקופ / צבת)", "A"),
+                MCol("I_start", "זרם התנעה RMS", "A"),
+                MCol("t_95", "זמן התנעה", "s"),
+                MCol("n_final", "מהירות סופית", "rpm"),
+            ),
+            "fixed",
+            "row",
+            row_labels=("התנעה ישירה",),
         ),
         MeasureDef(
             "inverter",
@@ -169,6 +182,8 @@ def matching_case(
             raise InputError("no_operating_points", "no rows with both f and M")
         boost = conditions.get("U_boost", 0.0)
         return {"points": pts, "law": "V/f", "U_boost": float(boost or 0.0), "f_start": 10.0}
+    if kind == "dol_start":
+        return {"U_line": None, "J": J_ASSUMED, "M_brake": 0.0, "t_end": 1.0, "angle_deg": 0.0}
     if kind == "dc_resistance":
         cur = [rows[i].get("I") for i in range(min(3, len(rows)))]
         targets = [float(x) for x in cur if isinstance(x, (int, float)) and x > 0]
@@ -244,6 +259,12 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
         "מנוע עם אינוורטר",
         "מחברים את המנוע דרך האינוורטר (ציור 4-5). בכל תדר (20, 35, 50, 60 Hz) מעמיסים ב-4 "
         "נקודות ורושמים Vout, Iout, M, n. משווים את זרם ההתנעה ב-10 Hz להתנעה ישירה ב-50 Hz.",
+    ),
+    (
+        "dol_start",
+        "התנעה ישירה בזמן",
+        "מחברים את המנוע ישירות לרשת (ללא אינוורטר) ורושמים בסקופ/צבת את שיא הזרם ואת זמן "
+        "ההתנעה. הסימולציה מראה את זרם הקו, המהירות והמומנט כפונקציה של הזמן.",
     ),
 ]
 

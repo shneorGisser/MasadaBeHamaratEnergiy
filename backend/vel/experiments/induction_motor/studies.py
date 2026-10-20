@@ -24,8 +24,9 @@ from vel.experiments.induction_motor import derive, templates
 from vel.experiments.induction_motor.derive import MotorLike
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.induction_motor.templates import WINDINGS
+from vel.experiments.induction_motor.transient import J_ASSUMED, DolStartCase, run_dol_start
 
-MODEL_VERSION = "mna-phasor-1.0+im-T-slip-1.0"
+MODEL_VERSION = "mna-phasor-1.0+im-T-slip-1.0+im-dq5-1.0"
 
 MOTOR = "M"
 
@@ -684,6 +685,17 @@ STUDIES: dict[str, StudyDef] = {
 }
 
 
+STUDIES["dol_start"] = StudyDef(
+    "dol_start",
+    "התנעה ישירה (סימולציה בזמן)",
+    "ציור 4-5: השוואת זרם ההתנעה הישירה לזו שבאינוורטר",
+    DolStartCase,
+    lambda spec: {"U_line": None, "J": J_ASSUMED, "M_brake": 0.0, "t_end": 1.0, "angle_deg": 0.0},
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     """Run a study. Never raises for engineering failures: they become explicit statuses."""
     sd = STUDIES.get(kind)
@@ -698,6 +710,8 @@ def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, An
     try:
         if isinstance(case, InsulationCase):
             return run_insulation(spec, case)
+        if isinstance(case, DolStartCase):
+            return run_dol_start(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case)

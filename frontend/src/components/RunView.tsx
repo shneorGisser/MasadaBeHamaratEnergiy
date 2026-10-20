@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useReproduce } from '../api/hooks'
 import type { Param, ResultTable, Run } from '../api/types'
 import { fmt } from '../format'
@@ -8,7 +8,13 @@ import { axisLabel, curveSeries, curveTable } from './curves'
 import { ErrorBox } from './ErrorBox'
 import StatusBadge from './StatusBadge'
 
+const LONG_TABLE = 60 // time series (transients) are shown as curves; the table starts folded
+const FOLDED_ROWS = 15
+
 export function DataTable({ table, highlightRow }: { table: ResultTable; highlightRow?: number }) {
+  const [all, setAll] = useState(false)
+  const long = table.rows.length > LONG_TABLE
+  const rows = long && !all ? table.rows.slice(0, FOLDED_ROWS) : table.rows
   return (
     <div className="table-wrap">
       <table className="data" aria-label={table.title_he}>
@@ -23,7 +29,7 @@ export function DataTable({ table, highlightRow }: { table: ResultTable; highlig
           </tr>
         </thead>
         <tbody>
-          {table.rows.map((r, i) => (
+          {rows.map((r, i) => (
             <tr key={i} style={i === highlightRow ? { background: 'var(--accent-soft)' } : undefined}>
               {table.columns.map((c) => (
                 <td key={c.key} className={typeof r[c.key] === 'number' || r[c.key] === null ? 'num' : ''}>
@@ -34,6 +40,11 @@ export function DataTable({ table, highlightRow }: { table: ResultTable; highlig
           ))}
         </tbody>
       </table>
+      {long && (
+        <button className="btn small" onClick={() => setAll(!all)} data-testid="table-toggle">
+          {all ? 'הצג פחות' : `הצג את כל ${table.rows.length} השורות`}
+        </button>
+      )}
     </div>
   )
 }

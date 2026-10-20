@@ -197,7 +197,15 @@ def test_M8_api_journey(client: TestClient) -> None:
     pid = p.json()["id"]
     assert p.json()["derived"]["n_sync"] == 1500
     kinds = [s["kind"] for s in client.get(f"/api/projects/{pid}/studies").json()]
-    assert kinds == ["insulation", "dc_resistance", "no_load", "locked_rotor", "load", "inverter"]
+    assert kinds == [
+        "insulation",
+        "dc_resistance",
+        "no_load",
+        "locked_rotor",
+        "load",
+        "inverter",
+        "dol_start",
+    ]
     # a transformer study does not exist here
     r = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "vector_group", "case": {}})
     assert r.status_code == 404
@@ -261,7 +269,7 @@ def test_M8_api_journey(client: TestClient) -> None:
     assert sim2.json()["input_snapshot"]["case"]["M_targets"] == [r["M"] for r in sim_rows]
 
     guide = client.get(f"/api/projects/{pid}/guide").json()
-    assert guide["total"] == 3 + 4 * 6
+    assert guide["total"] == 3 + 4 * 7
     rp = client.post(
         f"/api/projects/{pid}/reports",
         json={
