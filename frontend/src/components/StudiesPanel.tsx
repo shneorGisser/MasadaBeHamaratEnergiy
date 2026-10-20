@@ -61,7 +61,8 @@ function CaseEditor({
       {Object.entries(study.default_case)
         .filter(([k]) => !HIDDEN_CASE_KEYS.has(k))
         .map(([k, def]) => {
-          const label = t(`case.${k}` as MessageKey)
+          const own = t(`case.${study.kind}.${k}` as MessageKey)
+          const label = own === `case.${study.kind}.${k}` ? t(`case.${k}` as MessageKey) : own
           const v = value[k] ?? ''
           if (typeof def === 'boolean')
             return (

@@ -32,6 +32,18 @@ MEASURE_DEFS: dict[str, MeasureDef] = {
             condition_keys=("I_f",),
         ),
         MeasureDef(
+            "synchronize",
+            (
+                MCol("I_peak", "שיא זרם (סקופ)", "A"),
+                MCol("I_final", "זרם סופי", "A"),
+                MCol("P_final", "הספק סופי", "W"),
+            ),
+            "fixed",
+            "row",
+            row_labels=("סגירת המפסק",),
+            condition_keys=("U_line", "I_f", "angle_deg", "df"),
+        ),
+        MeasureDef(
             "insulation",
             (MCol("R_ins", "התנגדות בידוד", "MΩ"),),
             "fixed",
@@ -215,6 +227,22 @@ def matching_case(
         if isinstance(raw, (int, float, str)) and str(raw).replace(".", "", 1).isdigit():
             base["I_f"] = float(raw)
         return base
+    if kind == "synchronize":
+        from vel.experiments.synchronous.studies import STUDIES
+
+        base = STUDIES["synchronize"].default_case(spec)
+        for key in ("U_line", "I_f"):
+            v = _cond_float(conditions, key)
+            if v is not None:
+                base[key] = v
+        for key in ("angle_deg", "df"):
+            try:
+                x = float(conditions.get(key, ""))
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(x):
+                base[key] = x
+        return base
     return {"U_test": 500.0}
 
 
@@ -303,6 +331,12 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
         "קצר פתאומי",
         "בזרם עירור נמוך מקצרים פתאום את שלוש היציאות ורושמים בסקופ את זרם הקו: זרם "
         "תת-מעברי, מעברי ומתמיד, ורכיב DC שתלוי ברגע הקצר.",
+    ),
+    (
+        "synchronize",
+        "סנכרון לרשת",
+        "משווים מתח, תדר ופאזה של המכונה לרשת וסוגרים את המפסק. בסקופ רואים את זרם הסגירה "
+        "ואת התנודה של זווית העומס עד שהמכונה ננעלת על הרשת.",
     ),
 ]
 

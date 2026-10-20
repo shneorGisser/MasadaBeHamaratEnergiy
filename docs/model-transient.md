@@ -228,3 +228,63 @@ agrees within 1.5 %.
 
 The cycle-averaged envelope is undefined within half a cycle of either end, and those samples
 are left empty instead of being zero-padded.
+
+## T1.5b — synchronous machine: synchronising to the grid
+
+`synchronize()` in `vel/engine/transient/synchronous.py`, study `synchronize` (experiment 3).
+It uses the same Sauer–Pai model as T1.5a, with two more states:
+
+* the load angle δ, with dδ/dt = ω_e − ω_b;
+* the rotor speed, with J·dω_m/dt = M_drive − M_em − M_fw.
+
+The friction law M_fw ∝ ω gives P_fw ∝ n², the same law as the steady-state model.
+
+**Setting.**
+
+* The bus is infinite: v_d + j·v_q = √2·V·(sin δ + j·cos δ).
+* Before the breaker closes, the machine runs open-circuit at f + Δf.
+* Its EMF is the real OCC value at I_f, and its q axis is Δθ ahead of the bus voltage.
+* After closing, the drive delivers a constant P_drive: + for a generator, − for a motor load.
+
+**Saturation — the honest compromise.** The phasor engine saturates through the resultant
+air-gap MMF; the dynamic model is linear.
+
+* The study first solves the steady state on the grid with the phasor engine (template
+  `motor_on_grid`). It then takes that solution's saturation factor k = E/(a·F).
+* `saturate(m, k)` scales the mutual reactances X_ad and X_aq by k, keeping the rotor
+  circuits. X_fd, X_1d and X_1q come from the equivalent-circuit identities. So X'd, X''d
+  and the time constants move consistently, and less than Xd does.
+* The field voltage sustains k·a·(I_f + F_res). The final state is therefore exact. The first
+  swing is approximate, because k changes during it. A `saturation_linearised` warning
+  appears when the pre-closing EMF and the model's field differ by more than 5 %.
+
+**Checks in every run.**
+
+* The final line current and power are compared with the phasor engine (`I_check`, `P_check`).
+  The comparison runs only when the swing has died out. If it has not, the run shows the
+  `not_settled` warning.
+* At the rated point the two engines agree to 1e-4 or better.
+* Pole slipping produces the `pole_slip` warning. Locking after slipping a pole pair produces
+  the `slipped_poles` warning.
+
+**Outputs.**
+
+* The line currents over the first 0.4 s, at full resolution.
+* The swing over the whole run: δ, P, n and the RMS current.
+* The analytic estimate of the closing current |ΔU|/X''d.
+
+**Assumed values.** J = 0.02 kg·m², together with the transient parameters of T1.5a. At
+rated voltage the swing is lightly damped and takes about 10 s to settle (the default
+t_end).
+
+**Tests.**
+
+* **TS5:** a perfect closing draws no current.
+* **TS6:** a lossless generator settles on P = 3EV·sin δ/Xd (δ within 0.01°).
+* **TS7:** a larger phase error gives a larger closing current, within the
+  √2·2V·sin(Δθ/2)/X''d bounds.
+* **TS8:** `saturate` keeps the reactance ordering, and the further a reactance is from the
+  air gap, the less it moves.
+* **TS9:** the study agrees with the phasor engine for P_drive = 0 and ±100 W.
+* **TS10:** an overload slips poles and is reported, with no false check.
+* **E2E T6:** the study runs with a 60° phase error.
