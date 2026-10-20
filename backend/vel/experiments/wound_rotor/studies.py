@@ -29,6 +29,12 @@ from vel.experiments.induction_motor import studies as im
 from vel.experiments.wound_rotor import templates
 from vel.experiments.wound_rotor.spec import WoundSpec
 from vel.experiments.wound_rotor.templates import WINDINGS
+from vel.experiments.wound_rotor.transient import (
+    J_ASSUMED,
+    StarterCase,
+    default_steps,
+    run_starter,
+)
 
 MODEL_VERSION = "mna-phasor-1.2+wrim-T-slip-1.0"
 MOTOR = "M"
@@ -486,6 +492,17 @@ STUDIES: dict[str, StudyDef] = {
 }
 
 
+STUDIES["starter_start"] = StudyDef(
+    "starter_start",
+    "התנעה דרך מתנע רוטור (סימולציה בזמן)",
+    "ציור 4-3: מתנע Rst בשלבים",
+    StarterCase,
+    lambda spec: {"points": default_steps(spec), "J": J_ASSUMED, "M_brake": 0.0, "angle_deg": 0.0},
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(kind: str, spec: WoundSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     sd = STUDIES.get(kind)
     if sd is None:
@@ -499,6 +516,8 @@ def execute(kind: str, spec: WoundSpec, circuit_doc: Any, case_doc: dict[str, An
     try:
         if isinstance(case, InsulationCase):
             return run_insulation(spec, case)
+        if isinstance(case, StarterCase):
+            return run_starter(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case)

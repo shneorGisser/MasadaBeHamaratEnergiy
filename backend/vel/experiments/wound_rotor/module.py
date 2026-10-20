@@ -20,6 +20,18 @@ _DC_LABELS = tuple(f"{label} · נקודה {k}" for _, label in WINDINGS for k i
 
 MEASURE_DEFS: dict[str, MeasureDef] = {
     **{k: im_module.MEASURE_DEFS[k] for k in SHARED},
+    "starter_start": MeasureDef(
+        "starter_start",
+        (
+            MCol("I_peak", "שיא זרם רגעי", "A"),
+            MCol("I_start", "זרם התנעה RMS", "A"),
+            MCol("t_95", "זמן התנעה", "s"),
+            MCol("n_final", "מהירות סופית", "rpm"),
+        ),
+        "fixed",
+        "row",
+        row_labels=("התנעה דרך מתנע",),
+    ),
     "load_rext": MeasureDef(
         "load_rext",
         im_module.MEASURE_DEFS["load"].columns,
@@ -109,6 +121,10 @@ def matching_case(
 ) -> dict[str, Any]:
     if kind in SHARED:
         return im_module.matching_case(kind, conditions, rows, spec)
+    if kind == "starter_start":
+        from vel.experiments.wound_rotor.transient import J_ASSUMED, default_steps
+
+        return {"points": default_steps(spec), "J": J_ASSUMED, "M_brake": 0.0, "angle_deg": 0.0}
     if kind == "load_rext":
         base = im_module.matching_case("load", conditions, rows, spec)
         try:
@@ -216,6 +232,12 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
         "inverter",
         "מנוע עם אינוורטר",
         "טבעות הרוטור מגושרות. בכל תדר 4 נקודות עומס; משווים זרם התנעה ב-10 Hz מול 50 Hz.",
+    ),
+    (
+        "starter_start",
+        "התנעה דרך מתנע רוטור",
+        "מתניעים עם מתנע הרוטור על הדרגה הגבוהה ומורידים אותו בשלבים עד קיצור הטבעות. "
+        "הסימולציה מראה את הזרם, המהירות והמומנט בכל שלב.",
     ),
 ]
 

@@ -83,6 +83,18 @@ MEASURE_DEFS: dict[str, MeasureDef] = {
             row_labels=("התנעה ישירה",),
         ),
         MeasureDef(
+            "star_delta",
+            (
+                MCol("I_peak", "שיא זרם רגעי", "A"),
+                MCol("I_start", "זרם התנעה RMS (בכוכב)", "A"),
+                MCol("t_95", "זמן התנעה", "s"),
+                MCol("n_final", "מהירות סופית", "rpm"),
+            ),
+            "fixed",
+            "row",
+            row_labels=("כוכב-משולש",),
+        ),
+        MeasureDef(
             "inverter",
             (
                 MCol("f", "f", "Hz"),
@@ -184,6 +196,8 @@ def matching_case(
         return {"points": pts, "law": "V/f", "U_boost": float(boost or 0.0), "f_start": 10.0}
     if kind == "dol_start":
         return {"U_line": None, "J": J_ASSUMED, "M_brake": 0.0, "t_end": 1.0, "angle_deg": 0.0}
+    if kind == "star_delta":
+        return {"U_line": None, "J": J_ASSUMED, "M_brake": 0.0, "t_switch": 0.5, "t_dead": 0.05}
     if kind == "dc_resistance":
         cur = [rows[i].get("I") for i in range(min(3, len(rows)))]
         targets = [float(x) for x in cur if isinstance(x, (int, float)) and x > 0]
@@ -265,6 +279,12 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
         "התנעה ישירה בזמן",
         "מחברים את המנוע ישירות לרשת (ללא אינוורטר) ורושמים בסקופ/צבת את שיא הזרם ואת זמן "
         "ההתנעה. הסימולציה מראה את זרם הקו, המהירות והמומנט כפונקציה של הזמן.",
+    ),
+    (
+        "star_delta",
+        "התנעת כוכב-משולש",
+        "מנוע שמתח המשולש שלו הוא מתח הרשת מותנע בכוכב (זרם הקו קטן פי 3) ועובר למשולש. "
+        "משווים את זרם ההתנעה ואת קפיצת הזרם במעבר להתנעה ישירה.",
     ),
 ]
 

@@ -85,3 +85,36 @@ def test_TI4_study_and_api(client: TestClient) -> None:
     )
     assert run.status_code == 201, run.text
     assert run.json()["status"] in ("success", "success_with_warnings")
+
+
+def test_TI5_star_delta_third_of_the_current_then_settles_in_delta() -> None:
+    from vel.engine.transient.induction import star_delta_start
+
+    u = SPEC.U_winding  # windings at their rating once in delta
+    sd = star_delta_start(SPEC, U_line=u, f=50.0, J=0.003, t_switch=0.4, t_dead=0.05, t_end=1.0)
+    dol = dol_start(SPEC, U_line=u, f=50.0, connection="D", J=0.003, t_end=0.05)
+    # the classic result: in star the line current is a third of the direct delta start
+    k = 40  # 10 ms
+    assert sd.i_line_rms[k] / dol.i_line_rms[k] == pytest.approx(1 / 3, rel=0.02)
+    op = operating_point(templates.load_test(u, 50.0, "D", m_load=0.0), NO_FE)
+    assert sd.n_final == pytest.approx(op.readings["M"]["n"], abs=0.01)
+    assert sd.i_line_rms_final == pytest.approx(op.readings["A"]["I"], rel=1e-4)
+    assert [e["label"] for e in sd.events] == ["מעבר (מנותק)", "משולש"]
+    # during the dead time no current flows and the motor coasts
+    dead = (sd.t > 0.401) & (sd.t < 0.449)
+    assert np.all(sd.i_line[dead] == 0) and np.all(np.diff(sd.n[dead]) <= 1e-9)
+
+
+def test_TI6_star_delta_study_warns_on_early_changeover(client: TestClient) -> None:
+    mod = registry.get("induction_motor")
+    spec = mod.default_spec()
+    ok = mod.execute("star_delta", spec, None, mod.studies["star_delta"].default_case(spec))
+    codes = {w["code"] for w in ok.warnings}
+    assert ok.status == "success_with_warnings" and "engines_disagree" not in codes
+    assert "early_changeover" not in codes
+    early = mod.execute("star_delta", spec, None, {"t_switch": 0.02, "t_dead": 0.0, "t_end": 0.8})
+    assert "early_changeover" in {w["code"] for w in early.warnings}
+    over = mod.execute("star_delta", spec, None, {"U_line": 380.0, "t_end": 1.2})
+    assert "winding_overvoltage" in {w["code"] for w in over.warnings}
+    bad = mod.execute("star_delta", spec, None, {"t_switch": 1.0, "t_end": 1.0})
+    assert bad.status == "invalid_input"

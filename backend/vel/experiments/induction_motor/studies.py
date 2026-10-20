@@ -24,7 +24,13 @@ from vel.experiments.induction_motor import derive, templates
 from vel.experiments.induction_motor.derive import MotorLike
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.induction_motor.templates import WINDINGS
-from vel.experiments.induction_motor.transient import J_ASSUMED, DolStartCase, run_dol_start
+from vel.experiments.induction_motor.transient import (
+    J_ASSUMED,
+    DolStartCase,
+    StarDeltaCase,
+    run_dol_start,
+    run_star_delta,
+)
 
 MODEL_VERSION = "mna-phasor-1.0+im-T-slip-1.0+im-dq5-1.0"
 
@@ -696,6 +702,25 @@ STUDIES["dol_start"] = StudyDef(
 )
 
 
+STUDIES["star_delta"] = StudyDef(
+    "star_delta",
+    "התנעת כוכב-משולש (סימולציה בזמן)",
+    "הרחבה: התנעה מופחתת זרם",
+    StarDeltaCase,
+    lambda spec: {
+        "U_line": None,
+        "J": J_ASSUMED,
+        "M_brake": 0.0,
+        "t_switch": 0.5,
+        "t_dead": 0.05,
+        "t_end": 1.2,
+        "angle_deg": 0.0,
+    },
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     """Run a study. Never raises for engineering failures: they become explicit statuses."""
     sd = STUDIES.get(kind)
@@ -712,6 +737,8 @@ def execute(kind: str, spec: MotorSpec, circuit_doc: Any, case_doc: dict[str, An
             return run_insulation(spec, case)
         if isinstance(case, DolStartCase):
             return run_dol_start(spec, case)
+        if isinstance(case, StarDeltaCase):
+            return run_star_delta(spec, case)
         if isinstance(case, DcResistanceCase):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             return run_dc_resistance(spec, circuits, case)
