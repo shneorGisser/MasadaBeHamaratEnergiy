@@ -13,7 +13,7 @@ Modelica Standard Library (BSD-3) and motulator (MIT); the solver is SciPy `solv
 | T1.2 | Star-delta start, wound-rotor starter steps (event-segmented integration) | **done** |
 | T1.3 | DC machine: start through a starter, shunt-generator voltage build-up (using the fitted OCC) | **done** |
 | T1.4 | Transformer energisation and inrush (saturation curve + remanence, switching angle) | **done** |
-| T1.5 | Synchronous machine: sudden 3-phase short circuit (checked against the analytic IEEE 115 envelope), synchronisation | |
+| T1.5 | Synchronous machine: sudden 3-phase short circuit (checked against the analytic IEEE 115 envelope), synchronisation | **short circuit done**; synchronisation next |
 | T1.6 | Inverter-fed motor (average model, V/f ramp) | |
 
 ## T1.1 — induction motor, direct-on-line start
@@ -186,3 +186,45 @@ core they agree exactly. The study reports this as `I0_check`.
 
 There is no measured inrush yet. The external check is the IPST 2011 inrush benchmark
 (Chiesa et al.).
+
+## T1.5a — synchronous machine: sudden three-phase short circuit
+
+`vel/engine/transient/synchronous.py`, study `sudden_sc` (experiment 3). Sauer–Pai
+sub-transient model with stator transients, rotor frame, generator convention, cylindrical
+rotor (X'q = Xq), speed held by the drive.
+
+**Parameters.**
+
+* From the spec: Xd = Xq = Xl + a·k_a (unsaturated) and R = Ra.
+* Defaults for what the spec lacks:
+  * X''d = X2, the measured negative-sequence reactance (X2 ≈ (X''d + X''q)/2);
+  * X'd = 1.5·X''d (assumed);
+  * T'd0 = 0.3 s, T''d0 = 0.02 s, T''q0 = 0.03 s (assumed).
+* The run lists which of these values are assumed.
+
+**Linearity.** The model is linear (air-gap line), which is correct for the sustained current
+of a short-circuited machine. When the OCC is saturated at the chosen field current, the run
+warns that the initial currents are slightly overstated.
+
+**Two independent checks in every run:**
+
+* the sustained current against the steady-state model (same E/Xs);
+* the AC envelope against the IEEE Std 115 formula at 0.1 s.
+
+For the lab machine (Ra = 33 Ω against X''d = 151 Ω, far from R ≪ X) the envelope still
+agrees within 1.5 %.
+
+**Tests (`test_transient_synchronous.py`):**
+
+* **TS1:** the envelope is within 3 % of IEEE 115 at 0.05, 0.1, 0.3 and 1.0 s, for R small
+  and for the lab's R.
+* **TS2:**
+  * the sustained current equals E/|R + jXs| (1e-5);
+  * the first-cycle peak lies between √2E/X''d and twice that;
+  * the field-current kick returns to the pre-fault value.
+* **TS3:** the rotor angle at the fault sets the DC offset of phase A.
+* **TS4:** the study passes both checks and rejects inconsistent reactances
+  (X''d < Xl).
+
+The cycle-averaged envelope is undefined within half a cycle of either end, and those samples
+are left empty instead of being zero-padded.

@@ -22,6 +22,7 @@ from vel.experiments.common import (
 from vel.experiments.synchronous import derive, templates
 from vel.experiments.synchronous.spec import SyncSpec
 from vel.experiments.synchronous.templates import FAULTS, WINDINGS
+from vel.experiments.synchronous.transient import TD01, TD02, TQ02, SuddenScCase, run_sudden_sc
 
 MODEL_VERSION = "mna-phasor-1.1+sm-mmf-seq-1.0"
 MACHINE = "G"
@@ -791,6 +792,26 @@ STUDIES: dict[str, StudyDef] = {
 }
 
 
+STUDIES["sudden_sc"] = StudyDef(
+    "sudden_sc",
+    "קצר פתאומי (סימולציה בזמן)",
+    "הרחבה: זרמים תת-מעבריים ומעבריים",
+    SuddenScCase,
+    lambda spec: {
+        "I_f": 0.4,
+        "Xd2": None,
+        "Xd1": None,
+        "Td01": TD01,
+        "Td02": TD02,
+        "Tq02": TQ02,
+        "angle_deg": 0.0,
+        "t_end": 1.0,
+    },
+    None,
+    editable_circuit=False,
+)
+
+
 def execute(kind: str, spec: SyncSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:
     sd = STUDIES.get(kind)
     if sd is None:
@@ -804,6 +825,8 @@ def execute(kind: str, spec: SyncSpec, circuit_doc: Any, case_doc: dict[str, Any
     try:
         if isinstance(case, InsulationCase):
             return run_insulation(spec, case)
+        if isinstance(case, SuddenScCase):
+            return run_sudden_sc(spec, case)
         if isinstance(case, (DcResistanceCase, ShortCircuitCase)):
             circuits = {k: CircuitModel.model_validate(v) for k, v in circuit_doc.items()}
             if isinstance(case, DcResistanceCase):

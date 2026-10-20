@@ -88,3 +88,17 @@ test('T4: transformer inrush — three line currents and limb fluxes', async ({ 
   await expect(view.locator('.chart canvas')).toHaveCount(2)
   await page.screenshot({ path: 'test-results/t4-inrush.png', fullPage: true })
 })
+
+test('T5: synchronous machine sudden short circuit — envelope against IEEE 115', async ({ page }) => {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill('T5 קצר פתאומי')
+  await page.locator('select[name="experiment"]').selectOption('synchronous')
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-experiment')).toBeVisible()
+  await openTab(page, /קצר פתאומי/)
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.locator('[data-param="env_check"]')).toBeVisible()
+  await expect(view.locator('.chart canvas')).toHaveCount(3)
+  await page.screenshot({ path: 'test-results/t5-sudden-sc.png', fullPage: true })
+})

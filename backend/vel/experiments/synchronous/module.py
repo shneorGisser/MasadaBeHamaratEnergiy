@@ -20,6 +20,18 @@ MEASURE_DEFS: dict[str, MeasureDef] = {
     d.kind: d
     for d in [
         MeasureDef(
+            "sudden_sc",
+            (
+                MCol("I_peak", "שיא זרם (סקופ)", "A"),
+                MCol("I2", "I''k", "A"),
+                MCol("Ik", "I_k מתמיד", "A"),
+            ),
+            "fixed",
+            "row",
+            row_labels=("קצר פתאומי",),
+            condition_keys=("I_f",),
+        ),
+        MeasureDef(
             "insulation",
             (MCol("R_ins", "התנגדות בידוד", "MΩ"),),
             "fixed",
@@ -195,6 +207,14 @@ def matching_case(
         u = [rows[i].get("U") for i in range(min(3, len(rows)))]
         targets = [float(x) for x in u if isinstance(x, (int, float)) and 0 < x <= 25]
         return {"U_values": targets or [8.0, 16.0, 20.0]}
+    if kind == "sudden_sc":
+        from vel.experiments.synchronous.studies import STUDIES
+
+        base = STUDIES["sudden_sc"].default_case(spec)
+        raw = conditions.get("I_f", base["I_f"])
+        if isinstance(raw, (int, float, str)) and str(raw).replace(".", "", 1).isdigit():
+            base["I_f"] = float(raw)
+        return base
     return {"U_test": 500.0}
 
 
@@ -277,6 +297,12 @@ STUDY_STEPS: list[tuple[str, str, str]] = [
         "אופייני V",
         "המכונה עובדת כמנוע מחובר לרשת. בהספק קבוע משנים את זרם העירור ורושמים Ia ו-cos φ. "
         "טבלה 6.7.",
+    ),
+    (
+        "sudden_sc",
+        "קצר פתאומי",
+        "בזרם עירור נמוך מקצרים פתאום את שלוש היציאות ורושמים בסקופ את זרם הקו: זרם "
+        "תת-מעברי, מעברי ומתמיד, ורכיב DC שתלוי ברגע הקצר.",
     ),
 ]
 

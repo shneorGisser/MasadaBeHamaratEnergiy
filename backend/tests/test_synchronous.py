@@ -249,6 +249,7 @@ def test_G12_api_journey(client: TestClient) -> None:
         "regulation",
         "zpf",
         "v_curves",
+        "sudden_sc",
     ]
     for st in studies:
         r = client.post(
