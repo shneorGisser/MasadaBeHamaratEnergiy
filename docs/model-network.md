@@ -118,3 +118,55 @@ and loading for a load flow, I''k3 and I''k1,min for a short circuit.
 Protection and TCC: the breaker and fuse curves of the installation module on log-log axes,
 the selectivity check between C1 and C2, and the minimum fault current against the
 magnetic-release threshold.
+
+## N2 — protection: time–current curves, disconnection and selectivity
+
+Study `protection` (`vel/experiments/network/protection.py`).
+
+**Breakers.** Thermal-magnetic breakers sit at the head of each zone:
+
+* Q1 at B1, feeding C1;
+* Q2 at B2, feeding C2;
+* Q3, the bench outlet's breaker, at B3.
+
+They use the breaker model of experiment 8, `mcb_trip`: a first-order bimetal tripping at
+k_t², and a magnetic release at k_m·I_n after t_mag. In the spec section `protection`:
+
+* Q3 = C16 with τ = 48.7 s, the value fitted in experiment 8;
+* Q1 = 250 A and Q2 = 63 A, with assumed τ.
+
+**Checks.** The fault currents come from the IEC 60909 study, and pandapower is checked against
+our solver in every run.
+
+* **Disconnection (IEC 60364-4-41, TN system).** The minimum earth-fault current at the end of
+  each zone must trip that zone's breaker in time:
+  * Q1, for the zone ending at B2, within 5 s;
+  * Q2, for the zone ending at B3, within 5 s;
+  * Q3, at B3, within t_disc = 0.4 s.
+* **Overload.** I_n ≤ I_z of the protected cable.
+* **Selectivity.**
+  * The fault is placed just below the downstream breaker. That gives Q3/Q2 at the maximum
+    I''k3 of B3, and Q2/Q1 at the maximum I''k3 of B2.
+  * The limit is the first current at which the upstream breaker does not trip later than the
+    downstream one (with an optional margin). It is found by a scan and then bisection.
+  * In this model two magnetic releases trip in the same t_mag, so selectivity ends exactly at
+    the upstream magnetic threshold (630 A and 2500 A for the preset). This is the "partial
+    selectivity" of manufacturers' tables.
+  * Real breakers can be selective beyond that threshold through current limitation or energy
+    selectivity. That needs the manufacturers' tables, which are not modelled. The run states
+    this in its warning.
+
+**Outputs.**
+
+* A zones table: disconnection time against the required time, I_z, and I''k3 at the breaker's
+  location (the breaking capacity it needs).
+* A selectivity table.
+* Time–current curves of the three breakers on log-log axes.
+
+**Tests.**
+
+* **N7:** the selectivity limit equals k_m·I_n of the upstream breaker. Below that threshold
+  the pair is selective over the whole range.
+* **N8:** for the preset, every zone disconnects in time and both pairs are partially
+  selective. With a 2 km bench cable and Q2 = 100 A, both `disconnection_fails` and
+  `overload_unprotected` are raised. The curves fall with current and end at t_mag.

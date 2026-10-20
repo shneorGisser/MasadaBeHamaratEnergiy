@@ -21,6 +21,7 @@ type Section =
   | 'cable1'
   | 'cable2'
   | 'loads'
+  | 'protection'
 interface FieldDef {
   section: Section
   key: string
@@ -160,6 +161,18 @@ const NETWORK_FORM: FormDef = {
     { section: 'loads', key: 'pf2', label: 'cos φ בלוח המעבדה', unit: '' },
     { section: 'loads', key: 'P3_kW', label: 'עומס בעמדה P', unit: 'kW' },
     { section: 'loads', key: 'pf3', label: 'cos φ בעמדה', unit: '' },
+    { section: 'protection', key: 'Q1_In', label: 'Q1 (ראש הכבל הראשי): I_n', unit: 'A' },
+    { section: 'protection', key: 'Q1_km', label: 'Q1: סף מגנטי', unit: '×In' },
+    { section: 'protection', key: 'Q1_tau', label: 'Q1: τ תרמי', unit: 's' },
+    { section: 'protection', key: 'Q2_In', label: 'Q2 (ראש הכבל לעמדה): I_n', unit: 'A' },
+    { section: 'protection', key: 'Q2_km', label: 'Q2: סף מגנטי', unit: '×In' },
+    { section: 'protection', key: 'Q2_tau', label: 'Q2: τ תרמי', unit: 's' },
+    { section: 'protection', key: 'Q3_In', label: 'Q3 (מפסק העמדה): I_n', unit: 'A' },
+    { section: 'protection', key: 'Q3_km', label: 'Q3: סף מגנטי', unit: '×In' },
+    { section: 'protection', key: 'Q3_tau', label: 'Q3: τ תרמי', unit: 's' },
+    { section: 'protection', key: 'k_t', label: 'k_t סף תרמי (משותף)', unit: '×In' },
+    { section: 'protection', key: 't_mag', label: 'זמן שחרור מגנטי', unit: 's' },
+    { section: 'protection', key: 't_disc', label: 'זמן ניתוק נדרש במעגל סופי', unit: 's' },
   ],
   derived: [
     { key: 'I_n_lv', label: 'זרם נקוב של השנאי (מ״נ)', unit: 'A' },
@@ -377,6 +390,7 @@ const SECTION_TITLE: Record<Section, MessageKey> = {
   cable1: 'spec.cable1',
   cable2: 'spec.cable2',
   loads: 'spec.loads',
+  protection: 'spec.protection',
 }
 const SECTIONS = Object.keys(SECTION_TITLE) as Section[]
 

@@ -70,6 +70,26 @@ class Loads(BaseModel):
     pf3: float = Field(gt=0, le=1)
 
 
+class Protection(BaseModel):
+    """Thermal-magnetic breakers at the head of each feeder, one model for all (as the MCB of
+    experiment 8): bimetal θ' = (k² − θ)/τ tripping at k_t², magnetic release at k_m·In after
+    t_mag. Q1 feeds C1 from B1, Q2 feeds C2 from B2, Q3 is the bench outlet's breaker at B3."""
+
+    model_config = ConfigDict(extra="forbid")
+    Q1_In: float = Field(default=250.0, gt=0, le=1e4)
+    Q1_km: float = Field(default=10.0, gt=1, le=50)
+    Q1_tau: float = Field(default=300.0, gt=0, le=1e5)
+    Q2_In: float = Field(default=63.0, gt=0, le=1e4)
+    Q2_km: float = Field(default=10.0, gt=1, le=50)
+    Q2_tau: float = Field(default=120.0, gt=0, le=1e5)
+    Q3_In: float = Field(default=16.0, gt=0, le=1e4)
+    Q3_km: float = Field(default=10.0, gt=1, le=50)
+    Q3_tau: float = Field(default=48.7, gt=0, le=1e5)
+    k_t: float = Field(default=1.3, gt=1, le=2)
+    t_mag: float = Field(default=0.01, gt=0, le=0.5)
+    t_disc: float = Field(default=0.4, gt=0, le=5, description="IEC 60364-4-41, TN 230 V")
+
+
 class NetworkSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
     provenance: Provenance
@@ -79,6 +99,7 @@ class NetworkSpec(BaseModel):
     cable1: Cable
     cable2: Cable
     loads: Loads
+    protection: Protection = Field(default_factory=Protection)
 
     @property
     def I_n_lv(self) -> float:
@@ -91,7 +112,8 @@ def typical_substation() -> NetworkSpec:
         provenance_note=(
             "כל הערכים מוערכים: תחנת השנאה טיפוסית 22/0.4 kV, 630 kVA, uk = 6 %; רשת "
             "ההזנה S''k = 250/150 MVA; כבל ראשי 4×150 mm² אלומיניום 80 m וכבל לעמדה "
-            "4×16 mm² נחושת 30 m; עומסים משוערים. לא נמדד דבר"
+            "4×16 mm² נחושת 30 m; עומסים משוערים; מפסקים 250/63/16 A (C16 בעמדה כמו "
+            "בניסוי 8, τ שלו מהתאמת ניסוי 8; τ של Q1, Q2 מוערכים). לא נמדד דבר"
         ),
         grid=Grid(U_n_kV=22.0, Sk_max_MVA=250.0, Sk_min_MVA=150.0, RX=0.1),
         trafo=Transformer(
@@ -100,6 +122,7 @@ def typical_substation() -> NetworkSpec:
         cable1=Cable(L_m=80.0, r=0.206, x=0.080, I_max=275.0),
         cable2=Cable(L_m=30.0, r=1.15, x=0.080, I_max=80.0),
         loads=Loads(P2_kW=40.0, pf2=0.9, P3_kW=5.0, pf3=0.85),
+        protection=Protection(),
     )
 
 

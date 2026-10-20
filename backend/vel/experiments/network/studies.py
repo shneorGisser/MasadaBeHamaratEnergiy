@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from vel.engine.network import direct, pp_model
 from vel.experiments.common import Outcome, Param, StudyDef, StudyError, col
+from vel.experiments.network.protection import ProtectionCase, run_protection
 from vel.experiments.network.spec import BUS_LABELS, BUSES, NetworkSpec
 
 MODEL_VERSION = "pandapower-3.5+net-direct-1.0"
@@ -342,7 +343,20 @@ STUDIES: dict[str, StudyDef] = {
         editable_circuit=False,
     ),
 }
-_RUN = {"load_flow": run_load_flow, "short_circuit": run_short_circuit}
+STUDIES["protection"] = StudyDef(
+    "protection",
+    "הגנות: אופייני זמן–זרם וסלקטיביות",
+    "מודול רשת: ניתוק אוטומטי (IEC 60364-4-41) וסלקטיביות בין המפסקים",
+    ProtectionCase,
+    lambda spec: {"margin": 0.0},
+    None,
+    editable_circuit=False,
+)
+_RUN = {
+    "load_flow": run_load_flow,
+    "short_circuit": run_short_circuit,
+    "protection": run_protection,
+}
 
 
 def execute(kind: str, spec: NetworkSpec, circuit_doc: Any, case_doc: dict[str, Any]) -> Outcome:

@@ -103,9 +103,47 @@ def test_N6_api_project_runs_and_measurements(client: TestClient) -> None:
     assert p.status_code == 201, p.text
     pid = p.json()["id"]
     kinds = [s["kind"] for s in client.get(f"/api/projects/{pid}/studies").json()]
-    assert kinds == ["load_flow", "short_circuit"]
+    assert kinds == ["load_flow", "short_circuit", "protection"]
     r = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "short_circuit", "case": {}})
     assert r.status_code == 201, r.text
     assert r.json()["status"] == "success_with_warnings"
     guide = client.get(f"/api/projects/{pid}/guide").json()
     assert guide["total"] == 3 + 4 * 2
+
+
+# --- N2: protection ------------------------------------------------------------------------
+
+
+def test_N7_selectivity_ends_at_the_upstream_magnetic_threshold() -> None:
+    from vel.experiments.network.protection import devices, selectivity_limit
+
+    d = devices(SPEC)
+    p = SPEC.protection
+    assert selectivity_limit(d["Q3"], d["Q2"], 4300.0, 0.0) == pytest.approx(
+        p.Q2_km * p.Q2_In, rel=1e-6
+    )
+    # below the upstream threshold the pair is selective over the whole range
+    assert selectivity_limit(d["Q3"], d["Q2"], 0.9 * p.Q2_km * p.Q2_In, 0.0) is None
+
+
+def test_N8_protection_study_checks_and_failures() -> None:
+    out = MOD.execute("protection", SPEC, None, {})
+    assert out.status == "success_with_warnings", out.error
+    codes = [w["code"] for w in out.warnings]
+    assert codes.count("partial_selectivity") == 2
+    assert "disconnection_fails" not in codes and "overload_unprotected" not in codes
+    zones = out.result["tables"][0]["rows"]  # type: ignore[index]
+    assert [z["disc"] for z in zones] == ["עומד"] * 3
+    # a long, thin bench cable: the earth-fault current falls below Q3's magnetic threshold
+    weak = SPEC.model_copy(
+        update={
+            "cable2": SPEC.cable2.model_copy(update={"L_m": 2000.0}),
+            "protection": SPEC.protection.model_copy(update={"Q2_In": 100.0}),
+        }
+    )
+    codes = {w["code"] for w in MOD.execute("protection", weak, None, {}).warnings}
+    assert {"disconnection_fails", "overload_unprotected"} <= codes
+    tcc = out.result["tables"][2]["rows"]  # type: ignore[index]
+    # each curve falls with current and ends in the magnetic release
+    t3 = [r["t3"] for r in tcc if r["t3"] is not None]
+    assert all(a >= b for a, b in zip(t3, t3[1:], strict=False)) and t3[-1] == SPEC.protection.t_mag
