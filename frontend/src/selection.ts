@@ -4,9 +4,14 @@ import { create } from 'zustand'
 interface SelectionState {
   selected: string | null
   select: (id: string | null) => void
+  /** cable highlighted by the wiring guide, in both views */
+  wire: string | null
+  highlightWire: (id: string | null) => void
 }
 
 export const useSelection = create<SelectionState>((set) => ({
   selected: null,
   select: (id) => set({ selected: id }),
+  wire: null,
+  highlightWire: (id) => set({ wire: id }),
 }))

@@ -11,8 +11,9 @@ from sqlalchemy import select
 
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
+from vel.engine.circuit import CircuitModel
 from vel.engine.netlist import catalog_json
-from vel.errors import not_found
+from vel.errors import ApiError, not_found
 from vel.orm import SimulationRun
 from vel.services import runs as svc
 
@@ -115,6 +116,18 @@ def list_studies(project_id: str, session: SessionDep) -> list[StudyOut]:
 def get_circuit(project_id: str, kind: str, session: SessionDep) -> Any:
     p = load_project(session, project_id)
     return {"kind": kind, "circuit": svc.current_circuit(session, p, kind)}
+
+
+@router.get("/projects/{project_id}/circuits/{kind}/wiring")
+def get_wiring(project_id: str, kind: str, session: SessionDep) -> Any:
+    """Step-by-step wiring guide derived from the saved circuit of this study."""
+    from vel.services.wiring import guide
+
+    p = load_project(session, project_id)
+    doc = svc.current_circuit(session, p, kind)
+    if not isinstance(doc, dict) or "components" not in doc:
+        raise ApiError(409, "not_single_circuit", "this study uses several fixed circuits")
+    return guide(CircuitModel.model_validate(doc))
 
 
 @router.put("/projects/{project_id}/circuits/{kind}")

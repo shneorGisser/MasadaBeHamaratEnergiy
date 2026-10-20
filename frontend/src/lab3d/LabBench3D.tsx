@@ -261,6 +261,7 @@ function Scene({
 }) {
   const selected = useSelection((s) => s.selected)
   const select = useSelection((s) => s.select)
+  const wire = useSelection((s) => s.wire)
   // drei <Html> labels mounted in the canvas's very first commit lose their content (the first
   // one in the list never rendered). Mounting them after the first frame avoids that.
   const [labels, setLabels] = useState(false)
@@ -315,8 +316,8 @@ function Scene({
         <Line
           key={w.id}
           points={[terminalPos(w.a.component, w.a.terminal), terminalPos(w.b.component, w.b.terminal)]}
-          color={['#8b4513', '#111111', '#777777', '#1f4fa3'][i % 4]}
-          lineWidth={2}
+          color={w.id === wire ? '#e74c3c' : ['#8b4513', '#111111', '#777777', '#1f4fa3'][i % 4]}
+          lineWidth={w.id === wire ? 6 : 2}
         />
       ))}
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.1} />

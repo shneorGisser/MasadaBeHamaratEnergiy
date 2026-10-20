@@ -130,6 +130,12 @@ function Editor({
   const selected = nodes.find((n) => n.selected)
   const shared = useSelection((st) => st.selected)
   const select = useSelection((st) => st.select)
+  const wire = useSelection((st) => st.wire)
+  // the cable the wiring guide is on: drawn thick and animated (display only, not saved)
+  const shownEdges = useMemo(
+    () => (wire ? edges.map((e) => (e.id === wire ? { ...e, animated: true, zIndex: 10, style: { stroke: '#c0392b', strokeWidth: 4 } } : e)) : edges),
+    [edges, wire],
+  )
 
   // external selection (3D bench) → schematic
   useEffect(() => {
@@ -226,7 +232,7 @@ function Editor({
         <div className="sch-canvas" dir="ltr" data-testid="schematic">
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={shownEdges}
             nodeTypes={nodeTypes}
             onNodesChange={(ch) => {
               onNodesChange(ch)
