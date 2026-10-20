@@ -167,7 +167,7 @@ Command: ruff, mypy, pytest (backend) → all pass; CI green on the previous com
 
 ## R1/R2 — real reports as measurement sets; automatic explanation of differences (2026-10-20)
 Command: `scripts/check.sh` → ALL CHECKS PASSED (Playwright 21)
-- `vel/labdata`: 6 transcribed reports, 41 tables (experiment 1 2025, experiment 3 2026 and 2025, experiments 4–6 2025),
+- `vel/labdata`: 6 transcribed reports, 39 tables (experiment 1 2025, experiment 3 2026 and 2025, experiments 4–6 2025),
   values as written, every interpretation in a table/row note. API: list per experiment, import (all / per study /
   one table) through the normal append-only entry path, each entry noted with its source.
 - Studies list now carries each study's condition keys; the measurement panel edits a set's conditions (U, If, n,
