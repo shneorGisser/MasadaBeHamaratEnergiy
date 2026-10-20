@@ -35,3 +35,30 @@ jobs:
       - name: End-to-end tests
         env: { PW_CHROMIUM: /nonexistent }
         run: scripts/ci-step.sh e2e "cd frontend && npx playwright test"
+
+  # The deployable artifact itself: build the production image and smoke-test it against a
+  # real PostgreSQL 16 (as on Cloud SQL) — migrations, a simulation, a report and its Word export.
+  container:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: vel, POSTGRES_PASSWORD: vel, POSTGRES_DB: vel }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vel" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t virtual-energy-lab .
+      - name: Run container (PostgreSQL)
+        run: |
+          docker run -d --name vel --network host -e PORT=8080 \
+            -e VEL_DATABASE_URL=postgresql+psycopg://vel:vel@127.0.0.1:5432/vel virtual-energy-lab
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8080/api/health && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/api/health
+      - name: Smoke test
+        run: bash scripts/smoke-container.sh http://127.0.0.1:8080
+      - name: Container log on failure
+        if: failure()
+        run: docker logs vel | tail -100

@@ -10,7 +10,7 @@ AI Studio מתאים לאב-טיפוס של העיצוב בלבד. השרת הא
 | התקנת ה-backend כחבילה רגילה (כמו בקונטיינר) והרצת מיגרציות, סימולציה ודו״ח | עבר |
 | כל 98 בדיקות ה-backend מול PostgreSQL 16 אמיתי (`VEL_TEST_PG_URL`) | עבר |
 | שרת FastAPI שמגיש את ה-build של ה-frontend (זה מה שרץ בבדיקות ה-E2E) | עבר |
-| `docker build` | **לא נבדק:** Docker Hub חסום בסביבת העבודה שלי. צריך להריץ אצלך או ב-Cloud Build |
+| `docker build` והרצת הקונטיינר מול PostgreSQL 16 | נבדק ב-CI (משימת `container`) בכל push: בנייה, מיגרציות, סימולציה, השוואה לטבלת 2025, דו״ח Word, מדריך חיבור (`scripts/smoke-container.sh`) |
 | פריסה בפועל ל-Cloud Run | **לא בוצעה:** דורשת את חשבון ה-Google Cloud שלך |
 
 ## 1. הכנה (פעם אחת)
@@ -35,6 +35,9 @@ printf 'postgresql+psycopg://vel:CHOOSE_A_STRONG_PASSWORD@/vel?host=/cloudsql/%s
 עלות: db-f1-micro עולה בערך 8$ לחודש. אין לו Free Tier, והוא לא מכוסה ב-SLA.
 
 ## 3. פריסה
+אחרי הפריסה מריצים את אותה בדיקת עשן מול הכתובת הציבורית:
+`scripts/smoke-container.sh https://<השירות>.run.app`
+
 ```bash
 gcloud run deploy virtual-energy-lab --source . --region=$REGION \
   --add-cloudsql-instances=$INSTANCE \
