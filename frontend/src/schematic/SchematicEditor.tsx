@@ -18,6 +18,7 @@ import { api } from '../api/client'
 import { ErrorBox } from '../components/ErrorBox'
 import ComponentNode from './ComponentNode'
 import CurrentEdge, { type CurrentData } from './CurrentEdge'
+import PhasorDiagram, { type Phasor } from './PhasorDiagram'
 import { useCatalog, useCircuit } from './hooks'
 import {
   fromFlow,
@@ -35,6 +36,7 @@ const edgeTypes = { current: CurrentEdge }
 interface LivePoint {
   status: string
   dc?: boolean
+  readings?: Record<string, Record<string, number | null>>
   wire_currents?: Record<string, { I: number; angle_deg?: number } | null>
   error?: { message: string }
 }
@@ -234,6 +236,40 @@ function Editor({
     }
   }
 
+  // instrument dials: the live reading of each meter (display only)
+  const shownNodes = useMemo(() => {
+    const rd = flowOn && !dirty ? flow?.readings : undefined
+    if (!rd) return nodes
+    const dc = Boolean(flow?.dc)
+    return nodes.map((n) => {
+      const q = { ammeter: ['I', 'A'], voltmeter: ['U', 'V'], wattmeter: ['P', 'W'] }[n.data.comp.type] as [string, string] | undefined
+      const v = q ? rd[n.id]?.[q[0]] : undefined
+      if (!q || typeof v !== 'number') return n
+      return { ...n, data: { ...n.data, reading: { value: v, unit: q[1], signed: dc || q[0] === 'P' } } }
+    })
+  }, [nodes, flowOn, dirty, flow])
+
+  // AC only: voltmeter voltages and ammeter currents (current into the ammeter's p terminal)
+  const phasors = useMemo<Phasor[]>(() => {
+    if (!flowOn || dirty || !flow?.readings || !flow.wire_currents || flow.dc) return []
+    const out: Phasor[] = []
+    for (const n of nodes) {
+      const { comp } = n.data
+      if (comp.type === 'voltmeter') {
+        const r = flow.readings[comp.id]
+        if (typeof r?.U === 'number' && typeof r.angle_deg === 'number') out.push({ label: comp.id, mag: r.U, angle_deg: r.angle_deg, kind: 'U' })
+      } else if (comp.type === 'ammeter') {
+        const e = edges.find((x) => (x.source === comp.id && x.sourceHandle === 'p') || (x.target === comp.id && x.targetHandle === 'p'))
+        const w = e ? flow.wire_currents[e.id] : null
+        if (e && w && typeof w.angle_deg === 'number' && w.I > 1e-9) {
+          const into = e.target === comp.id // wire current flows source → target
+          out.push({ label: comp.id, mag: w.I, angle_deg: w.angle_deg + (into ? 0 : 180), kind: 'I' })
+        }
+      }
+    }
+    return out.slice(0, 8)
+  }, [flowOn, dirty, flow, nodes, edges])
+
   const currentNets = useMemo(() => nets(fromFlow(nodes, edges)), [nodes, edges])
 
   return (
@@ -290,7 +326,7 @@ function Editor({
       <div className="sch-layout">
         <div className="sch-canvas" dir="ltr" data-testid="schematic">
           <ReactFlow
-            nodes={nodes}
+            nodes={shownNodes}
             edges={shownEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
@@ -325,6 +361,7 @@ function Editor({
                   <li key={n.join()}>{n.join(' · ')}</li>
                 ))}
               </ol>
+              <PhasorDiagram phasors={phasors} />
             </div>
           )}
         </aside>

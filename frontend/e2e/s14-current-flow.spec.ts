@@ -21,7 +21,10 @@ test('F1: current flow on the schematic matches the solver, AC and DC', async ({
   await expect(page.getByTestId(`current-${wid}`)).toHaveAttribute('data-current', String(val!.I))
   // dots are drawn on the live cables
   await expect(page.getByTestId(`current-${wid}`).locator('circle[visibility="visible"]').first()).toBeAttached()
-  await page.waitForTimeout(400)
+  // the instruments become dials showing the same reading
+  await expect(page.getByTestId('node-Aa').getByTestId('analog-meter')).toBeVisible()
+  await expect(page.getByTestId('reading-Aa')).toContainText(ref.readings.Aa.I.toFixed(3).slice(0, 4))
+  await page.waitForTimeout(800)
   await page.getByTestId('schematic').screenshot({ path: 'test-results/f1-dc-flow.png' })
 
   // AC: the transformer's no-load circuit
@@ -34,6 +37,10 @@ test('F1: current flow on the schematic matches the solver, AC and DC', async ({
   await page.getByTestId('show-current').check()
   await page.getByTestId('show-current-values').check()
   await expect(page.locator('[data-testid^="current-"] circle[visibility="visible"]').first()).toBeAttached()
+  // AC: the phasor diagram shows the voltmeters and the ammeter
+  await expect(page.getByTestId('phasors').locator('[data-phasor="A"]')).toBeAttached()
+  await expect(page.getByTestId('phasors').locator('[data-phasor="V1"]')).toBeAttached()
+  await page.getByTestId('phasors').screenshot({ path: 'test-results/f1-phasors.png' })
   await page.waitForTimeout(400)
   await page.getByTestId('schematic').screenshot({ path: 'test-results/f1-ac-flow.png' })
 })

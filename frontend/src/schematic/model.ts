@@ -53,6 +53,8 @@ export interface ComponentType {
 export interface CompNodeData extends Record<string, unknown> {
   comp: CComponent
   ctype: ComponentType | undefined
+  /** live reading shown on an instrument's dial (display only, never saved) */
+  reading?: { value: number; unit: string; signed: boolean }
 }
 export type CompNode = Node<CompNodeData, 'component'>
 

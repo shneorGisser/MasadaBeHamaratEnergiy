@@ -1,6 +1,8 @@
 import { Handle, type NodeProps } from '@xyflow/react'
 import { POS, terminalSlots } from './slots'
 import { fmt } from '../format'
+import AnalogMeter from './AnalogMeter'
+import CircuitSymbol from './symbols'
 import type { CompNode } from './model'
 
 const SYMBOL: Record<string, string> = {
@@ -57,7 +59,17 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const { comp, ctype } = data
   const terminals = ctype?.terminals ?? []
   const slots = terminalSlots(comp.type, terminals)
-  const tall = comp.type === 'transformer3' || comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' || comp.type === 'dcmachine' ? 150 : comp.type === 'switch3' || comp.type === 'source3' || comp.type === 'load3' ? 110 : 70
+  // nodes with terminals on the bottom edge get room so the terminal labels clear the text
+  const tall =
+    comp.type === 'transformer3' || comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' || comp.type === 'dcmachine'
+      ? 150
+      : comp.type === 'source3'
+        ? 122
+        : comp.type === 'switch3' || comp.type === 'load3'
+          ? 110
+          : comp.type === 'wattmeter' || comp.type === 'source_dc'
+            ? 92
+            : 70
   const wide = comp.type === 'transformer3' ? 180 : comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' || comp.type === 'dcmachine' ? 150 : 110
   const instrument = ctype?.instrument
   return (
@@ -76,8 +88,18 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
           </>
         )}
       </div>
-      <div className="sch-symbol">{SYMBOL[comp.type] ?? '?'}</div>
-      <div className="sch-sub">{summary(comp.type, comp.params)}</div>
+      <div className="sch-symbol">
+        {data.reading ? (
+          <AnalogMeter value={data.reading.value} unit={data.reading.unit} signed={data.reading.signed} />
+        ) : SYMBOL[comp.type] ? (
+          <CircuitSymbol type={comp.type} />
+        ) : (
+          '?'
+        )}
+      </div>
+      <div className="sch-sub" data-testid={data.reading ? `reading-${comp.id}` : undefined}>
+        {data.reading ? `${fmt(data.reading.value)} ${data.reading.unit}` : summary(comp.type, comp.params)}
+      </div>
       {terminals.map((t) => {
         const sl = slots[t] ?? { side: 'left', at: 0.5 }
         const style: React.CSSProperties =

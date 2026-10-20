@@ -249,3 +249,23 @@ CI green on 41d304a, both jobs: `check` and the new `container`.
   - With prefers-reduced-motion the dots are static.
 - Playwright `s14-current-flow`: the value on the drawn cable equals the API's; DC and AC
   screenshots inspected.
+
+## Schematic: IEC symbols, analog dials, phasor diagram (2026-10-20)
+- **Symbols** follow IEC 60617 conventions and were drawn here:
+  - resistor as a rectangle, inductor as arcs, capacitor as plates;
+  - meters as a circle with a letter;
+  - machines as a circle with M / G / GS and 3~ or =, and slip rings for the wound rotor;
+  - transformer as two circles; switch and sources.
+  - QElectroTech's CC-BY collection was considered, but these shapes are simple enough to
+    draw without third-party artwork.
+- **Analog dials:** with "הצג זרימת זרם" on, every ammeter, voltmeter and wattmeter shows a
+  needle on the next standard lab range (1–1.5–2.5–3–5–6–7.5 ×10ⁿ, `meter.ts` + Vitest), with
+  the value underneath.
+  - DC meters and wattmeters are centre-zero (they can read negative).
+  - Wattmeter and DC-source nodes are taller, so the bottom terminal labels clear the text.
+    All 30 template schematics were re-screenshotted and inspected.
+- **Phasor diagram** (AC): the voltmeter voltages and the current into each ammeter's p
+  terminal, taken from the cable current. U and I have separate scales, and the labels avoid
+  each other.
+- Playwright `s14`: the dial value equals the API reading, and the AC phasors exist;
+  screenshots inspected.

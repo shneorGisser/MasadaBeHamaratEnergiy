@@ -233,3 +233,6 @@ html, body { overflow-x: hidden; }
 .workspace-split { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .workspace-split { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .page-head h1 { flex-basis: 100%; } }
+.sch-svg { color: var(--ink); display: block; margin: 0 auto; }
+.sch-node.instrument .sch-svg { color: var(--sim); }
+.sch-meter { color: var(--ink-2); display: block; margin: -4px auto 0; background: #fffdf6; border-radius: 6px; }
