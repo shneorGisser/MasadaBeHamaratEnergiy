@@ -11,6 +11,7 @@ from __future__ import annotations
 import cmath
 import math
 from collections.abc import Callable
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -31,6 +32,10 @@ from vel.experiments.transformer3ph.spec import TransformerSpec
 from vel.experiments.wound_rotor.spec import WoundSpec
 
 ZERO_Z = 1e-12
+
+# Cables as zero-volt branches (their currents become unknowns) roughly doubles the size of the
+# MNA system, so it is only switched on when the caller asks for the cable currents.
+WIRE_BRANCHES: ContextVar[bool] = ContextVar("WIRE_BRANCHES", default=False)
 
 
 class CircuitValidationError(Exception):
@@ -285,6 +290,9 @@ class Built:
     # instruments that straddle a rotating rotor circuit and the stator side (no single f)
     mixed_instruments: set[str] = field(default_factory=set)
     warnings: list[dict[str, Any]] = field(default_factory=list)
+    # wire id -> name of its zero-volt branch; wires left out as redundant parallel paths
+    wire_branches: dict[str, str] = field(default_factory=dict)
+    loop_wires: list[str] = field(default_factory=list)
 
 
 def _f(params: dict[str, Any], key: str, ctype: ComponentType, cid: str) -> float:
@@ -384,16 +392,28 @@ def build(
     if issues:
         raise CircuitValidationError(issues)
 
-    uf = _UnionFind()
+    # Wires are zero-volt branches, not merged nodes, so that the current in every cable is a
+    # solution unknown (current-flow display, wiring checks). `full` merges everything a closed
+    # conductor joins (the classic node of the schematic); `uf` merges only closed switch
+    # contacts. Wires that would close a loop of wires are redundant parallel paths: their
+    # current is indeterminate for ideal conductors, so they are left out of the network.
+    uf, full = _UnionFind(), _UnionFind()
     for c in circuit.components:
         for t in CATALOG[c.type].terminals:
             uf.add(f"{c.id}.{t}")
-    for w in circuit.wires:
-        uf.union(w.a.key(), w.b.key())
+            full.add(f"{c.id}.{t}")
     for c in circuit.components:
         if c.type == "switch3" and bool(c.params.get("closed", True)):
             for k in (1, 2, 3):
                 uf.union(f"{c.id}.i{k}", f"{c.id}.o{k}")
+                full.union(f"{c.id}.i{k}", f"{c.id}.o{k}")
+    tree_wires = [w for w in circuit.wires if full.union(w.a.key(), w.b.key())]
+    tree_ids = {w.id for w in tree_wires}
+    loop_wires = [w.id for w in circuit.wires if w.id not in tree_ids]
+    if not WIRE_BRANCHES.get():
+        for w in tree_wires:
+            uf.union(w.a.key(), w.b.key())
+        tree_wires, loop_wires = [], []
 
     roots: dict[str, int] = {}
     node_of_terminal: dict[str, int] = {}
@@ -402,6 +422,10 @@ def build(
         if r not in roots:
             roots[r] = len(roots)
         node_of_terminal[key] = roots[r]
+    full_roots: dict[str, int] = {}
+    merged_node: dict[str, int] = {}
+    for key in list(full.parent):
+        merged_node[key] = full_roots.setdefault(full.find(key), len(full_roots))
 
     counter = [len(roots)]
 
@@ -465,6 +489,13 @@ def build(
         "cpl": [],
     }
     built = Built(network=Network(n_nodes=0), node_of_terminal=node_of_terminal, f=f)
+    for w in tree_wires:
+        name = f"wire:{w.id}"
+        net_items["vs"].append(
+            VSource(node_of_terminal[w.a.key()], node_of_terminal[w.b.key()], 0j, name)
+        )
+        built.wire_branches[w.id] = name
+    built.loop_wires = loop_wires
 
     def series_z(a: int, b: int, z: complex, name: str) -> None:
         if abs(z) < ZERO_Z:
@@ -477,7 +508,7 @@ def build(
         for m in circuit.components:
             if m.type == "woundmotor3" and not bool(m.params.get("locked", False)):
                 slip = (slips or {}).get(m.id, 1.0)
-                comps, inst, mixed = _rotor_circuit(circuit, node_of_terminal, m)
+                comps, inst, mixed = _rotor_circuit(circuit, merged_node, m)
                 for cid in comps:
                     rotor_scale[cid] = slip
                 for iid in inst:
@@ -641,7 +672,23 @@ def build(
             built.instruments[c.id] = {"type": "wattmeter"}
 
     n_nodes = counter[0]
-    _check_voltage_loops(net_items["vs"], n_nodes)
+    # judged on the merged schematic nodes, so a source shorted by a cable is reported as such
+    term_of_node: dict[int, str] = {}
+    for tkey, tnode in node_of_terminal.items():
+        term_of_node.setdefault(tnode, tkey)
+
+    def merged(i: int) -> int:
+        k = term_of_node.get(i)
+        return merged_node[k] if k is not None else len(full_roots) + i
+
+    _check_voltage_loops(
+        [
+            VSource(merged(v.a), merged(v.b), v.v, v.name)
+            for v in net_items["vs"]
+            if not v.name.startswith("wire:")
+        ],
+        n_nodes,
+    )
 
     # Galvanic groups: which nodes have a defined potential relative to each other.
     guf = _UnionFind()

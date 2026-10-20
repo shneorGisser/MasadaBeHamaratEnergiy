@@ -11,11 +11,13 @@ import {
   type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSelection } from '../selection'
 import { api } from '../api/client'
 import { ErrorBox } from '../components/ErrorBox'
 import ComponentNode from './ComponentNode'
+import CurrentEdge, { type CurrentData } from './CurrentEdge'
 import { useCatalog, useCircuit } from './hooks'
 import {
   fromFlow,
@@ -28,6 +30,14 @@ import {
 } from './model'
 
 const nodeTypes = { component: ComponentNode }
+const edgeTypes = { current: CurrentEdge }
+
+interface LivePoint {
+  status: string
+  dc?: boolean
+  wire_currents?: Record<string, { I: number; angle_deg?: number } | null>
+  error?: { message: string }
+}
 
 function ParamPanel({
   node,
@@ -131,11 +141,35 @@ function Editor({
   const shared = useSelection((st) => st.selected)
   const select = useSelection((st) => st.select)
   const wire = useSelection((st) => st.wire)
-  // the cable the wiring guide is on: drawn thick and animated (display only, not saved)
-  const shownEdges = useMemo(
-    () => (wire ? edges.map((e) => (e.id === wire ? { ...e, animated: true, zIndex: 10, style: { stroke: '#c0392b', strokeWidth: 4 } } : e)) : edges),
-    [edges, wire],
+  // current flow: the solved current of every cable of the SAVED circuit (display only)
+  const [flowOn, setFlowOn] = useState(false)
+  const [labelsOn, setLabelsOn] = useState(false)
+  const flowQuery = useQuery({
+    queryKey: ['current-flow', projectId, kind, circuit],
+    queryFn: () => api.post<LivePoint>(`/api/projects/${projectId}/circuits/${kind}/operating-point`, { overrides: {}, wire_currents: true }),
+    enabled: flowOn,
+  })
+  const flow: LivePoint | null = useMemo(
+    () => (flowQuery.isError ? { status: 'error', error: { message: String(flowQuery.error) } } : (flowQuery.data ?? null)),
+    [flowQuery.isError, flowQuery.error, flowQuery.data],
   )
+  const flowBusy = flowQuery.isFetching
+
+  // the cable the wiring guide is on: drawn thick and animated (display only, not saved)
+  const shownEdges = useMemo(() => {
+    let out = edges
+    const wc = flowOn && !dirty ? flow?.wire_currents : undefined
+    if (wc) {
+      const scale = Math.max(1e-30, ...Object.values(wc).map((x) => (x ? Math.abs(x.I) : 0)))
+      out = out.map((e) => {
+        const x = wc[e.id]
+        const data: CurrentData = { I: x ? x.I : null, angle: x?.angle_deg, dc: Boolean(flow?.dc), scale, showLabel: labelsOn }
+        return { ...e, type: 'current', data }
+      })
+    }
+    if (wire) out = out.map((e) => (e.id === wire ? { ...e, animated: true, zIndex: 10, style: { stroke: '#c0392b', strokeWidth: 4 } } : e))
+    return out
+  }, [edges, wire, flowOn, flow, dirty, labelsOn])
 
   // external selection (3D bench) → schematic
   useEffect(() => {
@@ -227,6 +261,31 @@ function Editor({
         {saved && !dirty && <span className="badge ok">המעגל נשמר</span>}
         <span className="muted small grow">חיבור = גרירה מהדק להדק. קרבה במסך אינה חיבור חשמלי.</span>
       </div>
+      <div className="row small" data-testid="flow-controls">
+        <label className="row" style={{ gap: 4 }}>
+          <input type="checkbox" checked={flowOn} onChange={(e) => setFlowOn(e.target.checked)} data-testid="show-current" />
+          הצג זרימת זרם בכבלים
+        </label>
+        <label className="row" style={{ gap: 4 }}>
+          <input type="checkbox" checked={labelsOn} disabled={!flowOn} onChange={(e) => setLabelsOn(e.target.checked)} data-testid="show-current-values" />
+          עם ערכים
+        </label>
+        {flowOn && flowBusy && <span className="muted">פותר…</span>}
+        {flowOn && dirty && <span className="badge warn">הזרמים מוצגים אחרי שמירת המעגל</span>}
+        {flowOn && flow && flow.status !== 'success' && flow.status !== 'success_with_warnings' && (
+          <span className="badge warn" data-testid="flow-error">
+            אין פתרון: {flow.error?.message ?? flow.status}
+          </span>
+        )}
+        {flowOn && flow?.wire_currents && !dirty && (
+          <span className="muted">
+            {flow.dc
+              ? 'זרם ישר: הנקודות נעות בכיוון הזרם, במהירות לפי גודלו.'
+              : 'זרם חילופין: הנקודות מתנודדות לפי הפאזה (זמן מואט); ערך = RMS.'}{' '}
+            נקודת העבודה של המעגל השמור.
+          </span>
+        )}
+      </div>
       {saveError != null && <ErrorBox error={saveError} />}
       <div className="sch-layout">
         <div className="sch-canvas" dir="ltr" data-testid="schematic">
@@ -234,6 +293,7 @@ function Editor({
             nodes={nodes}
             edges={shownEdges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onNodesChange={(ch) => {
               onNodesChange(ch)
               if (ch.some((c) => c.type === 'position' || c.type === 'remove')) markDirty()

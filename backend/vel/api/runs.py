@@ -148,6 +148,8 @@ def reset_circuit(project_id: str, kind: str, body: ResetBody, session: SessionD
 class LiveBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # also solve the current in every cable (current-flow display); about twice the work
+    wire_currents: bool = False
 
 
 @router.post("/projects/{project_id}/circuits/{kind}/operating-point")
@@ -157,7 +159,7 @@ def live_operating_point(
     """One steady-state solution of the stored circuit with temporary parameter overrides
     (variac setting, switch state) — used by the 3D bench. Not persisted."""
     p = load_project(session, project_id)
-    return svc.live_point(session, p, kind, body.overrides)
+    return svc.live_point(session, p, kind, body.overrides, body.wire_currents)
 
 
 @router.post("/projects/{project_id}/runs", response_model=RunOut, status_code=201)

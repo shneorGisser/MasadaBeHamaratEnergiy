@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from vel.engine.circuit import CircuitModel
 from vel.engine.mna import Network, Solution, solve
-from vel.engine.netlist import Built, CircuitValidationError, build
+from vel.engine.netlist import WIRE_BRANCHES, Built, CircuitValidationError, build
 from vel.experiments.wound_rotor.spec import WoundSpec
 
 SLIP_SCAN = 80  # grid points used to locate the pull-out torque before root finding
@@ -25,6 +25,9 @@ class OperatingPoint:
     cond: float
     floating_groups: list[list[str]] = field(default_factory=list)
     warnings: list[dict[str, Any]] = field(default_factory=list)
+    # current in each cable, from terminal a to terminal b of the wire (DC: signed value;
+    # AC: magnitude and phase). None for a wire in a loop of wires (ideal parallel paths).
+    wire_currents: dict[str, dict[str, float] | None] = field(default_factory=dict)
 
 
 class MechanicalError(Exception):
@@ -58,9 +61,25 @@ def operating_point(
     *,
     dc: bool = False,
     on_stall: Literal["raise", "stall"] = "raise",
+    wire_currents: bool = False,
 ) -> OperatingPoint:
     """Steady state of the circuit. For an induction motor the slip is found from the torque
-    balance M_shaft(s) = M_load on the stable branch (0 ≤ s < s_pull-out)."""
+    balance M_shaft(s) = M_load on the stable branch (0 ≤ s < s_pull-out).
+
+    `wire_currents` also solves the current in every cable (OperatingPoint.wire_currents)."""
+    token = WIRE_BRANCHES.set(wire_currents)
+    try:
+        return _operating_point(circuit, equipment, dc, on_stall)
+    finally:
+        WIRE_BRANCHES.reset(token)
+
+
+def _operating_point(
+    circuit: CircuitModel,
+    equipment: Any,
+    dc: bool,
+    on_stall: Literal["raise", "stall"],
+) -> OperatingPoint:
     if dc and any(c.type == "dcmachine" for c in circuit.components):
         from vel.engine.dcmachine import dc_operating_point
 
@@ -450,6 +469,14 @@ def _electrical(
             p_src += -(vs.v * sol.branch_i[vs.name].conjugate()).real
     internals["_sources"] = {"P_delivered": p_src}
 
+    wire_currents: dict[str, dict[str, float] | None] = {w: None for w in built.loop_wires}
+    for wid, name in built.wire_branches.items():
+        # the zero-volt branch current flows from its node a (wire end a) through it to b
+        iw = sol.branch_i[name]
+        wire_currents[wid] = (
+            {"I": iw.real} if dc else {"I": abs(iw), "angle_deg": math.degrees(cmath.phase(iw))}
+        )
+
     return OperatingPoint(
         readings=readings,
         undefined=undefined,
@@ -458,6 +485,7 @@ def _electrical(
         cond=sol.cond,
         floating_groups=built.floating_groups,
         warnings=op_warnings,
+        wire_currents=wire_currents,
     )
 
 

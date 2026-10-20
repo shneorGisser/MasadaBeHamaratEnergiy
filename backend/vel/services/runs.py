@@ -171,7 +171,11 @@ LIVE_OVERRIDABLE = {
 
 
 def live_point(
-    session: Session, p: Project, kind: str, overrides: dict[str, dict[str, Any]]
+    session: Session,
+    p: Project,
+    kind: str,
+    overrides: dict[str, dict[str, Any]],
+    wire_currents: bool = False,
 ) -> dict[str, Any]:
     from vel.engine.mna import ConvergenceError, SingularCircuitError
     from vel.engine.netlist import CircuitValidationError
@@ -202,7 +206,7 @@ def live_point(
     try:
         types = {c.type for c in circuit.components}
         dc = "source3" not in types and bool(types & {"source_dc", "dcmachine"})
-        op = operating_point(circuit, spec, dc=dc, on_stall="stall")
+        op = operating_point(circuit, spec, dc=dc, on_stall="stall", wire_currents=wire_currents)
     except CircuitValidationError as exc:
         return {
             **base,
@@ -225,4 +229,7 @@ def live_point(
         "warnings": warnings,
         "internals": {k: v for k, v in op.internals.items() if not k.startswith("_")},
         "iterations": op.iterations,
+        # per-cable current (wire end a → end b) for the current-flow display
+        "wire_currents": op.wire_currents,
+        "dc": dc,
     }

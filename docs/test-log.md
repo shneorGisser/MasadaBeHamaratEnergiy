@@ -227,3 +227,25 @@ CI green on 41d304a, both jobs: `check` and the new `container`.
   its warnings when a table has no derived columns.
 - **Not tested against data:** RCD, insulation, earth and continuity. Their spec values are
   assumed because the 2025 tables are empty.
+
+## Current flow in the cables (2026-10-20)
+- Engine: on request (`wire_currents=True`, used by the live operating point), wires become
+  zero-volt MNA branches instead of merged nodes. The current in every cable is then a
+  solution unknown. This is off by default: it doubles the system size, and the runs do not
+  need it. A cable that closes a loop of cables (an ideal parallel path) is left
+  out of the network and reported as undefined; its current is indeterminate. Voltage-loop
+  errors are still judged on the merged schematic nodes, so their messages are unchanged.
+- `test_wire_currents.py`:
+  - every template circuit: the cable on an ammeter terminal carries the ammeter's current,
+    and voltmeter leads carry none (> 150 checks);
+  - a DC series loop has one current;
+  - a duplicated cable is undefined and changes no reading.
+- The full suite is unchanged. A test also shows that every reading is the same with the cable branches on and off (an induction motor on load).
+- UI: "הצג זרימת זרם" on the schematic. The idea comes from Falstad's CircuitJS (GPL); no
+  code was copied.
+  - DC: dots drift at a speed ∝ √(|I|/I_max), in the direction of the current.
+  - AC: dots oscillate with the current's phase, in slowed time.
+  - Values are shown on long cables, and on hover for every cable.
+  - With prefers-reduced-motion the dots are static.
+- Playwright `s14-current-flow`: the value on the drawn cable equals the API's; DC and AC
+  screenshots inspected.
