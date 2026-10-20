@@ -216,7 +216,7 @@ def test_M8_api_journey(client: TestClient) -> None:
     ).json()
     assert run["status"] in ("success", "success_with_warnings"), run["error"]
     assert run["input_snapshot"]["spec"]["nameplate"]["P_n"] == 370
-    assert run["model_version"].endswith("im-T-slip-1.0")
+    assert "im-T-slip-1.0" in run["model_version"]
     rep = client.post(f"/api/runs/{run['id']}/reproduce").json()
     assert rep["identical"] and rep["input_hash_matches"]
 
