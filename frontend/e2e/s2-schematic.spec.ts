@@ -94,3 +94,19 @@ test('S2: vector groups — clock number from topology', async ({ page }) => {
   }
   await page.screenshot({ path: 'test-results/s2-vector-group.png', fullPage: true })
 })
+
+test('W1: the wiring check compares nets with the manual — a removed cable is reported', async ({ page }) => {
+  await newProject(page, 'W1 בדיקת חיווט')
+  await openTab(page, 'ניסוי עומס')
+  await expect(page.getByTestId('node-T')).toBeVisible()
+  await page.getByTestId('check-wiring').click()
+  await expect(page.getByTestId('wiring-check')).toContainText('תואם לחוברת')
+  // delete one cable and save
+  await page.locator('.react-flow__edge').first().click()
+  await page.getByTestId('delete-selected').click()
+  await page.getByTestId('save-circuit').click()
+  await expect(page.getByTestId('dirty')).toHaveCount(0)
+  await page.getByTestId('check-wiring').click()
+  await expect(page.getByTestId('wiring-check')).toContainText('חסר חיבור')
+  await page.screenshot({ path: 'test-results/w1-wiring-check.png', fullPage: false })
+})

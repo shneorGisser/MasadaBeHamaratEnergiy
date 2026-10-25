@@ -131,6 +131,23 @@ def get_wiring(project_id: str, kind: str, session: SessionDep) -> Any:
     return guide(CircuitModel.model_validate(doc))
 
 
+@router.get("/projects/{project_id}/circuits/{kind}/check")
+def check_wiring(project_id: str, kind: str, session: SessionDep) -> Any:
+    """The saved circuit against the manual's wiring (the study's template), net by net."""
+    from vel.services.wiring_check import check
+
+    p = load_project(session, project_id)
+    doc = svc.current_circuit(session, p, kind)
+    if not isinstance(doc, dict) or "components" not in doc:
+        raise ApiError(409, "not_single_circuit", "this study uses several fixed circuits")
+    sd = svc.study_def(p, kind)
+    templates = {
+        v: CircuitModel.model_validate(svc.template_circuit(p, kind, v))
+        for v in (sd.variants or ("",))
+    }
+    return check(CircuitModel.model_validate(doc), templates)
+
+
 @router.put("/projects/{project_id}/circuits/{kind}")
 def put_circuit(project_id: str, kind: str, body: dict[str, Any], session: SessionDep) -> Any:
     p = load_project(session, project_id)

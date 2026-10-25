@@ -116,6 +116,7 @@ input.input.invalid { border-color: var(--err); background: var(--err-soft); }
 .alert { padding: 10px 12px; border-radius: 6px; border: 1px solid; font-size: 14px; }
 .alert.error { background: var(--err-soft); border-color: #e9b7b2; color: var(--err); }
 .alert.warn { background: var(--warn-soft); border-color: #ecd09e; color: #7a4a07; }
+.alert.ok { background: #e6f2ea; border-color: #b8d8c3; color: #1f5a37; }
 .alert.info { background: var(--sim-soft); border-color: #b8d3ea; color: #164f7f; }
 
 .badge {

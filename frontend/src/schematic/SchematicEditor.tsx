@@ -143,6 +143,16 @@ function Editor({
   const exportDxf = useDxfExport()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<unknown>(null)
+  const [wiringCheck, setWiringCheck] = useState<{ matches: boolean; variant: string; messages: string[] } | null>(null)
+  const [checkError, setCheckError] = useState<unknown>(null)
+  const runCheck = async () => {
+    setCheckError(null)
+    try {
+      setWiringCheck(await api.get(`/api/projects/${projectId}/circuits/${kind}/check`))
+    } catch (e) {
+      setCheckError(e)
+    }
+  }
   const [saved, setSaved] = useState(false)
   const selected = nodes.find((n) => n.selected)
   const shared = useSelection((st) => st.selected)
@@ -319,6 +329,9 @@ function Editor({
         <button className="btn" onClick={() => exportDxf(`circuit-${kind}.dxf`, fromFlow(nodes, edges), catalog, routes)} data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
           ייצוא DXF
         </button>
+        <button className="btn" onClick={() => void runCheck()} disabled={dirty} data-testid="check-wiring" title={dirty ? 'שמרו את המעגל קודם' : 'משווה צמתים חשמליים, לא את צורת הכבלים'}>
+          בדוק מול החוברת
+        </button>
         <button className="btn danger" onClick={deleteSelected} disabled={!nodes.some((n) => n.selected) && !edges.some((e) => e.selected)} data-testid="delete-selected">
           מחק נבחר
         </button>
@@ -352,6 +365,24 @@ function Editor({
         )}
       </div>
       {saveError != null && <ErrorBox error={saveError} />}
+      {checkError != null && <ErrorBox error={checkError} />}
+      {wiringCheck && !dirty && (
+        <div className={`alert ${wiringCheck.matches ? 'ok' : 'warn'}`} data-testid="wiring-check">
+          {wiringCheck.matches ? (
+            <span>החיווט תואם לחוברת{wiringCheck.variant ? ` (תצורה ${wiringCheck.variant})` : ''}: אותם צמתים חשמליים.</span>
+          ) : (
+            <>
+              <strong>החיווט שונה מהחוברת{wiringCheck.variant ? ` (נבדק מול תצורה ${wiringCheck.variant})` : ''}:</strong>
+              <ul style={{ margin: '4px 0 0', paddingInlineStart: 18 }}>
+                {wiringCheck.messages.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+              <span className="muted small">הבדל אינו בהכרח טעות (למשל מד זרם בצד השני של סליל הזרם) — הסימולציה רצה על מה שחובר.</span>
+            </>
+          )}
+        </div>
+      )}
       <div className="sch-layout">
         <div className="sch-canvas" dir="ltr" data-testid="schematic">
           <ReactFlow

@@ -36,8 +36,7 @@ Accepted, queued (after the time-domain steps T1.4–T1.6):
 5. Front-end unit tests (Vitest) for curves.ts, CurrentEdge, PhasorDiagram, SpecForm. Split
    LabBench3D into equipment/instrument files.
 6. Move `experiments/installation/physics.py` to `engine/`, so all physics lives in the engine.
-7. Wiring check of a student's own circuit against the template, by comparing nets (the
-   union-find `nets()` already exists in the front end and the back end).
+7. ~~Wiring check against the template~~ Done: `services/wiring_check.py`, `GET …/circuits/{kind}/check`, button "בדוק מול החוברת". Compares nets (not cables), picks the closest variant, reports missing joints with the student's groups and extra joints (shorts); a difference is reported as "differs from the manual", not as an error.
 
 Checked and rejected, or already the case:
 * "MNA has no nonlinear iteration": wrong. The magnetising branch is solved iteratively
