@@ -6,6 +6,7 @@ import { ErrorBox } from '../components/ErrorBox'
 import GuidePanel from '../components/GuidePanel'
 import ReportsPanel from '../components/ReportsPanel'
 import StudiesPanel from '../components/StudiesPanel'
+import ScriptPanel from '../components/ScriptPanel'
 import SpecForm from '../components/SpecForm'
 import { t } from '../i18n'
 
@@ -84,6 +85,9 @@ export default function ProjectPage() {
         <NavLink to={`/projects/${p.id}/spec`} className="tab">
           {experiment ? `מפרט ${experiment.equipment_he}` : t('tabs.spec')}
         </NavLink>
+        <NavLink to={`/projects/${p.id}/script`} className="tab">
+          סקריפט
+        </NavLink>
         <NavLink to={`/projects/${p.id}/reports`} className="tab">
           דו״חות
         </NavLink>
@@ -93,6 +97,7 @@ export default function ProjectPage() {
         <Route path="guide" element={<GuidePanel projectId={p.id} />} />
         <Route path="reports" element={<ReportsPanel projectId={p.id} />} />
         <Route path="spec" element={<SpecForm key={p.id} project={p} />} />
+        <Route path="script" element={<ScriptPanel key={p.id} projectId={p.id} experimentId={p.experiment_id} />} />
       </Routes>
     </div>
   )

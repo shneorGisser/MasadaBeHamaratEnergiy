@@ -38,12 +38,14 @@ def create_app(database_url: str | None = None, static_dir: Path | None = None) 
     )
     if static and static.is_dir():
         app.mount("/assets", StaticFiles(directory=static / "assets"), name="assets")
+        root = static.resolve()
 
         @app.get("/{path:path}", include_in_schema=False)
         def spa(path: str) -> FileResponse:
-            candidate = static / path
-            if path and candidate.is_file():
+            # resolve first: an encoded "../" must not reach files outside the static dir
+            candidate = (root / path).resolve()
+            if path and candidate.is_relative_to(root) and candidate.is_file():
                 return FileResponse(candidate)
-            return FileResponse(static / "index.html")
+            return FileResponse(root / "index.html")
 
     return app

@@ -236,3 +236,21 @@ html, body { overflow-x: hidden; }
 .sch-svg { color: var(--ink); display: block; margin: 0 auto; }
 .sch-node.instrument .sch-svg { color: var(--sim); }
 .sch-meter { color: var(--ink-2); display: block; margin: -4px auto 0; background: #fffdf6; border-radius: 6px; }
+
+/* scripting console */
+.script-out {
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-wrap;
+}
+.script-err {
+  color: var(--err);
+}
+.script-info {
+  color: var(--panel-engrave);
+}
