@@ -78,9 +78,9 @@ def no_load(u1n: float, f: float, conn: SecondaryConn = "Y") -> CircuitModel:
     b.add("V1ph", "voltmeter", 640, 470, "V1 (פאזי)")
     b.w("V1ph.p", "T.A1").w("V1ph.n", "T.A2")
     _secondary(b, conn)
-    b.add("V2", "voltmeter", 860, 120, "V2 (קווי)")
+    b.add("V2", "voltmeter", 900, 120, "V2 (קווי)")
     b.w("V2.p", "T.a1").w("V2.n", "T.b1")
-    b.add("V2ph", "voltmeter", 860, 300, "V2 (פאזי)")
+    b.add("V2ph", "voltmeter", 900, 300, "V2 (פאזי)")
     b.w("V2ph.p", "T.a1").w("V2ph.n", "T.a2")
     return b.done()
 

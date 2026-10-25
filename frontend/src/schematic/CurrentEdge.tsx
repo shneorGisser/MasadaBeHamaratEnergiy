@@ -12,15 +12,40 @@ import { useEffect, useRef } from 'react'
  * 120°. Time is slowed to SLOW_HZ; the picture is qualitative, the label carries the value.
  */
 export interface CurrentData extends Record<string, unknown> {
-  /** DC: signed amperes (a → b); AC: RMS magnitude */
-  I: number | null
+  /** route around the components (router.ts), from terminal to terminal */
+  points?: [number, number][]
+  /** DC: signed amperes (a → b); AC: RMS magnitude; null = undefined (parallel ideal paths);
+   * absent = no current shown */
+  I?: number | null
   /** AC only: phase of the current [deg] */
   angle?: number
-  dc: boolean
+  dc?: boolean
   /** largest |I| among the cables, for scaling */
-  scale: number
+  scale?: number
   /** print the value next to the cable */
-  showLabel: boolean
+  showLabel?: boolean
+}
+
+/** Polyline path through the routed points, attached to React Flow's handle anchors. */
+function routedPath(points: [number, number][], sx: number, sy: number, tx: number, ty: number): [string, number, number, number] {
+  // the router's first and last points are the terminals on the outline; React Flow's anchors
+  // sit on the handles just outside, on the same line — start and end there instead
+  const pts: [number, number][] = [[sx, sy], ...points.slice(1, -1), [tx, ty]]
+  let best = 0
+  let lx = (sx + tx) / 2
+  let ly = (sy + ty) / 2
+  let total = 0
+  for (let i = 1; i < pts.length; i++) {
+    const [a, b] = [pts[i - 1]!, pts[i]!]
+    const len = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])
+    total += len
+    if (len > best) {
+      best = len
+      lx = (a[0] + b[0]) / 2
+      ly = (a[1] + b[1]) / 2
+    }
+  }
+  return [`M${pts.map((p) => `${p[0]},${p[1]}`).join('L')}`, lx, ly, total]
 }
 export type CurrentEdgeType = Edge<CurrentData, 'current'>
 
@@ -44,10 +69,12 @@ function formatCurrent(i: number): string {
 
 export default function CurrentEdge(props: EdgeProps<CurrentEdgeType>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, style } = props
-  const [path, labelX, labelY] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition })
+  const routed = data?.points && data.points.length >= 2 ? routedPath(data.points, sourceX, sourceY, targetX, targetY) : null
+  const [path, labelX, labelY] = routed ?? getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition })
   const pathRef = useRef<SVGPathElement>(null)
   const dotsRef = useRef<SVGGElement>(null)
 
+  const hasCurrent = data !== undefined && 'I' in data
   const I = data?.I ?? null
   const share = I === null || !data?.scale ? 0 : Math.abs(I) / data.scale
   const live = share > MIN_FRACTION
@@ -95,7 +122,7 @@ export default function CurrentEdge(props: EdgeProps<CurrentEdgeType>) {
   const title =
     I === null ? 'זרם לא מוגדר: כבל במקביל לכבל אחר (מסלול אידיאלי כפול)' : `${formatCurrent(I)}${data?.dc ? '' : ` ∠${(data?.angle ?? 0).toFixed(0)}°`}`
   // enough dots for the routed path (a smooth-step path is at most the Manhattan distance + bends)
-  const span = Math.abs(targetX - sourceX) + Math.abs(targetY - sourceY)
+  const span = routed ? routed[3] : Math.abs(targetX - sourceX) + Math.abs(targetY - sourceY)
   const maxDots = Math.ceil((span + 80) / SPACING) + 1
   return (
     <>
@@ -104,6 +131,7 @@ export default function CurrentEdge(props: EdgeProps<CurrentEdgeType>) {
       <g ref={dotsRef} data-testid={`current-${id}`} data-current={I ?? ''} pointerEvents="none">
         {live && Array.from({ length: maxDots }, (_, k) => <circle key={k} r={2.6} fill="#f2a900" stroke="#7a5200" strokeWidth={0.6} visibility="hidden" />)}
       </g>
+      {hasCurrent && (
       <g transform={`translate(${labelX}, ${labelY})`}>
         <title>{title}</title>
         {((live && data?.showLabel && span >= LABEL_MIN_SPAN) || I === null) && (
@@ -121,6 +149,7 @@ export default function CurrentEdge(props: EdgeProps<CurrentEdgeType>) {
           </text>
         )}
       </g>
+      )}
     </>
   )
 }

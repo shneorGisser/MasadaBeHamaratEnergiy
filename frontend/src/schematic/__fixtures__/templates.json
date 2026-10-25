@@ -1,0 +1,9765 @@
+{
+ "catalog": [
+  {
+   "category": "source",
+   "instrument": false,
+   "label_he": "רשת תלת-פאזית דרך וריאק",
+   "params": [
+    {
+     "choices": [],
+     "default": 380.0,
+     "key": "U_line",
+     "kind": "float",
+     "label_he": "מתח קווי (כיוון הווריאק)",
+     "max": 100000.0,
+     "min": 0,
+     "unit": "V"
+    },
+    {
+     "choices": [],
+     "default": 50.0,
+     "key": "f",
+     "kind": "float",
+     "label_he": "תדירות",
+     "max": 1000,
+     "min": 1,
+     "unit": "Hz"
+    }
+   ],
+   "terminals": [
+    "L1",
+    "L2",
+    "L3",
+    "N"
+   ],
+   "type": "source3"
+  },
+  {
+   "category": "source",
+   "instrument": false,
+   "label_he": "ספק כוח זרם ישר",
+   "params": [
+    {
+     "choices": [],
+     "default": 10.0,
+     "key": "U",
+     "kind": "float",
+     "label_he": "מתח",
+     "max": 1000,
+     "min": 0,
+     "unit": "V"
+    }
+   ],
+   "terminals": [
+    "P",
+    "N"
+   ],
+   "type": "source_dc"
+  },
+  {
+   "category": "switch",
+   "instrument": false,
+   "label_he": "מפסק תלת-קוטבי",
+   "params": [
+    {
+     "choices": [],
+     "default": true,
+     "key": "closed",
+     "kind": "bool",
+     "label_he": "סגור",
+     "max": null,
+     "min": null,
+     "unit": ""
+    }
+   ],
+   "terminals": [
+    "i1",
+    "i2",
+    "i3",
+    "o1",
+    "o2",
+    "o3"
+   ],
+   "type": "switch3"
+  },
+  {
+   "category": "machine",
+   "instrument": false,
+   "label_he": "שנאי תלת-פזי",
+   "params": [],
+   "terminals": [
+    "A1",
+    "A2",
+    "B1",
+    "B2",
+    "C1",
+    "C2",
+    "a1",
+    "a2",
+    "b1",
+    "b2",
+    "c1",
+    "c2"
+   ],
+   "type": "transformer3"
+  },
+  {
+   "category": "machine",
+   "instrument": false,
+   "label_he": "מנוע השראה תלת-פזי + בלם אבקה מגנטית",
+   "params": [
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "M_load",
+     "kind": "float",
+     "label_he": "מומנט הבלם",
+     "max": 10000.0,
+     "min": 0,
+     "unit": "N·m"
+    },
+    {
+     "choices": [],
+     "default": false,
+     "key": "locked",
+     "kind": "bool",
+     "label_he": "רוטור נעול",
+     "max": null,
+     "min": null,
+     "unit": ""
+    }
+   ],
+   "terminals": [
+    "U1",
+    "U2",
+    "V1",
+    "V2",
+    "W1",
+    "W2"
+   ],
+   "type": "motor3"
+  },
+  {
+   "category": "machine",
+   "instrument": false,
+   "label_he": "מכונת זרם ישר (עוגן, עירור מקבילי, עירור טורי)",
+   "params": [
+    {
+     "choices": [
+      "speed",
+      "torque"
+     ],
+     "default": "speed",
+     "key": "speed_mode",
+     "kind": "choice",
+     "label_he": "מהירות נקבעת ע״י",
+     "max": null,
+     "min": null,
+     "unit": ""
+    },
+    {
+     "choices": [],
+     "default": 2000.0,
+     "key": "n_set",
+     "kind": "float",
+     "label_he": "מהירות (מנוע סרוו מניע)",
+     "max": 100000.0,
+     "min": -100000.0,
+     "unit": "rpm"
+    },
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "M_load",
+     "kind": "float",
+     "label_he": "מומנט הבלם (פעולת מנוע)",
+     "max": 10000.0,
+     "min": 0,
+     "unit": "N·m"
+    }
+   ],
+   "terminals": [
+    "A1",
+    "A2",
+    "F1",
+    "F2",
+    "S1",
+    "S2"
+   ],
+   "type": "dcmachine"
+  },
+  {
+   "category": "machine",
+   "instrument": false,
+   "label_he": "מכונת השראה עם רוטור מלופף + בלם",
+   "params": [
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "M_load",
+     "kind": "float",
+     "label_he": "מומנט הבלם",
+     "max": 10000.0,
+     "min": 0,
+     "unit": "N·m"
+    },
+    {
+     "choices": [],
+     "default": false,
+     "key": "locked",
+     "kind": "bool",
+     "label_he": "רוטור נעול",
+     "max": null,
+     "min": null,
+     "unit": ""
+    },
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "angle",
+     "kind": "float",
+     "label_he": "זווית הרוטור (נעול)",
+     "max": 3600,
+     "min": -3600,
+     "unit": "°"
+    },
+    {
+     "choices": [
+      "torque",
+      "speed"
+     ],
+     "default": "torque",
+     "key": "speed_mode",
+     "kind": "choice",
+     "label_he": "מהירות נקבעת ע״י",
+     "max": null,
+     "min": null,
+     "unit": ""
+    },
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "n_set",
+     "kind": "float",
+     "label_he": "מהירות כפויה",
+     "max": 100000.0,
+     "min": -100000.0,
+     "unit": "rpm"
+    }
+   ],
+   "terminals": [
+    "U1",
+    "U2",
+    "V1",
+    "V2",
+    "W1",
+    "W2",
+    "R1",
+    "R2",
+    "R3"
+   ],
+   "type": "woundmotor3"
+  },
+  {
+   "category": "machine",
+   "instrument": false,
+   "label_he": "מכונה סינכרונית תלת-פזית",
+   "params": [
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "I_f",
+     "kind": "float",
+     "label_he": "זרם עירור",
+     "max": 100,
+     "min": -100,
+     "unit": "A"
+    },
+    {
+     "choices": [],
+     "default": 1500.0,
+     "key": "n_drive",
+     "kind": "float",
+     "label_he": "מהירות המנוע המניע (ללא רשת)",
+     "max": 100000.0,
+     "min": 1,
+     "unit": "rpm"
+    },
+    {
+     "choices": [],
+     "default": 0.0,
+     "key": "P_shaft",
+     "kind": "float",
+     "label_he": "הספק בציר (מחובר לרשת; + מנוע, − מחולל)",
+     "max": 10000000.0,
+     "min": -10000000.0,
+     "unit": "W"
+    }
+   ],
+   "terminals": [
+    "U1",
+    "U2",
+    "V1",
+    "V2",
+    "W1",
+    "W2",
+    "F1",
+    "F2"
+   ],
+   "type": "syncmachine3"
+  },
+  {
+   "category": "load",
+   "instrument": false,
+   "label_he": "עומס תלת-פאזי",
+   "params": [
+    {
+     "choices": [
+      "R",
+      "L",
+      "C"
+     ],
+     "default": "R",
+     "key": "kind",
+     "kind": "choice",
+     "label_he": "סוג",
+     "max": null,
+     "min": null,
+     "unit": ""
+    },
+    {
+     "choices": [
+      "Y",
+      "D"
+     ],
+     "default": "Y",
+     "key": "connection",
+     "kind": "choice",
+     "label_he": "חיבור",
+     "max": null,
+     "min": null,
+     "unit": ""
+    },
+    {
+     "choices": [],
+     "default": 50.0,
+     "key": "value",
+     "kind": "float",
+     "label_he": "ערך לפאזה (Ω / H / F)",
+     "max": 1000000000.0,
+     "min": 1e-12,
+     "unit": ""
+    }
+   ],
+   "terminals": [
+    "1",
+    "2",
+    "3"
+   ],
+   "type": "load3"
+  },
+  {
+   "category": "passive",
+   "instrument": false,
+   "label_he": "נגד",
+   "params": [
+    {
+     "choices": [],
+     "default": 100.0,
+     "key": "R",
+     "kind": "float",
+     "label_he": "התנגדות",
+     "max": 1000000000000.0,
+     "min": 0,
+     "unit": "Ω"
+    }
+   ],
+   "terminals": [
+    "p",
+    "n"
+   ],
+   "type": "resistor"
+  },
+  {
+   "category": "passive",
+   "instrument": false,
+   "label_he": "סליל",
+   "params": [
+    {
+     "choices": [],
+     "default": 0.1,
+     "key": "L",
+     "kind": "float",
+     "label_he": "השראות",
+     "max": 1000000.0,
+     "min": 0,
+     "unit": "H"
+    }
+   ],
+   "terminals": [
+    "p",
+    "n"
+   ],
+   "type": "inductor"
+  },
+  {
+   "category": "passive",
+   "instrument": false,
+   "label_he": "קבל",
+   "params": [
+    {
+     "choices": [],
+     "default": 1e-05,
+     "key": "C",
+     "kind": "float",
+     "label_he": "קיבול",
+     "max": 10,
+     "min": 1e-15,
+     "unit": "F"
+    }
+   ],
+   "terminals": [
+    "p",
+    "n"
+   ],
+   "type": "capacitor"
+  },
+  {
+   "category": "instrument",
+   "instrument": true,
+   "label_he": "מד זרם",
+   "params": [],
+   "terminals": [
+    "p",
+    "n"
+   ],
+   "type": "ammeter"
+  },
+  {
+   "category": "instrument",
+   "instrument": true,
+   "label_he": "מד מתח",
+   "params": [],
+   "terminals": [
+    "p",
+    "n"
+   ],
+   "type": "voltmeter"
+  },
+  {
+   "category": "instrument",
+   "instrument": true,
+   "label_he": "מד הספק חד-פאזי (כולל cos φ)",
+   "params": [],
+   "terminals": [
+    "Ip",
+    "In",
+    "Vp",
+    "Vn"
+   ],
+   "type": "wattmeter"
+  }
+ ],
+ "templates": [
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V1ph",
+      "label": "V1 (פאזי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2",
+      "label": "V2 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2ph",
+      "label": "V2 (פאזי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 200.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "V1ph": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 470.0
+     },
+     "V2": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 120.0
+     },
+     "V2ph": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 300.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "V1ph",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "V1ph",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w18"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w19"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w20"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w21"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w22"
+     }
+    ]
+   },
+   "name": "transformer3ph/no_load/YY"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V1ph",
+      "label": "V1 (פאזי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2",
+      "label": "V2 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2ph",
+      "label": "V2 (פאזי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 200.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "V1ph": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 470.0
+     },
+     "V2": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 120.0
+     },
+     "V2ph": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 300.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "V1ph",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "V1ph",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w18"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w19"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w20"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w21"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w22"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w23"
+     }
+    ]
+   },
+   "name": "transformer3ph/no_load/YD"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 19.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "A2",
+      "label": "A2",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "A2": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 200.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 200.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "b": {
+       "component": "A2",
+       "terminal": "p"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "A2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w18"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w19"
+     }
+    ]
+   },
+   "name": "transformer3ph/short_circuit"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "W2",
+      "label": "W2",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A2",
+      "label": "A2",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "S2",
+      "label": "S2",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "L",
+      "label": "עומס",
+      "params": {
+       "connection": "Y",
+       "kind": "R",
+       "value": 50.0
+      },
+      "type": "load3"
+     },
+     {
+      "id": "V2",
+      "label": "V2 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2ph",
+      "label": "V2 (פאזי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "A2": {
+      "rot": 0,
+      "x": 980.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "L": {
+      "rot": 0,
+      "x": 1260.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "S2": {
+      "rot": 0,
+      "x": 1100.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 200.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "V2": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 430.0
+     },
+     "V2ph": {
+      "rot": 0,
+      "x": 1060.0,
+      "y": 430.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     },
+     "W2": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "b": {
+       "component": "W2",
+       "terminal": "Ip"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "W2",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A2",
+       "terminal": "p"
+      },
+      "id": "w18"
+     },
+     {
+      "a": {
+       "component": "A2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "S2",
+       "terminal": "i1"
+      },
+      "id": "w19"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "b": {
+       "component": "S2",
+       "terminal": "i2"
+      },
+      "id": "w20"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "b": {
+       "component": "S2",
+       "terminal": "i3"
+      },
+      "id": "w21"
+     },
+     {
+      "a": {
+       "component": "S2",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "L",
+       "terminal": "1"
+      },
+      "id": "w22"
+     },
+     {
+      "a": {
+       "component": "S2",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "L",
+       "terminal": "2"
+      },
+      "id": "w23"
+     },
+     {
+      "a": {
+       "component": "S2",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "L",
+       "terminal": "3"
+      },
+      "id": "w24"
+     },
+     {
+      "a": {
+       "component": "W2",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w25"
+     },
+     {
+      "a": {
+       "component": "W2",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w26"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w27"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w28"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w29"
+     },
+     {
+      "a": {
+       "component": "V2ph",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w30"
+     }
+    ]
+   },
+   "name": "transformer3ph/load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w17"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yy-abc"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w17"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yy-bca"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w17"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yy-cab"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w17"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yy-abc-rev"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w18"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yd-abc-1"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "T",
+      "label": "שנאי",
+      "params": {},
+      "type": "transformer3"
+     },
+     {
+      "id": "VaAB",
+      "label": "U aA–B1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VaAb",
+      "label": "U aA–b1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "VBb",
+      "label": "U B1–b1",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 160.0,
+      "y": 200.0
+     },
+     "T": {
+      "rot": 0,
+      "x": 620.0,
+      "y": 200.0
+     },
+     "VBb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 340.0
+     },
+     "VaAB": {
+      "rot": 0,
+      "x": 420.0,
+      "y": 340.0
+     },
+     "VaAb": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 120.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "B2"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "C2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "c2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "c1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a2"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "a1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "VaAB",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "A1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "VaAb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "B1"
+      },
+      "id": "w17"
+     },
+     {
+      "a": {
+       "component": "VBb",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "T",
+       "terminal": "b1"
+      },
+      "id": "w18"
+     }
+    ]
+   },
+   "name": "transformer3ph/vector_group/Yd-abc-2"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מנוע + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "motor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "induction_motor/no_load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מנוע + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": true
+      },
+      "type": "motor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 38.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "induction_motor/locked_rotor"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מנוע + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "motor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "induction_motor/load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מנוע + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "motor3"
+     },
+     {
+      "id": "G",
+      "label": "אינוורטר (יסודית)",
+      "params": {
+       "U_line": 380.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "induction_motor/inverter"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "מכונה סינכרונית",
+      "params": {
+       "I_f": 1.0,
+       "P_shaft": 0.0,
+       "n_drive": 1500.0
+      },
+      "type": "syncmachine3"
+     },
+     {
+      "id": "L",
+      "label": "עומס תלת-פזי",
+      "params": {
+       "connection": "Y",
+       "kind": "R",
+       "value": 1000.0
+      },
+      "type": "load3"
+     },
+     {
+      "id": "S",
+      "label": "S3",
+      "params": {
+       "closed": false
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "L": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "L",
+       "terminal": "1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "synchronous/open_circuit"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "מכונה סינכרונית",
+      "params": {
+       "I_f": 1.0,
+       "P_shaft": 0.0,
+       "n_drive": 1500.0
+      },
+      "type": "syncmachine3"
+     },
+     {
+      "id": "L",
+      "label": "עומס תלת-פזי",
+      "params": {
+       "connection": "Y",
+       "kind": "R",
+       "value": 1000.0
+      },
+      "type": "load3"
+     },
+     {
+      "id": "S",
+      "label": "S3",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "L": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "L",
+       "terminal": "1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "synchronous/load_characteristic"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "מכונה סינכרונית",
+      "params": {
+       "I_f": 1.0,
+       "P_shaft": 0.0,
+       "n_drive": 1500.0
+      },
+      "type": "syncmachine3"
+     },
+     {
+      "id": "L",
+      "label": "עומס תלת-פזי",
+      "params": {
+       "connection": "Y",
+       "kind": "R",
+       "value": 1000.0
+      },
+      "type": "load3"
+     },
+     {
+      "id": "S",
+      "label": "S3",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "L": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "L",
+       "terminal": "1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "synchronous/regulation"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "מכונה סינכרונית",
+      "params": {
+       "I_f": 1.0,
+       "P_shaft": 0.0,
+       "n_drive": 1500.0
+      },
+      "type": "syncmachine3"
+     },
+     {
+      "id": "L",
+      "label": "עומס תלת-פזי",
+      "params": {
+       "connection": "Y",
+       "kind": "L",
+       "value": 1.0
+      },
+      "type": "load3"
+     },
+     {
+      "id": "S",
+      "label": "S3",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "L": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "L",
+       "terminal": "1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "L",
+       "terminal": "3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "synchronous/zpf"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "G",
+      "label": "מכונה סינכרונית",
+      "params": {
+       "I_f": 2.0,
+       "P_shaft": 0.0,
+       "n_drive": 1500.0
+      },
+      "type": "syncmachine3"
+     },
+     {
+      "id": "N",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "N": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "N",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "N",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "N",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "N",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     }
+    ]
+   },
+   "name": "synchronous/v_curves"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה",
+      "params": {
+       "n_set": 0.0,
+       "speed_mode": "speed"
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2",
+      "label": "V2 (רוטור)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "V2": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/ratio"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/no_load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": true
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 40.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/locked_rotor"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rst",
+      "label": "מתנע Rst",
+      "params": {
+       "connection": "Y",
+       "kind": "R",
+       "value": 3.0
+      },
+      "type": "load3"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "Rst": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 420.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "Rst",
+       "terminal": "1"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "Rst",
+       "terminal": "2"
+      },
+      "id": "w16"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "b": {
+       "component": "Rst",
+       "terminal": "3"
+      },
+      "id": "w17"
+     }
+    ]
+   },
+   "name": "wound_rotor/load_rext"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה (רוטור נעול)",
+      "params": {
+       "angle": 0.0,
+       "locked": true
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 100.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "V1",
+      "label": "U1 (כניסה)",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "V2",
+      "label": "U2 (יציאה)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 420.0
+     },
+     "V2": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 420.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "V2",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w13"
+     }
+    ]
+   },
+   "name": "wound_rotor/regulator"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "רשת + וריאק",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/generator"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונה + בלם",
+      "params": {
+       "M_load": 0.0,
+       "locked": false
+      },
+      "type": "woundmotor3"
+     },
+     {
+      "id": "G",
+      "label": "אינוורטר (יסודית)",
+      "params": {
+       "U_line": 400.0,
+       "f": 50.0
+      },
+      "type": "source3"
+     },
+     {
+      "id": "S",
+      "label": "S1",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "W",
+      "label": "W",
+      "params": {},
+      "type": "wattmeter"
+     },
+     {
+      "id": "A",
+      "label": "A1",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "V1",
+      "label": "V1 (קווי)",
+      "params": {},
+      "type": "voltmeter"
+     }
+    ],
+    "layout": {
+     "A": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 60.0
+     },
+     "G": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 225.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 660.0,
+      "y": 200.0
+     },
+     "S": {
+      "rot": 0,
+      "x": 170.0,
+      "y": 225.0
+     },
+     "V1": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 420.0
+     },
+     "W": {
+      "rot": 0,
+      "x": 320.0,
+      "y": 60.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L1"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L2"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i2"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "G",
+       "terminal": "L3"
+      },
+      "b": {
+       "component": "S",
+       "terminal": "i3"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "W",
+       "terminal": "Ip"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "In"
+      },
+      "b": {
+       "component": "A",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "A",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "S",
+       "terminal": "o3"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W1"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vp"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "W",
+       "terminal": "Vn"
+      },
+      "b": {
+       "component": "G",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "U1"
+      },
+      "id": "w11"
+     },
+     {
+      "a": {
+       "component": "V1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V1"
+      },
+      "id": "w12"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "U2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "id": "w13"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "V2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "W2"
+      },
+      "id": "w14"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R1"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "id": "w15"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "R2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "R3"
+      },
+      "id": "w16"
+     }
+    ]
+   },
+   "name": "wound_rotor/inverter"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_motor/no_load_field"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_motor/load"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 30.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_motor/load_rext"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_motor/rx_speed"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_motor/field_speed"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "ספק DC",
+      "params": {
+       "U": 174.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC + בלם",
+      "params": {
+       "M_load": 0.0,
+       "speed_mode": "torque"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Rx",
+      "label": "R נוסף",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עוגן)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "Rx": {
+      "rot": 0,
+      "x": 300.0,
+      "y": 160.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rx",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Rx",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "S1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "S2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w10"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "S2"
+      },
+      "id": "w11"
+     }
+    ]
+   },
+   "name": "dc_motor/compound"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונת DC (מונעת ע״י סרוו)",
+      "params": {
+       "n_set": 2500.0,
+       "speed_mode": "speed"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "S4",
+      "label": "S4",
+      "params": {
+       "closed": false
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עומס)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "RL",
+      "label": "ריאוסטט עומס",
+      "params": {
+       "R": 1000000000.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Pf",
+      "label": "ספק עירור",
+      "params": {
+       "U": 220.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 60.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "Pf": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "RL": {
+      "rot": 0,
+      "x": 1040.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "S4": {
+      "rot": 0,
+      "x": 760.0,
+      "y": 60.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 300.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "S4",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "S4",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "RL",
+       "terminal": "p"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "RL",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "RL",
+       "terminal": "n"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Pf",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "Pf",
+       "terminal": "N"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_generator/occ"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "M",
+      "label": "מכונת DC (מונעת ע״י סרוו)",
+      "params": {
+       "n_set": 2800.0,
+       "speed_mode": "speed"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "S4",
+      "label": "S4",
+      "params": {
+       "closed": true
+      },
+      "type": "switch3"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (עומס)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "RL",
+      "label": "ריאוסטט עומס",
+      "params": {
+       "R": 100.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Pf",
+      "label": "ספק עירור",
+      "params": {
+       "U": 220.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 900.0,
+      "y": 60.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "Pf": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "RL": {
+      "rot": 0,
+      "x": 1040.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "S4": {
+      "rot": 0,
+      "x": 760.0,
+      "y": 60.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 860.0,
+      "y": 300.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "b": {
+       "component": "S4",
+       "terminal": "i1"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "S4",
+       "terminal": "o1"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "RL",
+       "terminal": "p"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "RL",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "RL",
+       "terminal": "n"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "Pf",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w9"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "Pf",
+       "terminal": "N"
+      },
+      "id": "w10"
+     }
+    ]
+   },
+   "name": "dc_generator/regulation"
+  },
+  {
+   "circuit": {
+    "components": [
+     {
+      "id": "P",
+      "label": "רשת DC",
+      "params": {
+       "U": 220.0
+      },
+      "type": "source_dc"
+     },
+     {
+      "id": "M",
+      "label": "מכונת DC (מונעת ע״י סרוו)",
+      "params": {
+       "n_set": 2800.0,
+       "speed_mode": "speed"
+      },
+      "type": "dcmachine"
+     },
+     {
+      "id": "U1",
+      "label": "U1",
+      "params": {},
+      "type": "voltmeter"
+     },
+     {
+      "id": "Aa",
+      "label": "A1 (מהרשת)",
+      "params": {},
+      "type": "ammeter"
+     },
+     {
+      "id": "Rf",
+      "label": "ריאוסטט עירור",
+      "params": {
+       "R": 0.0
+      },
+      "type": "resistor"
+     },
+     {
+      "id": "Af",
+      "label": "A2 (עירור)",
+      "params": {},
+      "type": "ammeter"
+     }
+    ],
+    "layout": {
+     "Aa": {
+      "rot": 0,
+      "x": 470.0,
+      "y": 160.0
+     },
+     "Af": {
+      "rot": 0,
+      "x": 330.0,
+      "y": 40.0
+     },
+     "M": {
+      "rot": 0,
+      "x": 640.0,
+      "y": 260.0
+     },
+     "P": {
+      "rot": 0,
+      "x": 0.0,
+      "y": 260.0
+     },
+     "Rf": {
+      "rot": 0,
+      "x": 150.0,
+      "y": 40.0
+     },
+     "U1": {
+      "rot": 0,
+      "x": 430.0,
+      "y": 470.0
+     }
+    },
+    "schema_version": 1,
+    "wires": [
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Rf",
+       "terminal": "p"
+      },
+      "id": "w1"
+     },
+     {
+      "a": {
+       "component": "Rf",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "Af",
+       "terminal": "p"
+      },
+      "id": "w2"
+     },
+     {
+      "a": {
+       "component": "Af",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "F1"
+      },
+      "id": "w3"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "F2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w4"
+     },
+     {
+      "a": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "b": {
+       "component": "Aa",
+       "terminal": "p"
+      },
+      "id": "w5"
+     },
+     {
+      "a": {
+       "component": "Aa",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A1"
+      },
+      "id": "w6"
+     },
+     {
+      "a": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "N"
+      },
+      "id": "w7"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "p"
+      },
+      "b": {
+       "component": "P",
+       "terminal": "P"
+      },
+      "id": "w8"
+     },
+     {
+      "a": {
+       "component": "U1",
+       "terminal": "n"
+      },
+      "b": {
+       "component": "M",
+       "terminal": "A2"
+      },
+      "id": "w9"
+     }
+    ]
+   },
+   "name": "dc_generator/grid"
+  }
+ ]
+}

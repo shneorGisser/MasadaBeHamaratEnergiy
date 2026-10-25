@@ -1,5 +1,5 @@
 import { Handle, type NodeProps } from '@xyflow/react'
-import { POS, terminalSlots } from './slots'
+import { nodeSize, POS, terminalSlots, titleInside } from './slots'
 import { fmt } from '../format'
 import AnalogMeter from './AnalogMeter'
 import CircuitSymbol from './symbols'
@@ -60,17 +60,7 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const terminals = ctype?.terminals ?? []
   const slots = terminalSlots(comp.type, terminals)
   // nodes with terminals on the bottom edge get room so the terminal labels clear the text
-  const tall =
-    comp.type === 'transformer3' || comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' || comp.type === 'dcmachine'
-      ? 150
-      : comp.type === 'source3'
-        ? 122
-        : comp.type === 'switch3' || comp.type === 'load3'
-          ? 110
-          : comp.type === 'wattmeter' || comp.type === 'source_dc'
-            ? 92
-            : 70
-  const wide = comp.type === 'transformer3' ? 180 : comp.type === 'motor3' || comp.type === 'syncmachine3' || comp.type === 'woundmotor3' || comp.type === 'dcmachine' ? 150 : 110
+  const { w: wide, h: tall } = nodeSize(comp.type)
   const instrument = ctype?.instrument
   return (
     <div
@@ -79,7 +69,7 @@ export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
       data-testid={`node-${comp.id}`}
       title={ctype?.label_he ?? comp.type}
     >
-      <div className="sch-title">
+      <div className={`sch-title${titleInside(comp.type) ? ' inside' : ''}`}>
         {comp.label && comp.label.startsWith(comp.id) ? (
           <strong>{comp.label}</strong>
         ) : (

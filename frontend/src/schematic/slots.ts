@@ -80,3 +80,40 @@ export function terminalSlots(type: string, terminals: string[]): Record<string,
   }
   return s
 }
+
+/** Drawn size of a component node [px] — one source for the node, the router and exports. */
+export function nodeSize(type: string): { w: number; h: number } {
+  const machine = type === 'motor3' || type === 'syncmachine3' || type === 'woundmotor3' || type === 'dcmachine'
+  const h =
+    type === 'transformer3' || machine
+      ? 150
+      : type === 'source3'
+        ? 122
+        : type === 'switch3' || type === 'load3'
+          ? 110
+          : type === 'wattmeter' || type === 'source_dc'
+            ? 92
+            : 70
+  const w = type === 'transformer3' ? 180 : machine ? 150 : 110
+  return { w, h }
+}
+
+/** Where a terminal sits on the node's border, relative to the node's top-left corner. */
+export function slotPoint(slot: Slot, w: number, h: number): { x: number; y: number } {
+  switch (slot.side) {
+    case 'left':
+      return { x: 0, y: slot.at * h }
+    case 'right':
+      return { x: w, y: slot.at * h }
+    case 'top':
+      return { x: slot.at * w, y: 0 }
+    default:
+      return { x: slot.at * w, y: h }
+  }
+}
+
+/** Nodes with terminals on the top edge carry their id label inside the outline, so the
+ * label never sits on the wires leaving those terminals. */
+export function titleInside(type: string): boolean {
+  return type === 'dcmachine' || type === 'syncmachine3'
+}

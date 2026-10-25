@@ -7,6 +7,7 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  ViewportPortal,
   type Connection,
   type Edge,
 } from '@xyflow/react'
@@ -21,6 +22,8 @@ import CurrentEdge, { type CurrentData } from './CurrentEdge'
 import PhasorDiagram, { type Phasor } from './PhasorDiagram'
 import { useCatalog, useCircuit } from './hooks'
 import { useDxfExport } from './useDxfExport'
+import { route, routeInput, type Pt } from './router'
+import { junctions } from './dxf'
 import {
   fromFlow,
   nets,
@@ -159,21 +162,42 @@ function Editor({
   )
   const flowBusy = flowQuery.isFetching
 
+  // cables routed around the components; while a node is dragged they fall back to the plain
+  // smooth step and are re-routed on release (routing every frame would stutter)
+  const dragging = nodes.some((n) => n.dragging)
+  const layoutKey = dragging
+    ? 'dragging'
+    : JSON.stringify([nodes.map((n) => [n.id, n.data.comp.type, Math.round(n.position.x), Math.round(n.position.y)]), edges.map((e) => [e.id, e.source, e.sourceHandle, e.target, e.targetHandle])])
+  const routes = useMemo<Map<string, Pt[]> | null>(
+    () => (layoutKey === 'dragging' ? null : route(routeInput(fromFlow(nodes, edges), catalog))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutKey captures what routing depends on
+    [layoutKey, catalog],
+  )
+
+  // junction dots where three conductors meet (a T): the drawing convention that tells a
+  // connection from a crossing
+  const dots = useMemo(() => {
+    if (!routes) return []
+    const input = routeInput(fromFlow(nodes, edges), catalog)
+    return junctions({ boxes: [], pins: input.terminals.map((t) => ({ name: t.name, x: t.p[0], y: t.p[1] })), wires: input.wires.map((w) => routes.get(w.id) ?? []) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed with the routes
+  }, [routes])
+
   // the cable the wiring guide is on: drawn thick and animated (display only, not saved)
   const shownEdges = useMemo(() => {
-    let out = edges
+    let out: Edge[] = edges.map((e) => ({ ...e, type: 'current', data: { points: routes?.get(e.id) } }))
     const wc = flowOn && !dirty ? flow?.wire_currents : undefined
     if (wc) {
       const scale = Math.max(1e-30, ...Object.values(wc).map((x) => (x ? Math.abs(x.I) : 0)))
       out = out.map((e) => {
         const x = wc[e.id]
-        const data: CurrentData = { I: x ? x.I : null, angle: x?.angle_deg, dc: Boolean(flow?.dc), scale, showLabel: labelsOn }
+        const data: CurrentData = { ...(e.data as CurrentData), I: x ? x.I : null, angle: x?.angle_deg, dc: Boolean(flow?.dc), scale, showLabel: labelsOn }
         return { ...e, type: 'current', data }
       })
     }
     if (wire) out = out.map((e) => (e.id === wire ? { ...e, animated: true, zIndex: 10, style: { stroke: '#c0392b', strokeWidth: 4 } } : e))
     return out
-  }, [edges, wire, flowOn, flow, dirty, labelsOn])
+  }, [edges, routes, wire, flowOn, flow, dirty, labelsOn])
 
   // external selection (3D bench) → schematic
   useEffect(() => {
@@ -292,7 +316,7 @@ function Editor({
         <button className="btn primary" onClick={() => void save()} disabled={!dirty || saving} data-testid="save-circuit">
           שמור מעגל
         </button>
-        <button className="btn" onClick={() => exportDxf(`circuit-${kind}.dxf`)} data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
+        <button className="btn" onClick={() => exportDxf(`circuit-${kind}.dxf`, fromFlow(nodes, edges), catalog, routes)} data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
           ייצוא DXF
         </button>
         <button className="btn danger" onClick={deleteSelected} disabled={!nodes.some((n) => n.selected) && !edges.some((e) => e.selected)} data-testid="delete-selected">
@@ -351,6 +375,13 @@ function Editor({
             minZoom={0.2}
             deleteKeyCode={['Delete', 'Backspace']}
           >
+            <ViewportPortal>
+              <svg style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible', pointerEvents: 'none' }} data-testid="junctions">
+                {dots.map(([x, y]) => (
+                  <circle key={`${x},${y}`} cx={x} cy={y} r={3.2} fill="#2a3634" />
+                ))}
+              </svg>
+            </ViewportPortal>
             <Background gap={20} />
             <Controls showInteractive={false} />
           </ReactFlow>
@@ -361,7 +392,7 @@ function Editor({
           ) : (
             <div className="stack" style={{ gap: 6 }}>
               <h3>צמתים חשמליים ({currentNets.length})</h3>
-              <ol className="small" style={{ margin: 0, paddingInlineStart: 18, maxHeight: 360, overflow: 'auto' }} data-testid="nets" dir="ltr">
+              <ol className="small" style={{ margin: 0, paddingInlineStart: 28, maxHeight: 360, overflow: 'auto' }} data-testid="nets" dir="ltr">
                 {currentNets.map((n) => (
                   <li key={n.join()}>{n.join(' · ')}</li>
                 ))}
