@@ -20,6 +20,7 @@ import ComponentNode from './ComponentNode'
 import CurrentEdge, { type CurrentData } from './CurrentEdge'
 import PhasorDiagram, { type Phasor } from './PhasorDiagram'
 import { useCatalog, useCircuit } from './hooks'
+import { useDxfExport } from './useDxfExport'
 import {
   fromFlow,
   nets,
@@ -136,6 +137,7 @@ function Editor({
   const [nodes, setNodes, onNodesChange] = useNodesState<CompNode>(initial.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initial.edges)
   const [dirty, setDirty] = useState(false)
+  const exportDxf = useDxfExport()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
@@ -289,6 +291,9 @@ function Editor({
       <div className="row">
         <button className="btn primary" onClick={() => void save()} disabled={!dirty || saving} data-testid="save-circuit">
           שמור מעגל
+        </button>
+        <button className="btn" onClick={() => exportDxf(`circuit-${kind}.dxf`)} data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
+          ייצוא DXF
         </button>
         <button className="btn danger" onClick={deleteSelected} disabled={!nodes.some((n) => n.selected) && !edges.some((e) => e.selected)} data-testid="delete-selected">
           מחק נבחר
