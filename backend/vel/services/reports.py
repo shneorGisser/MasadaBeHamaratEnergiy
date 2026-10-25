@@ -208,7 +208,26 @@ TEMPLATE = _ENV.from_string(
 
 
 def render(snapshot: dict[str, Any]) -> str:
-    return TEMPLATE.render(s=snapshot)
+    """HTML of the report; each section's curves are embedded as PNG (data URI), so the page —
+    and the PDF printed from it — is self-contained."""
+    import base64
+
+    from vel.services.report_charts import FOLDED, LONG_TABLE, section_charts
+
+    charts = [
+        [
+            {
+                "title": t,
+                "src": "data:image/png;base64," + base64.b64encode(png).decode(),
+                "err": "",
+            }
+            if png
+            else {"title": t, "src": "", "err": err}
+            for t, png, err in section_charts(sec)
+        ]
+        for sec in snapshot.get("sections", [])
+    ]
+    return TEMPLATE.render(s=snapshot, charts=charts, long_table=LONG_TABLE, folded=FOLDED)
 
 
 def create_report(

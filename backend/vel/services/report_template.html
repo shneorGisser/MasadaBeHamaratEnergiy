@@ -22,6 +22,9 @@
   .meta { color: #555; font-size: 9pt; }
   .formula { font-family: 'Cambria Math', 'Times New Roman', serif; direction: ltr; unicode-bidi: isolate; }
   .discussion { white-space: pre-wrap; border: 1px solid #ccc; padding: 6pt; }
+figure.chart { margin: 10px 0; text-align: center; page-break-inside: avoid; }
+figure.chart img { max-width: 100%; width: 640px; }
+figure.chart figcaption { font-size: 0.9em; color: #555; }
 </style>
 </head>
 <body>
@@ -64,8 +67,14 @@
 <p><strong>{{ tb.title_he }}</strong></p>
 <table>
   <tr>{% for c in tb.columns %}<th>{{ c.label_he }}{% if c.unit %} [{{ c.unit }}]{% endif %}</th>{% endfor %}</tr>
-  {% for r in tb.rows %}<tr>{% for c in tb.columns %}<td class="num">{{ r[c.key]|f }}</td>{% endfor %}</tr>{% endfor %}
+  {% set long = tb.rows|length > long_table %}
+  {% for r in (tb.rows[:folded] if long else tb.rows) %}<tr>{% for c in tb.columns %}<td class="num">{{ r[c.key]|f }}</td>{% endfor %}</tr>{% endfor %}
 </table>
+{% if long %}<p class="meta">מוצגות {{ folded }} מתוך {{ tb.rows|length }} שורות; הטבלה המלאה בגרף ובקובץ הנתונים (data.zip).</p>{% endif %}
+{% endfor %}
+{% for ch in charts[loop.index0] %}
+{% if ch.src %}<figure class="chart"><img src="{{ ch.src }}" alt="{{ ch.title }}"><figcaption>איור {{ loop.index }}: {{ ch.title }}</figcaption></figure>
+{% else %}<div class="warn">הגרף '{{ ch.title }}' לא נוצר: {{ ch.err }}</div>{% endif %}
 {% endfor %}
 {% if sec.run.result.parameters %}
 <p><strong>חישובים תיאורטיים מתוך תוצאות הסימולציה</strong></p>

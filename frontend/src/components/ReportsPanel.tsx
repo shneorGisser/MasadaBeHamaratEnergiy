@@ -136,6 +136,10 @@ export default function ReportsPanel({ projectId }: { projectId: string }) {
               ·{' '}
               <a href={`/api/reports/${r.id}/docx`} data-testid="report-docx" title="עברית מימין לשמאל, David 11, נספח קוד MATLAB">
                 Word
+              </a>{' '}
+              ·{' '}
+              <a href={`/api/reports/${r.id}/data.zip`} data-testid="report-data" title="כל הטבלאות של הדו״ח כ-CSV (גם הטבלאות המקופלות), לקריאה ב-MATLAB / Excel">
+                נתונים (CSV)
               </a>
             </li>
           ))}

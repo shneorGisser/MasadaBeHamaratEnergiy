@@ -118,6 +118,22 @@ def report_docx(report_id: str, session: SessionDep) -> Response:
     )
 
 
+@router.get("/reports/{report_id}/data.zip")
+def report_data(report_id: str, session: SessionDep) -> Response:
+    """All tables of the report as CSV — the full data behind the folded/thinned prints."""
+    from vel.services.report_docx import report_data_zip
+
+    r = _load(session, report_id)
+    snap = (r.sources or {}).get("snapshot")
+    if not isinstance(snap, dict):
+        raise ApiError(409, "no_snapshot", "this report has no stored snapshot")
+    return Response(
+        report_data_zip(snap),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="report-{r.id[:8]}-data.zip"'},
+    )
+
+
 @router.get("/reports/{report_id}/pdf")
 def report_pdf(report_id: str, session: SessionDep) -> Response:
     r = _load(session, report_id)

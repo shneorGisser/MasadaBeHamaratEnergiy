@@ -29,8 +29,7 @@ Accepted and done:
 
 Accepted, queued (after the time-domain steps T1.4–T1.6):
 1. ~~Scope tools in the charts~~ Done: `ScopeChart` + `scope.ts` (cursors A/B, Δt, 1/Δt, mean/RMS/p-p over the window, harmonics over whole periods of f₀ with THD); the inrush study now reports I₂/I₁ (> 15 %: what a differential relay blocks on).
-2. Charts in the Word report. Today it has tables and the MATLAB appendix; the curves are
-   only in HTML.
+2. ~~Charts in the Word report~~ Done (and in the HTML/PDF, which turned out to have none either): `report_charts.py` draws every curve of a section from the report's tables with matplotlib (≥ 3.11 lays Hebrew out with the bidi algorithm; labels get a leading RLM). Long tables are folded to 15 rows, the MATLAB appendix is thinned to ≈ 400 points, and `GET /reports/{id}/data.zip` carries all the data as CSV — a transient report went from 120 Word pages to 11.
 3. Winding temperature: R(T) = R20·(1 + α_Cu·(T − 20 °C)) as a spec field, for the load tests.
 4. "Calibrate the model to my measurements": turn the fit scripts into a service on a
    measurement set.

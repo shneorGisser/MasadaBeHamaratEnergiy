@@ -50,3 +50,53 @@ def test_docx_export(client: TestClient) -> None:
     assert len(rtl) > 10
     assert doc.tables and doc.tables[0]._tbl.tblPr.find(qn("w:bidiVisual")) is not None
     assert len(doc.tables) >= 4  # spec, simulation, measurements, comparison
+    # every curve of the section is a picture, captioned
+    pics = doc.inline_shapes
+    assert len(pics) >= 1
+    assert any(p.text.startswith("איור 3.1") for p in doc.paragraphs)
+
+
+def test_long_traces_are_folded_and_charted(client: TestClient) -> None:
+    """A transient run's trace (thousands of rows) is not printed as a 100-page table: the
+    report shows the first rows and the chart."""
+    pid = client.post(
+        "/api/projects", json={"name": "ט", "experiment_id": "transformer3ph"}
+    ).json()["id"]
+    run = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "inrush", "case": {}}).json()
+    rep = client.post(
+        f"/api/projects/{pid}/reports",
+        json={"title": "זרם כניסה", "sections": [{"study_kind": "inrush", "run_id": run["id"]}]},
+    )
+    assert rep.status_code == 201, rep.text
+    doc = Document(io.BytesIO(client.get(f"/api/reports/{rep.json()['id']}/docx").content))
+    assert max(len(t.rows) for t in doc.tables) <= 16 + 1
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "מוצגות 15 מתוך" in text
+    assert len(doc.inline_shapes) == 2  # line currents, limb fluxes
+
+
+def test_html_report_has_charts_and_folded_tables_and_data_zip(client: TestClient) -> None:
+    import csv
+    import zipfile
+
+    pid = client.post(
+        "/api/projects", json={"name": "ט", "experiment_id": "transformer3ph"}
+    ).json()["id"]
+    run = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "inrush", "case": {}}).json()
+    rep = client.post(
+        f"/api/projects/{pid}/reports",
+        json={"title": "זרם כניסה", "sections": [{"study_kind": "inrush", "run_id": run["id"]}]},
+    ).json()
+    html = client.get(f"/api/reports/{rep['id']}/html").text
+    assert html.count('<img src="data:image/png;base64,') == 2
+    assert "מוצגות 15 מתוך" in html
+    z = zipfile.ZipFile(io.BytesIO(client.get(f"/api/reports/{rep['id']}/data.zip").content))
+    names = z.namelist()
+    assert "README.txt" in names and "s1_inrush_trace.csv" in names
+    rows = list(csv.reader(io.StringIO(z.read("s1_inrush_trace.csv").decode())))
+    trace = next(t for t in run["result"]["tables"] if t["id"] == "trace")
+    assert rows[0] == [c["key"] for c in trace["columns"]] and len(rows) - 1 == len(trace["rows"])
+    # the MATLAB appendix is thinned for print and points to the full CSV
+    doc = Document(io.BytesIO(client.get(f"/api/reports/{rep['id']}/docx").content))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "readtable('s1_inrush_trace.csv')" in text

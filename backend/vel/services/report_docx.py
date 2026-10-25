@@ -19,6 +19,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 
+from vel.services.report_charts import FOLDED, LONG_TABLE, section_charts
+
 FONT = "David"
 SIZE = Pt(11)
 SIM = RGBColor(0x1F, 0x6F, 0xB2)
@@ -174,6 +176,16 @@ class _Doc:
         r = para.add_run(text)
         _style_run(r, bold=bold, size=size or Pt(9.5), color=color)
 
+    def picture(self, png: bytes, caption: str) -> None:
+        import io
+
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Cm
+
+        self.d.add_picture(io.BytesIO(png), width=Cm(15))
+        self.d.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        self.p(caption, size=Pt(9))
+
     def code(self, text: str) -> None:
         for line in text.splitlines():
             para = self.d.add_paragraph()
@@ -195,9 +207,49 @@ class _Doc:
 def _mat(xs: list[Any]) -> str:
     return (
         "["
-        + " ".join("NaN" if not isinstance(v, (int, float)) else repr(float(v)) for v in xs)
+        + " ".join("NaN" if not isinstance(v, (int, float)) else f"{float(v):.6g}" for v in xs)
         + "]"
     )
+
+
+PRINT_POINTS = 400  # a time trace in the printed appendix is thinned to about this many
+
+
+def csv_name(index: int, study: str, table: str) -> str:
+    return f"s{index + 1}_{_ident(study)}_{_ident(table)}.csv"
+
+
+def report_data_zip(snapshot: dict[str, Any]) -> bytes:
+    """Every table of the report as CSV (one file per run table and per measurement set), with
+    a README that maps the column keys to their Hebrew names and units — the complete data
+    behind the printed (folded, thinned) tables and the MATLAB appendix."""
+    import csv
+    import zipfile
+
+    buf = io.BytesIO()
+    readme = [f"{snapshot.get('title', '')} — report data (UTF-8 CSV, header = column key)", ""]
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for i, sec in enumerate(snapshot.get("sections", [])):
+            res = (sec.get("run") or {}).get("result") or {}
+            items = [(t["id"], t["columns"], t["rows"]) for t in res.get("tables", [])]
+            m = sec.get("measurements")
+            if m:
+                items.append(("measured", m["columns"], m["rows"]))
+            for tid, cols, rows in items:
+                name = csv_name(i, sec.get("study_kind", "study"), tid)
+                out = io.StringIO()
+                w = csv.writer(out)
+                w.writerow([c["key"] for c in cols])
+                for r in rows:
+                    w.writerow(["" if r.get(c["key"]) is None else r.get(c["key"]) for c in cols])
+                z.writestr(name, out.getvalue())
+                readme.append(f"{name}: {sec.get('title_he', '')}")
+                readme += [
+                    f"  {c['key']} = {c['label_he']}" + (f" [{c['unit']}]" if c.get("unit") else "")
+                    for c in cols
+                ]
+        z.writestr("README.txt", "\n".join(readme) + "\n")
+    return buf.getvalue()
 
 
 def _ident(s: str) -> str:
@@ -213,7 +265,7 @@ def matlab_appendix(snapshot: dict[str, Any]) -> str:
         "close all; clc;",
     ]
     fig = 0
-    for sec in snapshot.get("sections", []):
+    for si, sec in enumerate(snapshot.get("sections", [])):
         run = sec.get("run") or {}
         res = run.get("result") or {}
         tables = {t.get("id"): t for t in res.get("tables", [])}
@@ -229,14 +281,29 @@ def matlab_appendix(snapshot: dict[str, Any]) -> str:
             }
             fig += 1
             rows = tb["rows"]
+            out += ["", f"%% {sec.get('title_he', '')} — {curve.get('title_he', '')}"]
+            if len(rows) > PRINT_POINTS:
+                step = -(-len(rows) // PRINT_POINTS)
+                rows = rows[::step]
+                f = csv_name(si, sec.get("study_kind", "study"), tb.get("id", "table"))
+                out += [
+                    f"% printed: every {step}-th of {len(tb['rows'])} samples. Full data: {f} in",
+                    f"% the report's data.zip — T = readtable('{f}'); x_sim = T.{_ident(xk)}.';",
+                ]
             out += [
-                "",
-                f"%% {sec.get('title_he', '')} — {curve.get('title_he', '')}",
                 f"figure({fig}); hold on; grid on;",
                 f"x_sim = {_mat([r.get(xk) for r in rows])};",
                 f"y_sim = {_mat([r.get(yk) for r in rows])};",
                 "plot(x_sim, y_sim, '-o', 'DisplayName', 'Simulation');",
             ]
+            for n, extra in enumerate((curve.get("y2"), curve.get("y3")), start=2):
+                if extra:
+                    out += [
+                        f"y{n} = {_mat([r.get(extra) for r in rows])};",
+                        f"plot(x_sim, y{n}, '-', 'DisplayName', '{_ident(extra)}');",
+                    ]
+            if curve.get("log"):
+                out.append("set(gca, 'XScale', 'log', 'YScale', 'log');")
             if meas and any(isinstance(r.get(xk), (int, float)) for r in meas):
                 out += [
                     f"x_meas = {_mat([r.get(xk) for r in meas])};",
@@ -309,11 +376,27 @@ def build_docx(snapshot: dict[str, Any]) -> bytes:
             for tb in res.get("tables", []):
                 d.p(tb["title_he"], bold=True)
                 cols = tb["columns"]
+                trows = tb["rows"]
+                long = len(trows) > LONG_TABLE
                 d.table(
                     [c["label_he"] + (f" [{c['unit']}]" if c.get("unit") else "") for c in cols],
-                    [[_fmt(r.get(c["key"])) for c in cols] for r in tb["rows"]],
+                    [
+                        [_fmt(r.get(c["key"])) for c in cols]
+                        for r in trows[: FOLDED if long else None]
+                    ],
                     color=SIM,
                 )
+                if long:
+                    d.note(
+                        f"מוצגות {FOLDED} מתוך {len(trows)} שורות; הטבלה המלאה מוצגת בגרף "
+                        "ובנספח MATLAB.",
+                        color=None,
+                    )
+            for k, (title, png, err) in enumerate(section_charts(sec)):
+                if png is None:
+                    d.note(f"הגרף '{title}' לא נוצר: {err}")
+                else:
+                    d.picture(png, f"איור {i + 3}.{k + 1}: {title}")
             if res.get("parameters"):
                 d.p("חישובים מתוך תוצאות הסימולציה", bold=True)
                 d.table(
