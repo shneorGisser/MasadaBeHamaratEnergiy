@@ -4,6 +4,7 @@ import type { Param, ResultTable, Run } from '../api/types'
 import { fmt } from '../format'
 import { fmtDate, t } from '../i18n'
 import Chart from './Chart'
+import ScopeChart from './ScopeChart'
 import { axisLabel, curveSeries, curveTable } from './curves'
 import { ErrorBox } from './ErrorBox'
 import SingleLine from './SingleLine'
@@ -112,6 +113,7 @@ export default function RunView({ run }: { run: Run }) {
             : axisLabel(tb.columns, c.y),
           series: curveSeries(c, [{ label: 'סימולציה', kind: 'sim', rows: tb.rows }], tb.columns),
           log: c.log ?? false,
+          time: c.x === 't',
         },
       ]
     })
@@ -176,7 +178,11 @@ export default function RunView({ run }: { run: Run }) {
         <div className="grid-2">
           {charts.map((c) => (
             <section key={c.id} className="card">
-              <Chart title={c.title} xLabel={c.xLabel} yLabel={c.yLabel} series={c.series} log={c.log} />
+              {c.time && !c.log ? (
+                <ScopeChart title={c.title} xLabel={c.xLabel} yLabel={c.yLabel} series={c.series} />
+              ) : (
+                <Chart title={c.title} xLabel={c.xLabel} yLabel={c.yLabel} series={c.series} log={c.log} />
+              )}
             </section>
           ))}
         </div>

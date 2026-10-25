@@ -23,6 +23,8 @@ export default function Chart({
   series,
   height = 260,
   log = false,
+  markers,
+  onPick,
 }: {
   title: string
   xLabel: string
@@ -31,8 +33,18 @@ export default function Chart({
   height?: number
   /** logarithmic x and y axes (time–current characteristics); non-positive points are dropped */
   log?: boolean
+  /** vertical cursor lines at these x values (scope cursors A, B) */
+  markers?: number[]
+  /** click on the plot area → x value under the pointer */
+  onPick?: (x: number) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const plotRef = useRef<uPlot | null>(null)
+  const markersRef = useRef<number[]>(markers ?? [])
+  const pickRef = useRef(onPick)
+  useEffect(() => {
+    pickRef.current = onPick
+  }, [onPick])
 
   useEffect(() => {
     const el = ref.current
@@ -52,6 +64,30 @@ export default function Chart({
         height,
         scales: log ? { x: { time: false, distr: 3 }, y: { distr: 3 } } : { x: { time: false } },
         legend: { live: false },
+        hooks: {
+          draw: [
+            (u: uPlot) => {
+              const ctx = u.ctx
+              const ms = markersRef.current
+              ms.forEach((x, i) => {
+                const px = u.valToPos(x, 'x', true)
+                if (!Number.isFinite(px)) return
+                ctx.save()
+                ctx.strokeStyle = i === 0 ? '#b07a1f' : '#7a3e8f'
+                ctx.lineWidth = 1.5 * devicePixelRatio
+                ctx.setLineDash([5 * devicePixelRatio, 4 * devicePixelRatio])
+                ctx.beginPath()
+                ctx.moveTo(px, u.bbox.top)
+                ctx.lineTo(px, u.bbox.top + u.bbox.height)
+                ctx.stroke()
+                ctx.fillStyle = ctx.strokeStyle
+                ctx.font = `${12 * devicePixelRatio}px sans-serif`
+                ctx.fillText(i === 0 ? 'A' : 'B', px + 4 * devicePixelRatio, u.bbox.top + 14 * devicePixelRatio)
+                ctx.restore()
+              })
+            },
+          ],
+        },
         axes: [{ label: xLabel }, { label: yLabel }],
         series: [
           { label: xLabel },
@@ -68,13 +104,28 @@ export default function Chart({
       data as uPlot.AlignedData,
       el,
     )
+    plotRef.current = plot
+    const click = (e: MouseEvent) => {
+      if (!pickRef.current) return
+      const x = plot.posToVal(e.offsetX, 'x')
+      if (Number.isFinite(x)) pickRef.current(x)
+    }
+    plot.over.addEventListener('click', click)
     const ro = new ResizeObserver(() => plot.setSize({ width: Math.max(280, el.clientWidth), height }))
     ro.observe(el)
     return () => {
       ro.disconnect()
+      plot.over.removeEventListener('click', click)
       plot.destroy()
+      plotRef.current = null
     }
   }, [title, xLabel, yLabel, series, height, log])
+
+  // cursors move without rebuilding the plot
+  useEffect(() => {
+    markersRef.current = markers ?? []
+    plotRef.current?.redraw(false)
+  }, [markers])
 
   return <div ref={ref} dir="ltr" className="chart" data-testid={`chart-${title}`} />
 }

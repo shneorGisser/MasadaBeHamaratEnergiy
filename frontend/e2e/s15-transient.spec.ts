@@ -162,3 +162,22 @@ test('N1: network module — load flow and IEC 60909 on the single-line diagram,
   await expect(view.locator('.chart canvas')).toHaveCount(1)
   await page.screenshot({ path: 'test-results/n2-protection.png', fullPage: true })
 })
+
+test('O1: scope cursors on the inrush current — RMS over a window and harmonics with THD', async ({ page }) => {
+  await page.goto('/')
+  await page.getByPlaceholder(/קבוצה 3/).fill('O1 סקופ')
+  await page.getByRole('button', { name: 'צור פרויקט' }).click()
+  await expect(page.getByTestId('project-experiment')).toBeVisible()
+  await openTab(page, /זרם כניסה/)
+  await page.getByTestId('run-button').click()
+  const view = page.getByTestId('run-view')
+  await expect(view.getByTestId('run-status')).toHaveAttribute('data-status', /success/)
+  const chart = view.locator('.chart').first()
+  const over = chart.locator('.u-over')
+  const box = (await over.boundingBox())!
+  await over.click({ position: { x: box.width * 0.6, y: box.height / 2 } })
+  await over.click({ position: { x: box.width * 0.95, y: box.height / 2 } })
+  await expect(view.getByTestId('scope-table').first()).toContainText('RMS')
+  await expect(view.getByTestId('thd').first()).toContainText('THD =')
+  await page.screenshot({ path: 'test-results/o1-scope.png', fullPage: true })
+})

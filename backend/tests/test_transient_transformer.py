@@ -66,3 +66,15 @@ def test_TT4_study() -> None:
     p = {x["key"]: x["value"] for x in out.result["parameters"]}  # type: ignore[index]
     assert p["I_peak_pu_noload"] > 20 and p["t_decay"] is not None
     assert "remanence_assumed" in {w["code"] for w in out.warnings}
+
+
+def test_TT9_inrush_is_rich_in_second_harmonic() -> None:
+    """The textbook signature: a saturating, offset flux gives an asymmetric current whose
+    second harmonic exceeds the ≈ 15 % a differential relay uses to block on inrush."""
+    from vel.experiments import registry
+
+    mod = registry.get("transformer3ph")
+    spec = mod.default_spec()
+    out = mod.execute("inrush", spec, None, mod.studies["inrush"].default_case(spec))
+    p = {x["key"]: x["value"] for x in out.result["parameters"]}  # type: ignore[index]
+    assert p["H2_ratio"] > 0.15

@@ -71,8 +71,35 @@ def run_inrush(spec: TransformerSpec, case: InrushCase) -> Outcome:
                 "מוערך — במעבדה הוא תלוי ברגע הניתוק הקודם ואינו ידוע",
             }
         )
+    # second-harmonic content of the worst phase over the first two cycles: the signature a
+    # differential relay uses to tell inrush from an internal fault (blocking above ≈ 15 %)
+    f_n = spec.nameplate.f_n
+    n2 = int(round(2 / f_n / (r.t[1] - r.t[0])))
+    h2 = None
+    if n2 + 1 <= len(r.t):
+        seg = r.i_line[r.i_peak_phase, : n2 + 1]
+        tt = r.t[: n2 + 1] - r.t[0]
+
+        def harm(k: int) -> float:
+            w = 2 * np.pi * f_n * k
+            c = np.trapezoid(seg * np.cos(w * tt), tt)
+            sn = np.trapezoid(seg * np.sin(w * tt), tt)
+            return float(np.hypot(c, sn))
+
+        h1 = harm(1)
+        h2 = harm(2) / h1 if h1 > 0 else None
     params = [
         Param("I_peak", "שיא זרם הכניסה", r.i_peak, "A", "max|i_L(t)|", "analytic"),
+        Param(
+            "H2_ratio",
+            "הרמוניה שנייה בשני המחזורים הראשונים (בפאזה עם השיא)",
+            h2,
+            "",
+            "I₂ / I₁",
+            "analytic",
+            note="ממסר דיפרנציאלי חוסם ניתוק מעל ≈ 15 % — כך הוא מבחין בין זרם כניסה לקצר פנימי",
+            undefined_reason=None if h2 is not None else "הסימולציה קצרה משני מחזורים",
+        ),
         Param(
             "I_peak_pu_rated",
             "שיא זרם הכניסה ביחס לשיא הזרם הנומינלי",

@@ -28,7 +28,7 @@ Accepted and done:
   transient runs with thousands of samples.
 
 Accepted, queued (after the time-domain steps T1.4–T1.6):
-1. Scope tools in the charts: Δt/ΔY cursors, RMS over a window, FFT/THD of a trace.
+1. ~~Scope tools in the charts~~ Done: `ScopeChart` + `scope.ts` (cursors A/B, Δt, 1/Δt, mean/RMS/p-p over the window, harmonics over whole periods of f₀ with THD); the inrush study now reports I₂/I₁ (> 15 %: what a differential relay blocks on).
 2. Charts in the Word report. Today it has tables and the MATLAB appendix; the curves are
    only in HTML.
 3. Winding temperature: R(T) = R20·(1 + α_Cu·(T − 20 °C)) as a spec field, for the load tests.
