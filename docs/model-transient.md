@@ -359,6 +359,24 @@ Result (`tests/test_reference_motulator.py`, three cases: the assumed motor unlo
 **≈ 2·10⁻⁷ of their peaks** over the whole start. The test bound is 10⁻⁵. A missing √2, √3 or 3/2,
 or a sign error in the frame rotation, would show up as ≥ 10⁻².
 
+**V/f inverter start** (`test_REF2`, two ramps, one braked): time-varying frequency and
+voltage with a kink at the end of the ramp. Both integrate in two pieces. Agreement ≈ 10⁻⁷.
+
+## Cross-check against gym-electric-motor (DC shunt motor)
+
+`vel/reference/gem_dc.py` runs our shunt-motor start through **gym-electric-motor** (Paderborn,
+MIT, JOSS 2021), using its `DcShuntMotor.electrical_ode` and `torque`. GEM's DC machine is
+linear, so the comparison is set up on the core both share:
+* the field is energised first and settled;
+* no armature reaction and no brush drop;
+* GEM's L_e' = (OCC(F)/ω_ref)/i_f at that field.
+
+What is checked is the coupling: EMF and torque constants, rpm ↔ rad/s, and the starter steps.
+Result (`test_REF3`, three-step starter braked, and a direct start): ≈ 3·10⁻⁸ of the peaks.
+
+The nonlinear parts (saturating field inductance, armature reaction, brush drop) are NOT covered
+by this check. Their steady state is checked against the 2025 lab tables.
+
 Not cross-checked this way:
 * the synchronous machine. motulator's synchronous models are PM/SynRM drives; ours has a
   wound field and damper windings. That needs Modelica `Electrical.Machines` (planned).

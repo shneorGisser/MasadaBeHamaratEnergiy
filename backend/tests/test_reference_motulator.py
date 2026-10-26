@@ -42,3 +42,26 @@ def test_REF1_dol_start_matches_motulator(label: str, spec: Any, u: float, brake
     assert r["i_err_max"] < 1e-5, (label, r)
     assert r["M_err_max"] < 1e-5, (label, r)
     assert r["n_err_max"] < 1e-5, (label, r)
+
+
+@pytest.mark.parametrize(
+    ("label", "ramp", "brake"),
+    [
+        ("0→50 Hz in 0.5 s, 5 % boost, braked", (220.0, 50.0, 50.0, 0.5, 0.05), 0.8),
+        ("0→30 Hz in 0.3 s, no boost", (220.0, 50.0, 30.0, 0.3, 0.0), 0.0),
+    ],
+)
+def test_REF2_vf_start_matches_motulator(label: str, ramp: tuple[float, ...], brake: float) -> None:
+    """The inverter (V/f) start: time-varying frequency and voltage, a kink at the ramp end."""
+    from vel.engine.transient.induction import VfRamp
+    from vel.reference.motulator_im import compare_vf
+
+    u, fn, ft, tr, boost = ramp
+    r = compare_vf(
+        assumed_lab_motor(),
+        VfRamp(U_n=u, f_n=fn, f_target=ft, t_ramp=tr, boost=boost),
+        J=0.003,
+        M_brake=brake,
+        t_end=0.8,
+    )
+    assert max(r.values()) < 1e-5, (label, r)

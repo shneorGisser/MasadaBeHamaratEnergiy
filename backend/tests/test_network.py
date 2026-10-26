@@ -147,3 +147,40 @@ def test_N8_protection_study_checks_and_failures() -> None:
     # each curve falls with current and ends in the magnetic release
     t3 = [r["t3"] for r in tcc if r["t3"] is not None]
     assert all(a >= b for a, b in zip(t3, t3[1:], strict=False)) and t3[-1] == SPEC.protection.t_mag
+
+
+@pytest.mark.parametrize(
+    "curve", ["standard_inverse", "very_inverse", "extremely_inverse", "long_inverse"]
+)
+def test_N9_relay_matches_pandapower_ocrelay(curve: str) -> None:
+    """Our IEC 60255 relay gives the same operating times as pandapower's own OCRelay, run
+    through its protection workflow (calc_sc → calculate_protection_times) on a two-line
+    feeder with a fault at the far end."""
+    import pandapower as ppw
+    import pandas as pd
+    from pandapower.protection.protection_devices.ocrelay import OCRelay
+    from pandapower.protection.run_protection import calculate_protection_times
+    from pandapower.shortcircuit import calc_sc
+
+    from vel.engine.network.devices import Relay
+
+    net = ppw.create_empty_network()
+    b = [ppw.create_bus(net, 0.4, geodata=(i, 0)) for i in range(3)]
+    ppw.create_ext_grid(net, b[0], s_sc_max_mva=10, rx_max=0.1)
+    l1 = ppw.create_line_from_parameters(net, b[0], b[1], 0.05, 0.2, 0.08, 0, 0.25)
+    l2 = ppw.create_line_from_parameters(net, b[1], b[2], 0.08, 0.3, 0.08, 0, 0.16)
+    sw = [ppw.create_switch(net, b[0], l1, "l"), ppw.create_switch(net, b[1], l2, "l")]
+    manual = pd.DataFrame({"switch_id": sw, "I_s": [0.3, 0.2], "I_g": [1.0, 1.0]})
+    relays = [
+        OCRelay(
+            net, s, "IDMT", time_settings=[0.1, 0.0], pickup_current_manual=manual, curve_type=curve
+        )
+        for s in sw
+    ]
+    calc_sc(net, bus=b[2], branch_results=True)
+    res = calculate_protection_times(net)
+    for r, row in zip(relays, res.itertuples(), strict=True):
+        ours, why = Relay(I_s=r.I_s * 1e3, tms=r.tms, curve=curve).time(  # type: ignore[arg-type]
+            row.activation_parameter_value * 1e3
+        )
+        assert why is None and ours == pytest.approx(row.trip_melt_time_s, rel=1e-9)
