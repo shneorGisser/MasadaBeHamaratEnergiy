@@ -337,3 +337,30 @@ now varies in time, so v_s = √2·U(f(t)) stays real.
 Reference for later work: motulator (MIT) provides inverter and control models, including
 current-limited and vector-controlled drives. That remains the next step if the course needs
 it.
+
+## Cross-check against motulator (independent open-source model)
+
+`vel/reference/motulator_im.py` runs the same direct-on-line start with **motulator**
+(Aalto University, MIT licence, v0.18). The two implementations differ in every respect except
+the physics:
+
+| | Ours | motulator reference |
+|---|---|---|
+| Equivalent circuit | T | Γ (from inverse-Γ, exact conversion without saturation) |
+| Frame | synchronous dq | stationary αβ |
+| Solver | Radau | LSODA |
+| Flux/current/torque code | `vel.engine.transient.induction` | `motulator.drive.model.InductionMachine` |
+
+Shared on purpose, because they are inputs and not the model under test: the parameters, the
+ideal supply and the load model (brake·tanh(ω/ω_ε) + k_fw·ω).
+
+Result (`tests/test_reference_motulator.py`, three cases: the assumed motor unloaded and with a
+1.5 N·m brake, and the AP-3030 fit at reduced voltage): line current, torque and speed agree to
+**≈ 2·10⁻⁷ of their peaks** over the whole start. The test bound is 10⁻⁵. A missing √2, √3 or 3/2,
+or a sign error in the frame rotation, would show up as ≥ 10⁻².
+
+Not cross-checked this way:
+* the synchronous machine. motulator's synchronous models are PM/SynRM drives; ours has a
+  wound field and damper windings. That needs Modelica `Electrical.Machines` (planned).
+* iron loss (absent in our transient model);
+* saturation.

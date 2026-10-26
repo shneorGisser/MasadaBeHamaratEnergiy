@@ -18,13 +18,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov", "hypothesis", "httpx", "httpx2", "ruff", "mypy"]
+dev = ["pytest>=8", "pytest-cov", "hypothesis", "httpx", "httpx2", "ruff", "mypy", "motulator>=0.18"]
+reference = ["motulator>=0.18"]  # independent models for cross-checks (MIT)
 postgres = ["psycopg[binary]>=3.2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-markers = ["ngspice: cross-validation tests that require the ngspice binary"]
+markers = [
+  "ngspice: cross-validation tests that require the ngspice binary",
+  "reference: cross-checks against open-source reference models (motulator)",
+]
 
 [tool.ruff]
 line-length = 100
@@ -41,7 +45,7 @@ plugins = ["pydantic.mypy"]
 packages = ["vel"]
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "docx", "docx.*", "pandapower", "pandapower.*", "matplotlib", "matplotlib.*"]
+module = ["scipy.*", "docx", "docx.*", "pandapower", "pandapower.*", "matplotlib", "matplotlib.*", "motulator", "motulator.*"]
 ignore_missing_imports = true
 
 [tool.setuptools.package-data]
