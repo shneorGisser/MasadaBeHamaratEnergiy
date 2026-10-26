@@ -6,5 +6,7 @@ PORT="${1:-8765}"
 TMP="$(mktemp -d)"
 export VEL_DATABASE_URL="sqlite:///$TMP/e2e.sqlite3"
 export VEL_STATIC_DIR="$ROOT/frontend/dist"
+export VEL_ADMIN_TOKEN="${VEL_ADMIN_TOKEN:-e2e-admin-key-not-secret}"
+export VEL_WORKSPACES=cookie  # the deployment mode: every browser context is its own workspace
 cd "$ROOT/backend"
 exec "$ROOT/.venv/bin/uvicorn" --factory vel.main:create_app --host 127.0.0.1 --port "$PORT" --log-level warning

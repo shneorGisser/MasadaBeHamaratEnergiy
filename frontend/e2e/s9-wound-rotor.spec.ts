@@ -1,7 +1,8 @@
 import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
-test('D4: wound rotor — turns ratio, rotor resistance lowers the speed, induction regulator on the 3D bench', async ({ page, request }) => {
+test('D4: wound rotor — turns ratio, rotor resistance lowers the speed, induction regulator on the 3D bench', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('D4 רוטור מלופף')
   await page.locator('select[name="experiment"]').selectOption('wound_rotor')

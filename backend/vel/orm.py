@@ -11,7 +11,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from vel.db import Base
@@ -27,6 +27,7 @@ def _now() -> datetime:
 
 class Project(Base):
     __tablename__ = "projects"
+    __table_args__ = (UniqueConstraint("share_token", name="uq_projects_share_token"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(200))
@@ -37,6 +38,10 @@ class Project(Base):
     circuits_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     notes: Mapped[str] = mapped_column(Text, default="")
     guide_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # owner (vel.api.workspace); "shared" in single-user mode
+    workspace: Mapped[str] = mapped_column(String(64), default="shared", index=True)
+    # set when the owner creates a share link; anyone with it may copy the project
+    share_token: Mapped[str | None] = mapped_column(String(64), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_now, onupdate=_now
@@ -107,4 +112,20 @@ class Report(Base):
     sources: Mapped[dict[str, Any]] = mapped_column(JSON)
     student_discussion: Mapped[str] = mapped_column(Text, default="")
     html: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Feedback(Base):
+    """A note a user sent from the app's feedback button. Append-only."""
+
+    __tablename__ = "feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    workspace: Mapped[str] = mapped_column(String(64))
+    page: Mapped[str] = mapped_column(String(500), default="")
+    project_id: Mapped[str | None] = mapped_column(String(36), default=None)
+    kind: Mapped[str] = mapped_column(String(20), default="other")
+    message: Mapped[str] = mapped_column(Text)
+    contact: Mapped[str] = mapped_column(String(200), default="")
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

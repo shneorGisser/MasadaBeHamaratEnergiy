@@ -2,7 +2,8 @@ import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
 /** Master prompt §9 — the complete first-experiment journey, in a real browser, real backend. */
-test('S5: full journey — guided mode, parameters, simulate, reload, measure, compare, report', async ({ page, request }) => {
+test('S5: full journey — guided mode, parameters, simulate, reload, measure, compare, report', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   // 1. open the experiment
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('מסע מלא')

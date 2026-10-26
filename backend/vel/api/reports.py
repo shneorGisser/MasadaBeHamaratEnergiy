@@ -12,11 +12,12 @@ from sqlalchemy import select
 
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
+from vel.api.workspace import GuardDep
 from vel.errors import ApiError, not_found
 from vel.orm import Report
 from vel.services import reports as svc
 
-router = APIRouter(prefix="/api", tags=["reports"])
+router = APIRouter(prefix="/api", tags=["reports"], dependencies=[GuardDep])
 
 
 class Section(BaseModel):

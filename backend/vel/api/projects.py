@@ -11,11 +11,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vel.api.deps import SessionDep
+from vel.api.workspace import GuardDep, WorkspaceDep
 from vel.errors import ApiError, not_found
 from vel.experiments import registry
 from vel.orm import Project
 
-router = APIRouter(prefix="/api", tags=["projects"])
+router = APIRouter(prefix="/api", tags=["projects"], dependencies=[GuardDep])
 
 
 class ExperimentOut(BaseModel):
@@ -108,13 +109,15 @@ def list_presets(experiment_id: str) -> list[dict[str, Any]]:
 
 
 @router.get("/projects", response_model=list[ProjectOut])
-def list_projects(session: SessionDep) -> list[ProjectOut]:
-    rows = session.scalars(select(Project).order_by(Project.updated_at.desc())).all()
+def list_projects(session: SessionDep, workspace: WorkspaceDep) -> list[ProjectOut]:
+    rows = session.scalars(
+        select(Project).where(Project.workspace == workspace).order_by(Project.updated_at.desc())
+    ).all()
     return [to_out(p) for p in rows]
 
 
 @router.post("/projects", response_model=ProjectOut, status_code=201)
-def create_project(body: ProjectCreate, session: SessionDep) -> ProjectOut:
+def create_project(body: ProjectCreate, session: SessionDep, workspace: WorkspaceDep) -> ProjectOut:
     try:
         module = registry.get(body.experiment_id)
     except KeyError as exc:
@@ -126,6 +129,7 @@ def create_project(body: ProjectCreate, session: SessionDep) -> ProjectOut:
         spec_json=module.default_spec().model_dump(mode="json"),
         circuits_json={},
         notes="",
+        workspace=workspace,
     )
     session.add(p)
     session.commit()
@@ -173,10 +177,12 @@ def export_project(project_id: str, session: SessionDep) -> dict[str, Any]:
 
 
 @router.post("/projects/import", response_model=ProjectOut, status_code=201)
-def import_project(body: dict[str, Any], session: SessionDep) -> ProjectOut:
+def import_project(
+    body: dict[str, Any], session: SessionDep, workspace: WorkspaceDep
+) -> ProjectOut:
     from vel.services.backup import import_project as _import
 
-    return to_out(_import(session, body))
+    return to_out(_import(session, body, workspace))
 
 
 @router.delete("/projects/{project_id}", status_code=204)

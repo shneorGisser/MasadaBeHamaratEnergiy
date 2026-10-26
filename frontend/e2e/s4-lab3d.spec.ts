@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-test('S4: 3D bench shows solver readings, variac and switch drive the model, selection syncs with the schematic', async ({
-  page,
-  request,
-}) => {
+test('S4: 3D bench shows solver readings, variac and switch drive the model, selection syncs with the schematic', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('S4 שולחן')
   await page.getByRole('button', { name: 'צור פרויקט' }).click()

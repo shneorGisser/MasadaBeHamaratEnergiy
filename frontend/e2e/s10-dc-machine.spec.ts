@@ -10,7 +10,8 @@ async function newProject(page: import('@playwright/test').Page, name: string, e
   return page.url().split('/projects/')[1]!.split(/[/?]/)[0]!
 }
 
-test('D5: DC motor — load table, brake on the 3D bench, compound connection', async ({ page, request }) => {
+test('D5: DC motor — load table, brake on the 3D bench, compound connection', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   const pid = await newProject(page, 'D5 מנוע DC', 'dc_motor')
 
   await openTab(page, /^מנוע מקבילי בעומס$/)

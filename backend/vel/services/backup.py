@@ -128,7 +128,9 @@ def new() -> str:
     return str(uuid.uuid4())
 
 
-def import_project(session: Session, doc: dict[str, Any]) -> Project:
+def import_project(
+    session: Session, doc: dict[str, Any], workspace: str = "shared", suffix: str = " (שוחזר)"
+) -> Project:
     if doc.get("format") != FORMAT or doc.get("version") not in READABLE_VERSIONS:
         raise ApiError(422, "bad_format", f"expected {FORMAT} v{READABLE_VERSIONS}")
     pj = doc["project"]
@@ -140,7 +142,8 @@ def import_project(session: Session, doc: dict[str, Any]) -> Project:
         raise ApiError(422, "bad_project", f"project data is invalid: {exc}") from exc
     p = Project(
         id=new(),
-        name=f"{pj['name']} (שוחזר)",
+        name=f"{pj['name']}{suffix}",
+        workspace=workspace,
         experiment_id=pj["experiment_id"],
         experiment_version=pj["experiment_version"],
         spec_json=spec_doc,

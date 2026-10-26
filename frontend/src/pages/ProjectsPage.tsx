@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCreateProject, useDeleteProject, useExperiments, useProjects } from '../api/hooks'
 import { api } from '../api/client'
 import { ErrorBox } from '../components/ErrorBox'
+import { WorkspaceLink } from '../components/Sharing'
 import { fmtDate, t } from '../i18n'
 
 export default function ProjectsPage() {
@@ -107,6 +108,7 @@ export default function ProjectsPage() {
         )}
         {del.isError && <ErrorBox error={del.error} />}
       </section>
+      <WorkspaceLink />
     </div>
   )
 }

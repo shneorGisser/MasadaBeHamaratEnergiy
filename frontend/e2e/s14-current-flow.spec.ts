@@ -1,7 +1,8 @@
 import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
-test('F1: current flow on the schematic matches the solver, AC and DC', async ({ page, request }) => {
+test('F1: current flow on the schematic matches the solver, AC and DC', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('F1 זרימת זרם')
   await page.locator('select[name="experiment"]').selectOption('dc_motor')

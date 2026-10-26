@@ -256,3 +256,30 @@ html, body { overflow-x: hidden; }
 .script-info {
   color: var(--panel-engrave);
 }
+
+/* ---- sharing: feedback button, share and workspace boxes ---- */
+.ltr { direction: ltr; text-align: left; }
+.nowrap { white-space: nowrap; }
+.feedback-fab {
+  position: fixed; inset-inline-start: auto; inset-inline-end: 16px; bottom: 16px; z-index: 50;
+  background: var(--panel); color: var(--panel-ink); border: 1px solid var(--panel-2);
+  border-radius: var(--radius); padding: 8px 16px; font: inherit; font-weight: 600; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(23, 33, 43, 0.25);
+}
+.feedback-fab:hover { background: var(--panel-2); }
+.feedback-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.feedback-panel {
+  position: fixed; inset-inline-end: 16px; bottom: 16px; z-index: 50;
+  width: min(420px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 6px 24px rgba(23, 33, 43, 0.25);
+}
+.feedback-panel textarea { resize: vertical; font: inherit; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: var(--surface);
+}
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip.on { border-color: var(--panel); background: var(--panel); color: var(--panel-ink); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.share-box summary, .project-meta summary { cursor: pointer; }
+.app-main { padding-bottom: 72px; }

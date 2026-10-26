@@ -1,10 +1,8 @@
 import { openTab } from './helpers'
 import { expect, test } from '@playwright/test'
 
-test('D2: induction motor — load study with torque–speed curve, live brake on the 3D bench, measurements vs simulation', async ({
-  page,
-  request,
-}) => {
+test('D2: induction motor — load study with torque–speed curve, live brake on the 3D bench, measurements vs simulation', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('D2 מנוע')
   await page.locator('select[name="experiment"]').selectOption('induction_motor')

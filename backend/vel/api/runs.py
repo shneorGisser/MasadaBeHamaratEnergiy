@@ -12,13 +12,14 @@ from sqlalchemy.orm import defer
 
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
+from vel.api.workspace import GuardDep
 from vel.engine.circuit import CircuitModel
 from vel.engine.netlist import catalog_json
 from vel.errors import ApiError, not_found
 from vel.orm import SimulationRun
 from vel.services import runs as svc
 
-router = APIRouter(prefix="/api", tags=["runs"])
+router = APIRouter(prefix="/api", tags=["runs"], dependencies=[GuardDep])
 
 
 class StudyOut(BaseModel):

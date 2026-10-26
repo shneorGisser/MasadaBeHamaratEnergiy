@@ -11,6 +11,7 @@ from sqlalchemy import select
 from vel.api.deps import SessionDep
 from vel.api.projects import load_project
 from vel.api.runs import RunOut, _full, load_run
+from vel.api.workspace import GuardDep
 from vel.errors import ApiError
 from vel.labdata import by_experiment
 from vel.orm import MeasurementSet
@@ -18,7 +19,7 @@ from vel.services import labdata as labdata_svc
 from vel.services import measurements as ms
 from vel.services import runs as runs_svc
 
-router = APIRouter(prefix="/api", tags=["measurements"])
+router = APIRouter(prefix="/api", tags=["measurements"], dependencies=[GuardDep])
 
 
 class SetCreate(BaseModel):

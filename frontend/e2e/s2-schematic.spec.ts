@@ -29,7 +29,8 @@ test('S2: load test on the template circuit, R and C loads', async ({ page }) =>
   await page.screenshot({ path: 'test-results/s2-load-run.png', fullPage: true })
 })
 
-test('S2: editing topology changes the simulation; removing an instrument fails explicitly', async ({ page, request }) => {
+test('S2: editing topology changes the simulation; removing an instrument fails explicitly', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   const pid = await newProject(page, 'S2 עריכה')
   await openTab(page, 'ניסוי עומס')
   await expect(page.getByTestId('node-A2')).toBeVisible()

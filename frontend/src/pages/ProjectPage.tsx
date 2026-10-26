@@ -8,6 +8,7 @@ import ReportsPanel from '../components/ReportsPanel'
 import StudiesPanel from '../components/StudiesPanel'
 import ScriptPanel from '../components/ScriptPanel'
 import SpecForm from '../components/SpecForm'
+import { ShareProject } from '../components/Sharing'
 import { t } from '../i18n'
 
 function ProjectMetaForm({ project }: { project: Project }) {
@@ -75,6 +76,7 @@ export default function ProjectPage() {
         </span>
       </div>
       <ProjectMetaForm key={p.id} project={p} />
+      <ShareProject projectId={p.id} />
       <nav className="tabs" aria-label="project sections">
         <NavLink end to={`/projects/${p.id}`} className="tab">
           {t('tabs.studies')}

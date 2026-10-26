@@ -4,6 +4,8 @@ import { api } from './api/client'
 import { t } from './i18n'
 import ProjectPage from './pages/ProjectPage'
 import ProjectsPage from './pages/ProjectsPage'
+import { FeedbackAdminPage, SharedProjectPage, WorkspaceAdoptPage } from './pages/SharingPages'
+import { FeedbackButton } from './components/Sharing'
 
 /** Server status lamp: green only when /api/health actually answers. */
 function ServerLamp() {
@@ -38,8 +40,12 @@ export default function App() {
         <Routes>
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/projects/:projectId/*" element={<ProjectPage />} />
+          <Route path="/s/:token" element={<SharedProjectPage />} />
+          <Route path="/w" element={<WorkspaceAdoptPage />} />
+          <Route path="/feedback" element={<FeedbackAdminPage />} />
         </Routes>
       </main>
+      <FeedbackButton />
     </>
   )
 }

@@ -4,10 +4,8 @@ import { expect, test } from '@playwright/test'
 const IF = [0, 0.25, 0.5, 0.7, 0.97, 1.22, 1.47, 1.73, 1.96, 2.25, 2.5]
 const EF = [5.4, 72.6, 138, 184, 237, 280, 308, 332, 348, 362, 371.5]
 
-test('D3: synchronous machine — OCC vs the student table, three short circuits, field current on the 3D bench, V-curves', async ({
-  page,
-  request,
-}) => {
+test('D3: synchronous machine — OCC vs the student table, three short circuits, field current on the 3D bench, V-curves', async ({ page }) => {
+  const request = page.request // shares the browser's cookies (its workspace)
   await page.goto('/')
   await page.getByPlaceholder(/קבוצה 3/).fill('D3 סינכרונית')
   await page.locator('select[name="experiment"]').selectOption('synchronous')
