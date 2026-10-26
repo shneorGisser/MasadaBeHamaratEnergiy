@@ -5,6 +5,8 @@ import { useRef } from 'react'
 import type { Group } from 'three'
 import type { CComponent } from '../schematic/model'
 import { ROTATING, SIZE, readingText, type LivePoint } from './live'
+import { fmt } from '../format'
+import { BrakeUnit, MeterModule, Variac } from './Panels'
 
 /**
  * Motor + magnetic-powder brake on a common base. The coupling turns at a slowed-down rate
@@ -76,6 +78,18 @@ export function MotorBrake({
   )
 }
 
+/** What the module's own seven-segment readout shows: the number only, as on the real meter. */
+function display(v: unknown, unit: string, digits = 4): string {
+  return typeof v === 'number' && Number.isFinite(v) ? `${fmt(v, digits)} ${unit}` : '----'
+}
+
+function meterDisplay(c: CComponent, live: LivePoint | null): string {
+  const r = live?.readings?.[c.id]
+  if (c.type === 'ammeter') return display(r?.I, 'A')
+  if (c.type === 'voltmeter') return display(r?.U, 'V')
+  return display(r?.P, 'W')
+}
+
 export function Equipment({
   c,
   pos,
@@ -105,7 +119,20 @@ export function Equipment({
   return (
     <group position={pos}>
       {c.type === 'motor3' || c.type === 'woundmotor3' ? (
-        <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
+        <>
+          <MotorBrake rpm={Number(live?.readings?.[c.id]?.n ?? 0)} emissive={emissive} onClick={click} />
+          <BrakeUnit torque={display(live?.readings?.[c.id]?.M, 'Nm', 3)} speed={display(live?.readings?.[c.id]?.n, 'rpm', 4)} />
+        </>
+      ) : c.type === 'ammeter' || c.type === 'voltmeter' || c.type === 'wattmeter' ? (
+        <MeterModule
+          size={[w, h, d]}
+          text={meterDisplay(c, live)}
+          sockets={c.type === 'wattmeter' ? ['#c0392b', '#1b1b1b', '#c0392b', '#1b1b1b'] : ['#c0392b', '#1b1b1b']}
+          emissive={emissive}
+          onClick={click}
+        />
+      ) : c.type === 'source3' ? (
+        <Variac size={[w, h, d]} emissive={emissive} onClick={click} />
       ) : c.type === 'dcmachine' ? (
         // DC machine (brown-grey frame) on the servo brake / drive
         <MotorBrake

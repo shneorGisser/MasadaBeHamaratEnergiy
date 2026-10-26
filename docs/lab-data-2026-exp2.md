@@ -80,8 +80,8 @@ not 370 W. The nameplate photo is still needed.
 
 | Item | Seen | Used in the model |
 |---|---|---|
-| Machine bench (Appli-com) | three-phase supply, IGBT bridge, frequency inverter (digital Hz), power meter 14 05 010 (V phase, I line, P1, "3ph" label), resistive load 0–100 %, capacitive load Δ/Y 230/400 V 17–136 var, brake control unit APB00300 (torque N·m, speed rpm, four-quadrant LEDs) | the wattmeter convention above. The brake unit is the source of M and n |
-| Langlois HTN 450/8 variac | 400 V Y in, 0–450 V out, 50–400 Hz, 8 A, 6.24 kVA | `source3` (adjustable supply) |
+| Machine bench (Appli-com) | three-phase supply, IGBT bridge, frequency inverter (digital Hz), power meter 14 05 010 (V phase, I line, P1, "3ph" label), resistive load 0–100 %, capacitive load Δ/Y 230/400 V 17–136 var, brake control unit APB00300 (torque N·m, speed rpm, four-quadrant LEDs) | the wattmeter convention above. On the 3D bench, the meters are drawn as Appli-com modules with a red readout, and the brake has a control unit showing M and n |
+| Langlois HTN 450/8 variac | 400 V Y in, 0–450 V out, 50–400 Hz, 8 A, 6.24 kVA | `source3`, drawn on the 3D bench as the Langlois housing (ribs, handle, blue sockets) |
 | Appli-com power-electronics racks | 3×45-0-45 V 2.5 A supply, SCR/diode half-bridges, 100 Ω 100 W loads, 50 mH chokes, PWM / six-pulse firing, ±15 V; 300 VA 380/220 V transformer | not modelled (no power-electronics experiment yet) |
 | Metrel MD9040 True-RMS DMM | 10 A / 0.6 A / 1000 V CAT IV | ideal meter |
 | Metrel MD9272 clamp | 100 A, 600 V CAT III | ideal meter |
