@@ -6,6 +6,7 @@ import type { Comparison, Finding, LabDataset, MColumn, MSetView, ProbeCandidate
 import { fmt } from '../format'
 import { fmtDate, t, type MessageKey } from '../i18n'
 import Chart, { type Series } from './Chart'
+import CalibratePanel from './CalibratePanel'
 import { ErrorBox } from './ErrorBox'
 import { curveSeries } from './curves'
 import { DataTable } from './RunView'
@@ -665,6 +666,7 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
           {cmp.data && <ComparisonView cmp={cmp.data} view={view.data} />}
         </section>
       )}
+      {view.data && <CalibratePanel key={`c-${view.data.set.id}`} projectId={projectId} setId={view.data.set.id} />}
       {view.data && <Probe key={`p-${view.data.set.id}`} setId={view.data.set.id} />}
     </div>
   )

@@ -144,6 +144,22 @@ def simulate_at_measured_points(set_id: str, session: SessionDep) -> RunOut:
     return _full(runs_svc.create_run(session, p, s.study_kind, case, label))
 
 
+class CalibrateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # each knob: spec paths scaled together ("ecm.R1"); None = the study's defaults
+    knobs: list[list[str]] | None = Field(default=None, max_length=6)
+
+
+@router.post("/measurement-sets/{set_id}/calibrate")
+def calibrate(set_id: str, body: CalibrateBody, session: SessionDep) -> dict[str, Any]:
+    """Least-squares fit of a few spec parameters to this set. Returns a proposed spec;
+    nothing is saved."""
+    from vel.services.calibration import calibrate as run
+
+    s = ms.load_set(session, set_id)
+    return run(session, s, body.knobs)
+
+
 @router.get("/comparison")
 def comparison(
     run_id: str,
