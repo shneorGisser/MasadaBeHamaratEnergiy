@@ -1,5 +1,5 @@
 """Study definitions of experiment 8 (testing an electrical installation). None of them has a
-circuit to edit: the tester's readings follow from closed-form models (physics.py), and each
+circuit to edit: the tester's readings follow from closed-form models (vel.engine.installation), and each
 study states the acceptance criterion it applies and where that criterion comes from."""
 
 from __future__ import annotations
@@ -9,8 +9,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from vel.engine import installation as ph
 from vel.experiments.common import Outcome, Param, StudyDef, col
-from vel.experiments.installation import physics as ph
 from vel.experiments.installation.spec import K_INST, K_INST_LOW, InstallSpec
 
 MODEL_VERSION = "install-1.0"

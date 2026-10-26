@@ -12,8 +12,8 @@ import math
 import pytest
 from fastapi.testclient import TestClient
 
+from vel.engine import installation as ph
 from vel.experiments import registry
-from vel.experiments.installation import physics as ph
 from vel.experiments.installation.module import plausibility
 from vel.experiments.installation.spec import InstallSpec, assumed_nominal, lab_2025
 from vel.experiments.installation.studies import MCB_2025

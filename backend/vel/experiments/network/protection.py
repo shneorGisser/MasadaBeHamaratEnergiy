@@ -21,9 +21,9 @@ from typing import Any
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from vel.engine.installation import mcb_trip
 from vel.engine.network import direct, pp_model
 from vel.experiments.common import Outcome, Param, StudyError, col
-from vel.experiments.installation.physics import mcb_trip
 from vel.experiments.installation.spec import Mcb
 from vel.experiments.network.spec import NetworkSpec
 

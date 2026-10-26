@@ -5,8 +5,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from vel.engine import installation as ph
 from vel.experiments.common import SAFETY, InputError, MCol, MeasureDef, Step, study_steps
-from vel.experiments.installation import physics as ph
 from vel.experiments.installation import studies
 from vel.experiments.installation.spec import K_INST, PRESETS, InstallSpec, lab_2025
 from vel.experiments.registry import ExperimentModule

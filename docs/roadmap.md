@@ -32,9 +32,8 @@ Accepted, queued (after the time-domain steps T1.4–T1.6):
 2. ~~Charts in the Word report~~ Done (and in the HTML/PDF, which turned out to have none either): `report_charts.py` draws every curve of a section from the report's tables with matplotlib (≥ 3.11 lays Hebrew out with the bidi algorithm; labels get a leading RLM). Long tables are folded to 15 rows, the MATLAB appendix is thinned to ≈ 400 points, and `GET /reports/{id}/data.zip` carries all the data as CSV — a transient report went from 120 Word pages to 11.
 3. ~~Winding temperature~~ Done: `experiments/thermal.py` (docs/thermal.md).
 4. ~~"Calibrate the model to my measurements"~~ Done: `services/calibration.py` (docs/calibration.md) — least squares on the comparison itself, uncertainties, correlations, bounds; applied only on request.
-5. Front-end unit tests (Vitest) for curves.ts, CurrentEdge, PhasorDiagram, SpecForm. Split
-   LabBench3D into equipment/instrument files.
-6. Move `experiments/installation/physics.py` to `engine/`, so all physics lives in the engine.
+5. ~~Front-end unit tests; split LabBench3D~~ Done: `lab3d/` is now `LabBench3D.tsx` (scene + controls), `Equipment.tsx`, `Studio.tsx`, `live.ts`; Vitest for `curves.ts`, `live.ts`, `scope.ts`, `router.ts`, `dxf.ts`.
+6. ~~Move installation physics to the engine~~ Done: `vel/engine/installation.py`.
 7. ~~Wiring check against the template~~ Done: `services/wiring_check.py`, `GET …/circuits/{kind}/check`, button "בדוק מול החוברת". Compares nets (not cables), picks the closest variant, reports missing joints with the student's groups and extra joints (shorts); a difference is reported as "differs from the manual", not as an error.
 
 Checked and rejected, or already the case:

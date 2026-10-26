@@ -2,7 +2,7 @@
 
 Module `installation` (`backend/vel/experiments/installation/`). Unlike experiments 1–6, there is
 no circuit to edit. Each reading of the installation tester (MI 3125), the megger or the earth
-tester comes from a closed-form model in `physics.py`. Each study names the acceptance criterion
+tester comes from a closed-form model in `vel/engine/installation.py`. Each study names the acceptance criterion
 it applies and where that criterion comes from.
 
 ## Data: the 2025 report
