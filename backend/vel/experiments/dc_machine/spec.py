@@ -19,6 +19,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from vel.experiments.thermal import Thermal
+
 Provenance = Literal["assumed", "nameplate", "measured", "fitted"]
 
 
@@ -89,6 +91,7 @@ class DCSpec(BaseModel):
     provenance_note: str = Field(default="", max_length=2000)
     nameplate: DCNameplate
     ecm: DCECM
+    thermal: Thermal = Field(default_factory=Thermal)
     occ: DCOcc
     insulation: DCInsulation
 

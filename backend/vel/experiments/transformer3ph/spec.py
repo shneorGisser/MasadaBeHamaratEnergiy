@@ -26,6 +26,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from vel.experiments.thermal import Thermal
+
 Connection = Literal["Y", "D"]
 Provenance = Literal["assumed", "nameplate", "measured", "fitted"]
 
@@ -72,6 +74,7 @@ class TransformerSpec(BaseModel):
     provenance_note: str = ""
     nameplate: Nameplate
     ecm: EquivalentCircuit
+    thermal: Thermal = Field(default_factory=Thermal)
     insulation: Insulation
 
     # ---- derived quantities (pure functions of the spec) ----

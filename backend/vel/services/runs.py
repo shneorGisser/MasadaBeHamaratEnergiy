@@ -13,6 +13,7 @@ from vel.engine.netlist import validate_structure
 from vel.errors import ApiError
 from vel.experiments import registry
 from vel.experiments.common import Outcome, StudyDef
+from vel.experiments.thermal import at_operating_temperature
 from vel.orm import Project, SimulationRun
 
 
@@ -110,9 +111,17 @@ def build_snapshot(session: Session, p: Project, kind: str, case: dict[str, Any]
 
 
 def execute_snapshot(snapshot: dict[str, Any]) -> Outcome:
-    module = registry.get(snapshot.get("experiment_id", "transformer3ph"))
-    spec = module.spec(snapshot_spec(snapshot))
-    return module.execute(snapshot["study_kind"], spec, snapshot["circuit"], snapshot["case"])
+    exp = snapshot.get("experiment_id", "transformer3ph")
+    module = registry.get(exp)
+    spec, hot = at_operating_temperature(
+        exp, module.spec(snapshot_spec(snapshot)), snapshot["study_kind"]
+    )
+    out = module.execute(snapshot["study_kind"], spec, snapshot["circuit"], snapshot["case"])
+    if hot:
+        out.warnings = [hot, *out.warnings]
+        if out.status == "success":
+            out.status = "success_with_warnings"
+    return out
 
 
 def create_run(
@@ -196,7 +205,7 @@ def live_point(
         if bad:
             raise ApiError(422, "not_overridable", f"{cid}: cannot override {sorted(bad)}")
         comp.params.update(params)
-    spec = project_spec(p)
+    spec, _ = at_operating_temperature(p.experiment_id, project_spec(p), kind)
     base = {
         "source": "simulation",
         "persisted": False,

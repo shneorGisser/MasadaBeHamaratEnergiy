@@ -22,6 +22,7 @@ type Section =
   | 'cable2'
   | 'loads'
   | 'protection'
+  | 'thermal'
 interface FieldDef {
   section: Section
   key: string
@@ -39,6 +40,11 @@ interface FormDef {
 const CONN = [
   { value: 'Y', label: 'Y (כוכב)' },
   { value: 'D', label: 'Δ (משולש)' },
+]
+
+const THERMAL: FieldDef[] = [
+  { section: 'thermal', key: 'T_ref', label: 'טמפרטורה שבה נמדדו ההתנגדויות (קר)', unit: '°C' },
+  { section: 'thermal', key: 'T_op', label: 'טמפרטורת הליפופים בניסויי העומס', unit: '°C' },
 ]
 
 const DC_FORM: FormDef = {
@@ -66,6 +72,7 @@ const DC_FORM: FormDef = {
     { section: 'insulation', key: 'armature_Mohm', label: 'עוגן – גוף', unit: 'MΩ' },
     { section: 'insulation', key: 'shunt_Mohm', label: 'עירור מקבילי – גוף', unit: 'MΩ' },
     { section: 'insulation', key: 'series_Mohm', label: 'עירור טורי – גוף', unit: 'MΩ' },
+    ...THERMAL,
   ],
   derived: [
     { key: 'M_n', label: 'מומנט נקוב', unit: 'N·m', digits: 3 },
@@ -206,6 +213,7 @@ const FORMS: Record<string, FormDef> = {
       { section: 'insulation', key: 'primary_core_Mohm', label: 'ראשוני–גרעין', unit: 'MΩ' },
       { section: 'insulation', key: 'secondary_core_Mohm', label: 'משני–גרעין', unit: 'MΩ' },
       { section: 'insulation', key: 'primary_secondary_Mohm', label: 'ראשוני–משני', unit: 'MΩ' },
+      ...THERMAL,
     ],
     derived: [
       { key: 'U1_winding', label: 'מתח ליפוף ראשוני', unit: 'V' },
@@ -249,6 +257,7 @@ const FORMS: Record<string, FormDef> = {
       { section: 'insulation', key: 'W_frame_Mohm', label: 'סטטור W – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'F_frame_Mohm', label: 'רוטור – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'stator_rotor_Mohm', label: 'סטטור – רוטור', unit: 'MΩ' },
+      ...THERMAL,
     ],
     derived: [
       { key: 'n_sync', label: 'מהירות סינכרונית', unit: 'rpm' },
@@ -294,6 +303,7 @@ const FORMS: Record<string, FormDef> = {
       { section: 'insulation', key: 'V_frame_Mohm', label: 'סטטור V – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'W_frame_Mohm', label: 'סטטור W – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'rotor_frame_Mohm', label: 'רוטור – מארז', unit: 'MΩ' },
+      ...THERMAL,
     ],
     derived: [
       { key: 'n_sync', label: 'מהירות סינכרונית', unit: 'rpm' },
@@ -331,6 +341,7 @@ const FORMS: Record<string, FormDef> = {
       { section: 'insulation', key: 'U_frame_Mohm', label: 'ליפוף U – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'V_frame_Mohm', label: 'ליפוף V – מארז', unit: 'MΩ' },
       { section: 'insulation', key: 'W_frame_Mohm', label: 'ליפוף W – מארז', unit: 'MΩ' },
+      ...THERMAL,
     ],
     derived: [
       { key: 'n_sync', label: 'מהירות סינכרונית n_s', unit: 'rpm' },
@@ -350,7 +361,8 @@ function toDraft(form: FormDef, s: EquipmentSpec): Draft {
   const d: Draft = {}
   for (const f of form.fields) {
     const v = (s as unknown as Record<string, Record<string, unknown>>)[f.section]?.[f.key]
-    d[`${f.section}.${f.key}`] = v == null ? '' : String(v)
+    // projects created before the winding temperature existed: the model's default (20 °C)
+    d[`${f.section}.${f.key}`] = v == null ? (f.section === 'thermal' ? '20' : '') : String(v)
   }
   return d
 }
@@ -359,6 +371,7 @@ function fromDraft(form: FormDef, base: EquipmentSpec, d: Draft, provenance: Pro
   const out = structuredClone(base) as unknown as Record<Section, Record<string, unknown>> & EquipmentSpec
   for (const f of form.fields) {
     const raw = d[`${f.section}.${f.key}`] ?? ''
+    out[f.section] ??= {}
     if (f.choices) {
       out[f.section][f.key] = f.choices[0]?.int ? Number(raw) : raw
       continue
@@ -391,6 +404,7 @@ const SECTION_TITLE: Record<Section, MessageKey> = {
   cable2: 'spec.cable2',
   loads: 'spec.loads',
   protection: 'spec.protection',
+  thermal: 'spec.thermal',
 }
 const SECTIONS = Object.keys(SECTION_TITLE) as Section[]
 

@@ -43,6 +43,7 @@ export const he = {
   'spec.cable2': 'כבל לעמדה (לוח המעבדה → עמדה)',
   'spec.loads': 'עומסים',
   'spec.protection': 'מפסקים (תרמי-מגנטי)',
+  'spec.thermal': 'טמפרטורת הליפופים (R(T) של נחושת)',
   'spec.derived': 'גדלים נגזרים',
   'spec.provenance': 'מקור הנתונים',
   'spec.provenanceNote': 'הערה על המקור',
