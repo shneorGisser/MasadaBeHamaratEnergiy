@@ -291,8 +291,23 @@ def test_M8_api_journey(client: TestClient) -> None:
 
 def test_presets_per_experiment(client: TestClient) -> None:
     m = client.get("/api/experiments/induction_motor/presets").json()
-    assert [x["id"] for x in m] == ["assumed_037kw"]
+    assert [x["id"] for x in m] == ["assumed_037kw", "ap3030_sheet_2026"]
     t = client.get("/api/experiments/transformer3ph/presets").json()
     assert {x["id"] for x in t} == {"assumed_3kva", "report_2025"}
     ex = {e["id"]: e for e in client.get("/api/experiments").json()}
     assert ex["induction_motor"]["equipment_he"] == "המנוע"
+
+
+def test_ap3030_preset_reproduces_the_2026_sheet() -> None:
+    """The joint fit reproduces the independent load table (speed and current) at 380 V Δ."""
+    from vel.engine.simulate import operating_point
+    from vel.experiments.induction_motor import templates as tpl
+    from vel.experiments.induction_motor.spec import ap3030_sheet_2026
+    from vel.labdata import get
+
+    s = ap3030_sheet_2026()
+    load = next(t for t in get("induction_motor_2026").tables if t.study_kind == "load")
+    for u, i1, _pw, _pf, n, m in load.rows:
+        op = operating_point(tpl.load_test(float(u), 50, "D", float(m)), s)  # type: ignore[arg-type]
+        assert abs(op.readings["M"]["n"] - n) < 20  # type: ignore[operator]
+        assert abs(op.readings["A"]["I"] - i1) < 0.04  # type: ignore[operator]

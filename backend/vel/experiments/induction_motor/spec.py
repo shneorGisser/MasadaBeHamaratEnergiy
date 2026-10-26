@@ -112,9 +112,42 @@ def assumed_lab_motor() -> MotorSpec:
     )
 
 
+def ap3030_sheet_2026() -> MotorSpec:
+    """Appli-com AP-3030 plate (photographed 26.10.2026: 0.37 kW, 380/660 V Δ/Y, 1.13/0.65 A,
+    cos φ 0.67, 1400 rpm), stator in Δ at 380 V. Equivalent circuit (per Δ winding) fitted
+    jointly to the 2026 experiment-2 sheet — no-load, locked rotor and load together, which
+    also fixes the R1/R2' split (scripts/fit_induction_2026.py). Residuals: rms 1.8 tolerance
+    units (0.01 A, 1 W, 5 rpm), worst 3.4.
+
+    KNOWN INCONSISTENCY (not hidden): at the plate's 1400 rpm this machine gives 158 W at
+    0.56 A, not 370 W at 1.13 A. Y-at-380 does not rescue it — then the no-load current at the
+    rated 660 V would exceed the rated current. The sheet fits the multifunction slip-ring
+    machine's plate (270 W, 400 V Y, 0.83 A, 1360 rpm) far better: 237 W, 0.70 A, cos φ 0.73.
+    Which motor the sheet was measured on is open (docs/lab-data-2026-exp2.md)."""
+    return MotorSpec(
+        provenance="fitted",
+        provenance_note=(
+            "שלט Appli-com AP-3030 (משולש, 380 V); מעגל תמורה הותאם לדף המדידות 2026 (ריקם, רוטור "
+            "נעול ועומס יחד). סותר את השלט: ב-1400 סל״ד נותן 158 W ולא 370 W — לא ודאי שהדף נמדד "
+            "על המנוע הזה"
+        ),
+        nameplate=MotorNameplate(
+            P_n=370, U_n=380, I_n=1.13, f_n=50, n_n=1400, poles=4, connection="D", cos_phi_n=0.67
+        ),
+        ecm=MotorECM(
+            R1=105.49, X1=148.05, R2p=101.06, X2p=148.05, R_fe=42798.0, Xm=1462.7, P_fw_n=30.8
+        ),
+        insulation=MotorInsulation(U_frame_Mohm=500, V_frame_Mohm=500, W_frame_Mohm=500),
+    )
+
+
 PRESETS = {
     "assumed_037kw": (
         "ערכים מוערכים: מנוע 0.37 kW, 380 V Y, 1380 סל״ד (ללא מקור)",
         assumed_lab_motor,
+    ),
+    "ap3030_sheet_2026": (
+        "AP-3030 (שלט) + מעגל תמורה מדף המדידות 2026 — סותר את השלט, ראו הערה",
+        ap3030_sheet_2026,
     ),
 }
