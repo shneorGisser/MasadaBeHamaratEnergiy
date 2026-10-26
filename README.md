@@ -39,8 +39,9 @@ python3 -m venv .venv && .venv/bin/pip install -e 'backend[dev]'
 scripts/dev.sh            # backend :8000 + Vite :5173
 scripts/check.sh          # lint, types, all tests, build, E2E
 ```
-Docs: `docs/model-transformer.md` (model), `docs/test-log.md` (every test run), `docs/lab-data-2025.md`
-(real-data validation), `docs/deploy-cloud-run.md` (going online), `docs/prompts-google-stitch-ai-studio.md`.
+Docs: `docs/model-transformer.md` (model), `docs/test-log.md` (every test run), `docs/lab-data-2025.md`,
+`docs/lab-data-2026-exp2.md` (the bench sheet of experiment 2 and the lab equipment)
+(real-data validation); `docs/deploy-cloud-run.md` (going online), `docs/prompts-google-stitch-ai-studio.md`.
 
 Optional: install `ngspice` to run the independent cross-validation tests (they are skipped,
 and reported as skipped, when it is missing).

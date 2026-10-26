@@ -116,3 +116,39 @@ def test_C5_every_default_knob_points_at_a_positive_spec_field() -> None:
                 for p in paths:
                     sec, key = p.split(".")
                     assert isinstance(doc[sec][key], (int, float)) and doc[sec][key] > 0, (exp, p)
+
+
+def test_C6_real_sheet_2026_predicts_the_load_test(client: TestClient) -> None:
+    """The experiment-2 sheet photographed at the bench (vel.labdata induction_motor_2026):
+    no-load and locked-rotor calibration alone predict the independent load test's input
+    power and current within ≈ 10 %. The slip stays over-predicted — the R1/R2' split is not
+    fixed by these tests (no DC-resistance row on the sheet); the test pins that honestly."""
+    pid = client.post(
+        "/api/projects", json={"name": "ex2", "experiment_id": "induction_motor"}
+    ).json()["id"]
+    sids = {
+        k: client.post(
+            f"/api/projects/{pid}/datasets/induction_motor_2026/import", json={"study_kind": k}
+        ).json()["sets"][0]["id"]
+        for k in ("no_load", "locked_rotor", "load")
+    }
+    spec = client.get(f"/api/projects/{pid}").json()["spec"]
+    for k in ("no_load", "locked_rotor"):
+        out = client.post(f"/api/measurement-sets/{sids[k]}/calibrate", json={}).json()
+        assert out["after"]["rms_rel"] < 0.06 < out["before"]["rms_rel"], k
+        for knob in out["knobs"]:
+            for path, v in knob["after"].items():
+                sec, key = path.split(".")
+                spec[sec][key] = v
+    # the real motor's rotor resistance is far above the default machine's
+    assert 2.4 < spec["ecm"]["R2p"] / 20.0 < 3.1
+    assert client.patch(f"/api/projects/{pid}", json={"spec": spec}).status_code == 200
+    run = client.post(f"/api/measurement-sets/{sids['load']}/simulate").json()
+    cmp_ = client.get(f"/api/comparison?run_id={run['id']}&set_id={sids['load']}").json()
+    err: dict[str, list[float]] = {}
+    for p in cmp_["pairs"]:
+        for cell in p["cells"]:
+            if cell["rel_error"] is not None:
+                err.setdefault(cell["quantity"], []).append(abs(cell["rel_error"]))
+    assert max(err["P1"]) < 0.1 and max(err["I1"]) < 0.12 and max(err["pf"]) < 0.08
+    assert max(err["slip"]) > 0.3  # known gap, see docs/lab-data-2026-exp2.md
