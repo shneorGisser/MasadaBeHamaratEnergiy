@@ -58,7 +58,7 @@ function summary(type: string, p: Record<string, unknown>): string {
 export default function ComponentNode({ data, selected }: NodeProps<CompNode>) {
   const { comp, ctype } = data
   const terminals = ctype?.terminals ?? []
-  const slots = terminalSlots(comp.type, terminals)
+  const slots = terminalSlots(comp.type, terminals, data.flip)
   // nodes with terminals on the bottom edge get room so the terminal labels clear the text
   const { w: wide, h: tall } = nodeSize(comp.type)
   const instrument = ctype?.instrument

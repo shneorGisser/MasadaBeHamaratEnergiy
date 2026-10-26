@@ -17,7 +17,21 @@ function spread(list: string[], side: Side, out: Record<string, Slot>) {
   list.forEach((t, i) => (out[t] = { side, at: (i + 1) / (list.length + 1) }))
 }
 
-export function terminalSlots(type: string, terminals: string[]): Record<string, Slot> {
+export function terminalSlots(type: string, terminals: string[], flip = false): Record<string, Slot> {
+  const s0 = baseSlots(type, terminals)
+  if (!flip) return s0
+  const out: Record<string, Slot> = {}
+  for (const [t, sl] of Object.entries(s0))
+    out[t] =
+      sl.side === 'left'
+        ? { side: 'right', at: sl.at }
+        : sl.side === 'right'
+          ? { side: 'left', at: sl.at }
+          : { side: sl.side, at: 1 - sl.at }
+  return out
+}
+
+function baseSlots(type: string, terminals: string[]): Record<string, Slot> {
   const s: Record<string, Slot> = {}
   switch (type) {
     case 'transformer3':
@@ -112,8 +126,9 @@ export function slotPoint(slot: Slot, w: number, h: number): { x: number; y: num
   }
 }
 
-/** Nodes with terminals on the top edge carry their id label inside the outline, so the
- * label never sits on the wires leaving those terminals. */
+/** Nodes with terminals on the top edge carry their id label inside the outline (at the top
+ * right, the side these machines keep free of terminals), so the label never sits on the
+ * wires leaving those terminals. */
 export function titleInside(type: string): boolean {
   return type === 'dcmachine' || type === 'syncmachine3'
 }

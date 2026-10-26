@@ -174,7 +174,7 @@ details > summary { cursor: pointer; font-weight: 600; }
 .sch-node.unknown { border-color: var(--err); background: var(--err-soft); }
 .sch-node.selected { box-shadow: 0 0 0 3px #7fb3b4; }
 .sch-title { position: absolute; top: -18px; left: 0; right: 0; font-size: 11px; white-space: nowrap; }
-.sch-title.inside { top: 22px; left: 8px; right: auto; text-align: start; }
+.sch-title.inside { top: 22px; left: auto; right: 8px; text-align: end; }
 .sch-symbol { font-size: 22px; font-weight: 700; line-height: 1; }
 .sch-sub { font-size: 10px; color: var(--ink-2); margin-top: 4px; }
 .sch-term { position: absolute; font-size: 9px; color: var(--ink-3); pointer-events: none; }

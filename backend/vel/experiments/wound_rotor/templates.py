@@ -24,10 +24,10 @@ def _stator(b: _B, conn: Conn) -> None:
 
 def _feed(b: _B, u_line: float, f: float, label: str = "רשת + וריאק") -> None:
     b.add("G", "source3", 0, 225, label, U_line=u_line, f=f)
-    b.add("S", "switch3", 170, 225, "S1", closed=True)
+    b.add("S", "switch3", 190, 225, "S1", closed=True)
     b.add("W", "wattmeter", 320, 60, "W")
-    b.add("A", "ammeter", 470, 60, "A1")
-    b.add("V1", "voltmeter", 470, 420, "V1 (קווי)")
+    b.add("A", "ammeter", 530, 60, "A1")
+    b.add("V1", "voltmeter", 490, 340, "V1 (קווי)")
     b.w("G.L1", "S.i1").w("G.L2", "S.i2").w("G.L3", "S.i3")
     b.w("S.o1", "W.Ip").w("W.In", "A.p").w("A.n", "M.U1")
     b.w("S.o2", "M.V1").w("S.o3", "M.W1")
@@ -52,7 +52,7 @@ def motor(
     if r_ext is None:
         b.w("M.R1", "M.R2").w("M.R2", "M.R3")
     else:
-        b.add("Rst", "load3", 900, 420, "מתנע Rst", kind="R", connection="Y", value=r_ext)
+        b.add("Rst", "load3", 880, 220, "מתנע Rst", kind="R", connection="Y", value=r_ext)
         b.w("M.R1", "Rst.1").w("M.R2", "Rst.2").w("M.R3", "Rst.3")
     return b.done()
 
@@ -63,7 +63,7 @@ def rotor_open(u_line: float, f: float, conn: Conn) -> CircuitModel:
     b.add("M", "woundmotor3", 660, 200, "מכונה", speed_mode="speed", n_set=0.0)
     _feed(b, u_line, f)
     _stator(b, conn)
-    b.add("V2", "voltmeter", 900, 420, "V2 (רוטור)")
+    b.add("V2", "voltmeter", 880, 260, "V2 (רוטור)", flip=True)
     b.w("V2.p", "M.R1").w("V2.n", "M.R2")
     return b.done()
 
@@ -75,9 +75,9 @@ def regulator(u_line: float, f: float) -> CircuitModel:
     b = _B()
     b.add("M", "woundmotor3", 660, 200, "מכונה (רוטור נעול)", locked=True, angle=0.0)
     b.add("G", "source3", 0, 225, "רשת + וריאק", U_line=u_line, f=f)
-    b.add("S", "switch3", 170, 225, "S1", closed=True)
-    b.add("V1", "voltmeter", 320, 420, "U1 (כניסה)")
-    b.add("V2", "voltmeter", 900, 420, "U2 (יציאה)")
+    b.add("S", "switch3", 350, 225, "S1", closed=True)
+    b.add("V1", "voltmeter", 880, 240, "U1 (כניסה)", flip=True)
+    b.add("V2", "voltmeter", 540, 60, "U2 (יציאה)", flip=True)
     b.w("G.L1", "S.i1").w("G.L2", "S.i2").w("G.L3", "S.i3")
     b.w("S.o1", "M.R1").w("S.o2", "M.R2").w("S.o3", "M.R3")
     b.w("M.R1", "M.U2").w("M.R2", "M.V2").w("M.R3", "M.W2")

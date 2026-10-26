@@ -177,7 +177,7 @@ function Editor({
   const dragging = nodes.some((n) => n.dragging)
   const layoutKey = dragging
     ? 'dragging'
-    : JSON.stringify([nodes.map((n) => [n.id, n.data.comp.type, Math.round(n.position.x), Math.round(n.position.y)]), edges.map((e) => [e.id, e.source, e.sourceHandle, e.target, e.targetHandle])])
+    : JSON.stringify([nodes.map((n) => [n.id, n.data.comp.type, Math.round(n.position.x), Math.round(n.position.y), Boolean(n.data.flip)]), edges.map((e) => [e.id, e.source, e.sourceHandle, e.target, e.targetHandle])])
   const routes = useMemo<Map<string, Pt[]> | null>(
     () => (layoutKey === 'dragging' ? null : route(routeInput(fromFlow(nodes, edges), catalog))),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutKey captures what routing depends on
@@ -247,6 +247,11 @@ function Editor({
     setNodes((ns) =>
       ns.map((n) => (n.id === selected.id ? { ...n, data: { ...n.data, comp: { ...n.data.comp, params, label } } } : n)),
     )
+    markDirty()
+  }
+
+  const flipSelected = () => {
+    setNodes((ns) => ns.map((n) => (n.selected ? { ...n, data: { ...n.data, flip: !n.data.flip } } : n)))
     markDirty()
   }
 
@@ -331,6 +336,9 @@ function Editor({
         </button>
         <button className="btn" onClick={() => void runCheck()} disabled={dirty} data-testid="check-wiring" title={dirty ? 'שמרו את המעגל קודם' : 'משווה צמתים חשמליים, לא את צורת הכבלים'}>
           בדוק מול החוברת
+        </button>
+        <button className="btn" onClick={flipSelected} disabled={!nodes.some((n) => n.selected)} data-testid="flip-selected" title="היפוך אופקי: ההדקים עוברים לצד השני (שרטוט בלבד)">
+          הפוך ↔
         </button>
         <button className="btn danger" onClick={deleteSelected} disabled={!nodes.some((n) => n.selected) && !edges.some((e) => e.selected)} data-testid="delete-selected">
           מחק נבחר

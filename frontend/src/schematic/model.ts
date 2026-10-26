@@ -23,6 +23,8 @@ export interface Placement {
   x: number
   y: number
   rot: 0 | 90 | 180 | 270
+  /** drawn mirrored left↔right (drawing only) */
+  flip?: boolean
 }
 export interface CircuitModel {
   schema_version: 1
@@ -53,6 +55,8 @@ export interface ComponentType {
 export interface CompNodeData extends Record<string, unknown> {
   comp: CComponent
   ctype: ComponentType | undefined
+  /** drawn mirrored left↔right */
+  flip?: boolean
   /** live reading shown on an instrument's dial (display only, never saved) */
   reading?: { value: number; unit: string; signed: boolean }
 }
@@ -66,7 +70,7 @@ export function toFlow(c: CircuitModel, catalog: ComponentType[]): { nodes: Comp
       id: comp.id,
       type: 'component',
       position: { x: p.x, y: p.y },
-      data: { comp, ctype: byType.get(comp.type) },
+      data: { comp, ctype: byType.get(comp.type), flip: Boolean(p.flip) },
     }
   })
   const edges: Edge[] = c.wires.map((w) => ({
@@ -82,7 +86,8 @@ export function toFlow(c: CircuitModel, catalog: ComponentType[]): { nodes: Comp
 
 export function fromFlow(nodes: CompNode[], edges: Edge[]): CircuitModel {
   const layout: Record<string, Placement> = {}
-  for (const n of nodes) layout[n.id] = { x: Math.round(n.position.x), y: Math.round(n.position.y), rot: 0 }
+  for (const n of nodes)
+    layout[n.id] = { x: Math.round(n.position.x), y: Math.round(n.position.y), rot: 0, ...(n.data.flip ? { flip: true } : {}) }
   return {
     schema_version: 1,
     components: nodes.map((n) => n.data.comp),

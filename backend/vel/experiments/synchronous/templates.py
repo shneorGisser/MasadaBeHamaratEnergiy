@@ -40,10 +40,13 @@ def generator(
     is oriented from the generator towards the load, so delivered power reads positive."""
     b = _B()
     _machine(b, i_f, n)
-    b.add("L", "load3", 0, 225, "עומס תלת-פזי", kind=load_kind, connection="Y", value=load_value)
-    b.add("S", "switch3", 170, 225, "S3", closed=closed)
-    b.add("W", "wattmeter", 320, 60, "W")
-    b.add("A", "ammeter", 470, 60, "A1")
+    # power flows right to left (G → meters → S3 → load): the meters and the load are drawn
+    # mirrored so their terminals face the way the current comes from
+    b.add("L", "load3", 0, 220, "עומס תלת-פזי", flip=True, kind=load_kind, connection="Y",
+          value=load_value)  # fmt: skip
+    b.add("S", "switch3", 170, 220, "S3", closed=closed)
+    b.add("W", "wattmeter", 320, 60, "W", flip=True)
+    b.add("A", "ammeter", 470, 60, "A1", flip=True)
     b.add("V1", "voltmeter", 470, 420, "U1 (קווי)")
     b.w("L.1", "S.i1").w("L.2", "S.i2").w("L.3", "S.i3")
     b.w("G.U1", "A.p").w("A.n", "W.Ip").w("W.In", "S.o1")

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fixture from './__fixtures__/templates.json'
 import { auditDrawing } from './drawingAudit'
+import { drawingMetrics } from './drawingMetrics'
 import type { CircuitModel, ComponentType } from './model'
 import { route, routeInput } from './router'
 
@@ -17,5 +18,11 @@ describe('router', () => {
     const findings = auditDrawing(input, routes, circuit.components.map((c) => c.id))
     expect(findings.map((f) => `[${f.rule}] ${f.text}`)).toEqual([])
     expect(ms).toBeLessThan(1500)
+    // readability guard (the layouts were tuned with tools/layout-optimize; see
+    // docs/schematic-routing.md): no template may get worse than the worst one today
+    const m = drawingMetrics(input, routes)
+    expect(m.crossings).toBeLessThanOrEqual(18)
+    expect(m.bends).toBeLessThanOrEqual(60)
+    expect(m.worstDetour).toBeLessThan(2.5)
   })
 })

@@ -55,7 +55,7 @@ function Scene({
     const base = posOf(cid)
     if (!c) return base
     const [w, h, d] = SIZE[c.type] ?? [0.4, 0.3, 0.3]
-    const slot = terminalSlots(c.type, [t])[t] ?? { side: 'left', at: 0.5 }
+    const slot = terminalSlots(c.type, [t], Boolean(circuit.layout[c.id]?.flip))[t] ?? { side: 'left', at: 0.5 }
     const along = (slot.at - 0.5) * (slot.side === 'left' || slot.side === 'right' ? d : w)
     const top = c.type === 'transformer3' || ROTATING.has(c.type) ? 0.1 : h
     if (slot.side === 'left') return [base[0] - w / 2, top, base[2] + along]

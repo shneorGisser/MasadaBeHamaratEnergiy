@@ -41,6 +41,10 @@ class Placement(BaseModel):
     x: float = 0.0
     y: float = 0.0
     rot: Literal[0, 90, 180, 270] = 0
+    # drawn mirrored left↔right (terminals on the left move to the right and vice versa):
+    # a meter in a chain that runs right-to-left keeps its polarity marks and still faces
+    # its neighbours. Drawing only — the netlist does not depend on it.
+    flip: bool = False
 
 
 class CircuitModel(BaseModel):

@@ -1,6 +1,7 @@
 """Study definitions of experiment 8 (testing an electrical installation). None of them has a
-circuit to edit: the tester's readings follow from closed-form models (vel.engine.installation), and each
-study states the acceptance criterion it applies and where that criterion comes from."""
+circuit to edit: the tester's readings follow from closed-form models
+(vel.engine.installation), and each study states the acceptance criterion it applies and where
+that criterion comes from."""
 
 from __future__ import annotations
 

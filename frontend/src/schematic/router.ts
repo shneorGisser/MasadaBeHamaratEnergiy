@@ -56,7 +56,7 @@ export function routeInput(c: CircuitModel, catalog: ComponentType[]): RouteInpu
     boxes.push({ x0: pos.x, y0: pos.y - (titleInside(comp.type) ? 0 : TITLE), x1: pos.x + w, y1: pos.y + h })
     outlines.push({ id: comp.id, type: comp.type, x: pos.x, y: pos.y, w, h })
     const terms = byType.get(comp.type)?.terminals ?? []
-    const slots = terminalSlots(comp.type, terms)
+    const slots = terminalSlots(comp.type, terms, Boolean(c.layout[comp.id]?.flip))
     for (const t of terms) {
       const sl = slots[t] ?? { side: 'left' as const, at: 0.5 }
       const q = slotPoint(sl, w, h)

@@ -74,9 +74,48 @@ In the transformer no-load template, V2 and V2ph moved from x = 860 to x = 900. 
 corridor beside T's secondary had room for one lane only, so two nets were forced onto the same
 line.
 
-## What remains
+## Layouts of the templates (L2)
 
-The rules guarantee an unambiguous drawing, not a beautiful one. Some templates (the induction
-regulator, the transformer load test) still route long detours around the meters, because the
-meters sit far from what they measure. Fixing that is a matter of moving the meters in the
-templates, one by one.
+**Mirrored components.** A component can now be drawn mirrored left↔right.
+
+* The `flip` field in the layout is for drawing only, and the netlist ignores it.
+* In the editor it is the "הפוך ↔" (flip) button.
+* This lets a meter in a chain that runs right to left keep its polarity marks and still face its
+  neighbours. In the generator circuits of experiment 3, power flows from G on the right to the
+  load on the left.
+
+**Readability metric.** `drawingMetrics.ts` measures each drawing by:
+
+* crossings between different nets;
+* bends;
+* detour (routed length divided by the Manhattan distance);
+* total length.
+
+**Optimiser.** `tools/layout-optimize.test.ts` is a dev tool and is not part of the suite.
+
+* It runs a seeded local search over positions and flips.
+* Components shared by several templates, such as those placed by the same helper function, keep
+  one position across all of them.
+* Its positions were written into the templates by hand and checked visually, because the
+  metric is a guide and not a judge: an early weighting gave fewer crossings but a worse
+  drawing.
+
+**Result.** Crossings between different nets, before → after:
+
+| Template | Before | After |
+|---|---|---|
+| Induction regulator | 16 | 7 |
+| Synchronous generator (4 studies) | 13 | 7 |
+| Wound rotor with Rst | 12 | 6 |
+| Transformer, no load YY | 15 | 12 |
+| Transformer, no load YD | 18 | 15 |
+| Transformer, load | 22 | 18 |
+
+**What remains.** The meters now sit next to what they measure, with no detour around the
+machine.
+
+**Guard.** `router.test.ts` fails if any template exceeds 18 crossings, 60 bends or a worst
+detour of 2.5. That is "no worse than the worst one today".
+
+**Not yet possible.** Rotating a component by 90° is not supported. A voltmeter whose two
+leads go to the same side of a machine still needs one lead to wrap around it.
