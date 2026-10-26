@@ -45,6 +45,7 @@ gcloud run deploy virtual-energy-lab --source . --region=$REGION \
   --memory=1Gi --cpu=1 --min-instances=0 --max-instances=1 \
   --allow-unauthenticated
 ```
+* הקונטיינר רץ עם `VEL_WORKSPACES=cookie`: כל דפדפן מקבל מרחב פרטי, וזה מאפשר שיתוף עם חברים (`docs/deploy-huggingface.md`). כדי לקרוא משוב ב-`/feedback` מוסיפים סוד: `--set-secrets=VEL_ADMIN_TOKEN=vel-admin-token:latest`.
 * המיגרציות (Alembic) רצות אוטומטית כשהשרת עולה. לכן `--max-instances=1` בפריסה הראשונה, כדי שלא ירוצו שני מופעים במקביל על אותו מסד. אחרי שהמסד מאותחל אפשר להעלות את המספר.
 * Cloud Run בחיוב לפי בקשות: 180,000 vCPU-שניות ו-2 מיליון בקשות בחודש חינם, עם חשבון חיוב פעיל. מומלץ להגדיר התראת תקציב.
 * **PDF של הדו״ח:** בקונטיינר אין Chromium, ולכן `/api/reports/{id}/pdf` מחזיר 501. אפשר להדפיס או לשמור כ-PDF מהדפדפן. כדי לאפשר PDF בשרת, מוסיפים `apt-get install chromium` לשלב ה-runtime (בערך 300MB) ומגדירים `VEL_CHROMIUM=/usr/bin/chromium`.

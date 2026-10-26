@@ -59,6 +59,15 @@ jobs:
           curl -fsS http://127.0.0.1:8080/api/health
       - name: Smoke test
         run: bash scripts/smoke-container.sh http://127.0.0.1:8080
+      - name: Hugging Face Space image (clones main from GitHub, SQLite, port 7860)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -t vel-hf deploy/huggingface
+          docker run -d --name vel-hf -p 7860:7860 vel-hf
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:7860/api/health && break; sleep 1; done
+          bash scripts/smoke-container.sh http://127.0.0.1:7860
       - name: Container log on failure
         if: failure()
-        run: docker logs vel | tail -100
+        run: |
+          docker logs vel | tail -100
+          docker logs vel-hf 2>/dev/null | tail -100 || true

@@ -41,6 +41,7 @@ scripts/check.sh          # lint, types, all tests, build, E2E
 ```
 Docs: `docs/model-transformer.md` (model), `docs/test-log.md` (every test run), `docs/lab-data-2025.md`
 (real-data validation), `docs/lab-data-2026-exp2.md` (the experiment-2 bench sheet and the lab equipment),
+`docs/deploy-huggingface.md` (sharing with friends: free Space, per-browser workspaces, feedback),
 `docs/deploy-cloud-run.md` (going online), `docs/prompts-google-stitch-ai-studio.md`.
 
 Optional: install `ngspice` to run the independent cross-validation tests (they are skipped,

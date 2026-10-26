@@ -14,7 +14,8 @@ RUN npm run build
 # ---- stage 2: runtime ----
 FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    VEL_STATIC_DIR=/app/static VEL_DATA_DIR=/data PORT=8080
+    VEL_STATIC_DIR=/app/static VEL_DATA_DIR=/data PORT=8080 \
+    VEL_WORKSPACES=cookie
 WORKDIR /app
 COPY backend/pyproject.toml ./backend/
 COPY backend/vel ./backend/vel
