@@ -4,6 +4,7 @@ import { api } from './api/client'
 import { t } from './i18n'
 import ProjectPage from './pages/ProjectPage'
 import ProjectsPage from './pages/ProjectsPage'
+import PowerElectronicsPage from './pages/PowerElectronicsPage'
 import { FeedbackAdminPage, SharedProjectPage, WorkspaceAdoptPage } from './pages/SharingPages'
 import { FeedbackButton } from './components/Sharing'
 
@@ -34,12 +35,19 @@ export default function App() {
           <span>{t('app.title')}</span>
           <small>{t('app.subtitle')}</small>
         </Link>
+        <nav className="header-nav" aria-label="ניווט ראשי">
+          <Link to="/">פרויקטים</Link>
+          <Link to="/power-electronics" data-testid="nav-pe">
+            ספסל אלקטרוניקת הספק
+          </Link>
+        </nav>
         <ServerLamp />
       </header>
       <main className="app-main">
         <Routes>
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/projects/:projectId/*" element={<ProjectPage />} />
+          <Route path="/power-electronics" element={<PowerElectronicsPage />} />
           <Route path="/s/:token" element={<SharedProjectPage />} />
           <Route path="/w" element={<WorkspaceAdoptPage />} />
           <Route path="/feedback" element={<FeedbackAdminPage />} />

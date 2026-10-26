@@ -283,3 +283,18 @@ html, body { overflow-x: hidden; }
 .chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
 .share-box summary, .project-meta summary { cursor: pointer; }
 .app-main { padding-bottom: 72px; }
+
+/* ---- power-electronics bench ---- */
+button.tab { background: none; border-top: 0; border-inline: 0; font: inherit; cursor: pointer; padding-inline: 0; }
+.pe-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .pe-grid { grid-template-columns: minmax(0, 1fr); } }
+.pe-schematic { width: 100%; max-height: 360px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; }
+.pe-physics { margin: 6px 0 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; line-height: 1.55; }
+.pe-param { gap: 2px; }
+.pe-num { width: 90px; }
+.pe-mode { border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 10px; gap: 14px; }
+.pe-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 14px; }
+.pe-netlist { background: var(--surface-2); padding: 10px; border-radius: var(--radius); font-family: var(--mono); font-size: 12px; max-height: 360px; overflow: auto; }
+.header-nav { display: flex; gap: 18px; margin-inline-start: auto; margin-inline-end: 18px; }
+.header-nav a { color: var(--panel-ink); text-decoration: none; font-size: 14px; }
+.header-nav a:hover, .header-nav a:focus-visible { text-decoration: underline; }

@@ -7,7 +7,11 @@
 export type XY = [number, number][]
 
 export function valueAt(pts: XY, x: number): number | null {
-  if (pts.length === 0 || x < pts[0]![0] || x > pts[pts.length - 1]![0]) return null
+  if (pts.length === 0) return null
+  // a window end computed as t0 + k·T can overshoot the last sample by a rounding error
+  const eps = 1e-9 * Math.max(1e-9, Math.abs(pts[pts.length - 1]![0]))
+  if (x < pts[0]![0] - eps || x > pts[pts.length - 1]![0] + eps) return null
+  x = Math.min(Math.max(x, pts[0]![0]), pts[pts.length - 1]![0])
   let lo = 0
   let hi = pts.length - 1
   while (hi - lo > 1) {
