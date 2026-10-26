@@ -155,12 +155,20 @@ test('N1: network module — load flow and IEC 60909 on the single-line diagram,
   await expect(view.getByTestId('sld-bus-1-0')).toContainText('kA')
   await expect(view.getByRole('table', { name: /IEC 60909/ })).toContainText('B3')
   await page.screenshot({ path: 'test-results/n1-short-circuit.png', fullPage: true })
-  await openTab(page, /הגנות/)
+  await openTab(page, /הגנות: אופייני/)
   await page.getByTestId('run-button').click()
   await expect(view.getByRole('table', { name: 'סלקטיביות' })).toContainText('חלקית')
   await expect(view.locator('[data-param="Is_Q3_Q2"]')).toBeVisible()
   await expect(view.locator('.chart canvas')).toHaveCount(1)
   await page.screenshot({ path: 'test-results/n2-protection.png', fullPage: true })
+  // station level: catalogue fuses (pandapower) — inrush, MV back-up, selectivity
+  await openTab(page, /תיאום הגנות בתחנה/)
+  await page.getByTestId('run-button').click()
+  await expect(view.getByRole('table', { name: /סלקטיביות/ })).toContainText('Q1 ← Siemens NH-2-1000')
+  await expect(view.getByRole('table', { name: /גיבוי/ })).toContainText('מתחת לתחום הקטלוג')
+  await expect(view.locator('[data-param="t_melt_inrush"]')).toBeVisible()
+  await expect(view.locator('.chart canvas')).toHaveCount(1)
+  await page.screenshot({ path: 'test-results/n3-coordination.png', fullPage: true })
 })
 
 test('O1: scope cursors on the inrush current — RMS over a window and harmonics with THD', async ({ page }) => {

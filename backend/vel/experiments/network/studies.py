@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from vel.engine.network import direct, pp_model
 from vel.experiments.common import Outcome, Param, StudyDef, StudyError, col
+from vel.experiments.network.coordination import CoordinationCase, run_coordination
 from vel.experiments.network.protection import ProtectionCase, run_protection
 from vel.experiments.network.spec import BUS_LABELS, BUSES, NetworkSpec
 
@@ -352,10 +353,20 @@ STUDIES["protection"] = StudyDef(
     None,
     editable_circuit=False,
 )
+STUDIES["coordination"] = StudyDef(
+    "coordination",
+    "תיאום הגנות בתחנה: נתיך מ״ג, ראשי מ״נ, Q1",
+    "מודול רשת: נתיכים מהקטלוג (pandapower), ממסר IEC 60255, זרם זינוק וסלקטיביות",
+    CoordinationCase,
+    lambda spec: {"cti": 0.3},
+    None,
+    editable_circuit=False,
+)
 _RUN = {
     "load_flow": run_load_flow,
     "short_circuit": run_short_circuit,
     "protection": run_protection,
+    "coordination": run_coordination,
 }
 
 

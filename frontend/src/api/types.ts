@@ -190,6 +190,10 @@ export interface Curve {
   y2?: string
   /** optional third series from the same table */
   y3?: string
+  /** further series from the same table (needs y3) */
+  y_more?: string[]
+  /** explicit y-axis label (otherwise built from the series' columns) */
+  y_label?: string
   /** table id the curve reads from (default: the first table) */
   table?: string
   /** split the points into one series per value of this column (e.g. frequency) */

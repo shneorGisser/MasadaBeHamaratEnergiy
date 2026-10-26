@@ -50,7 +50,7 @@ export function curveSeries(c: Curve, sources: { label: string; kind: Series['ki
     })
     // extra series of the same table (Kloss next to the model; Ik(2), Ik(1) next to Ik(3)):
     // drawn for every source, coloured by position so they stay distinguishable
-    ;[c.y2, c.y3].forEach((y, i) => {
+    ;[c.y2, c.y3, ...(c.y_more ?? [])].forEach((y, i) => {
       if (!y) return
       if (src.kind === 'sim' && c.y2 && !c.y3) {
         out.push({ label: axisLabel(cols, y).replace(/ \[.*\]$/, ''), kind: 'theory', points: points(src.rows, c.x, y) })

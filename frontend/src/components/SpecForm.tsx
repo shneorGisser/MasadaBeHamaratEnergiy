@@ -42,6 +42,10 @@ const CONN = [
   { value: 'D', label: 'Δ (משולש)' },
 ]
 
+/** pandapower standard fuse library (backend test keeps these lists in sync) */
+const HV_FUSES = [{"value": "HV 6.3A", "label": "HV 6.3A"}, {"value": "HV 10A", "label": "HV 10A"}, {"value": "HV 16A", "label": "HV 16A"}, {"value": "HV 20A", "label": "HV 20A"}, {"value": "HV 25A", "label": "HV 25A"}, {"value": "HV 31.5A", "label": "HV 31.5A"}, {"value": "HV 40A", "label": "HV 40A"}, {"value": "HV 50A", "label": "HV 50A"}, {"value": "HV 63A", "label": "HV 63A"}, {"value": "HV 80A", "label": "HV 80A"}, {"value": "HV 100A", "label": "HV 100A"}, {"value": "HV 125A", "label": "HV 125A"}, {"value": "HV 160A", "label": "HV 160A"}, {"value": "HV 200A", "label": "HV 200A"}]
+const NH_FUSES = [{"value": "Siemens NH-1-16", "label": "Siemens NH-1-16"}, {"value": "Siemens NH-1-25", "label": "Siemens NH-1-25"}, {"value": "Siemens NH-1-50", "label": "Siemens NH-1-50"}, {"value": "Siemens NH-1-63", "label": "Siemens NH-1-63"}, {"value": "Siemens NH-1-80", "label": "Siemens NH-1-80"}, {"value": "Siemens NH-1-100", "label": "Siemens NH-1-100"}, {"value": "Siemens NH-1-125", "label": "Siemens NH-1-125"}, {"value": "Siemens NH-1-160", "label": "Siemens NH-1-160"}, {"value": "Siemens NH-2-200", "label": "Siemens NH-2-200"}, {"value": "Siemens NH-2-224", "label": "Siemens NH-2-224"}, {"value": "Siemens NH-2-250", "label": "Siemens NH-2-250"}, {"value": "Siemens NH-2-315", "label": "Siemens NH-2-315"}, {"value": "Siemens NH-2-355", "label": "Siemens NH-2-355"}, {"value": "Siemens NH-2-400", "label": "Siemens NH-2-400"}, {"value": "Siemens NH-2-425", "label": "Siemens NH-2-425"}, {"value": "Siemens NH-2-630", "label": "Siemens NH-2-630"}, {"value": "Siemens NH-2-1000", "label": "Siemens NH-2-1000"}]
+
 const THERMAL: FieldDef[] = [
   { section: 'thermal', key: 'T_ref', label: 'טמפרטורה שבה נמדדו ההתנגדויות (קר)', unit: '°C' },
   { section: 'thermal', key: 'T_op', label: 'טמפרטורת הליפופים בניסויי העומס', unit: '°C' },
@@ -180,6 +184,15 @@ const NETWORK_FORM: FormDef = {
     { section: 'protection', key: 'k_t', label: 'k_t סף תרמי (משותף)', unit: '×In' },
     { section: 'protection', key: 't_mag', label: 'זמן שחרור מגנטי', unit: 's' },
     { section: 'protection', key: 't_disc', label: 'זמן ניתוק נדרש במעגל סופי', unit: 's' },
+    { section: 'protection', key: 'F_MV', label: 'נתיך מ״ג של השנאי (קטלוג pandapower)', unit: '', choices: HV_FUSES },
+    { section: 'protection', key: 'lv_main', label: 'הגנה ראשית במ״נ', unit: '', choices: [{ value: 'fuse', label: 'נתיך NH' }, { value: 'relay', label: 'ממסר זרם יתר (IEC 60255)' }] },
+    { section: 'protection', key: 'F_LV', label: 'נתיך ראשי מ״נ', unit: '', choices: NH_FUSES },
+    { section: 'protection', key: 'R_Is', label: 'ממסר: זרם התעוררות I_s', unit: 'A' },
+    { section: 'protection', key: 'R_tms', label: 'ממסר: TMS', unit: '' },
+    { section: 'protection', key: 'R_curve', label: 'ממסר: אופיין', unit: '', choices: [{ value: 'standard_inverse', label: 'Standard inverse' }, { value: 'very_inverse', label: 'Very inverse' }, { value: 'extremely_inverse', label: 'Extremely inverse' }, { value: 'long_inverse', label: 'Long-time inverse' }] },
+    { section: 'protection', key: 'R_Iinst', label: 'ממסר: שלב מיידי (0 = ללא)', unit: 'A' },
+    { section: 'protection', key: 'k_inrush', label: 'זרם זינוק של השנאי', unit: '×In' },
+    { section: 'protection', key: 't_inrush', label: 'משך הזינוק', unit: 's' },
   ],
   derived: [
     { key: 'I_n_lv', label: 'זרם נקוב של השנאי (מ״נ)', unit: 'A' },

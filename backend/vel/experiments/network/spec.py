@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Provenance = Literal["assumed", "nameplate", "measured", "fitted"]
 
@@ -88,6 +88,27 @@ class Protection(BaseModel):
     k_t: float = Field(default=1.3, gt=1, le=2)
     t_mag: float = Field(default=0.01, gt=0, le=0.5)
     t_disc: float = Field(default=0.4, gt=0, le=5, description="IEC 60364-4-41, TN 230 V")
+    # station level (study "coordination"): catalogue fuses from pandapower's library
+    F_MV: str = Field(default="HV 40A", description="MV fuse of the transformer (pandapower std)")
+    F_LV: str = Field(default="Siemens NH-2-1000", description="LV main fuse (pandapower std)")
+    lv_main: Literal["fuse", "relay"] = "fuse"
+    R_Is: float = Field(default=1100.0, gt=0, le=1e5, description="relay pick-up [A]")
+    R_tms: float = Field(default=0.2, gt=0, le=10, description="relay time multiplier")
+    R_curve: Literal["standard_inverse", "very_inverse", "extremely_inverse", "long_inverse"] = (
+        "standard_inverse"
+    )
+    R_Iinst: float = Field(default=0.0, ge=0, le=1e6, description="instantaneous [A]; 0 = none")
+    k_inrush: float = Field(default=12.0, gt=1, le=30, description="inrush peak ÷ I_n (MV side)")
+    t_inrush: float = Field(default=0.1, gt=0, le=2, description="inrush duration [s]")
+
+    @field_validator("F_MV", "F_LV")
+    @classmethod
+    def _known_fuse(cls, v: str) -> str:
+        from vel.engine.network.devices import fuse_types
+
+        if v not in fuse_types(""):
+            raise ValueError(f"unknown fuse type {v!r} (pandapower standard library)")
+        return v
 
 
 class NetworkSpec(BaseModel):

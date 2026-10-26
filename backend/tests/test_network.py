@@ -103,7 +103,7 @@ def test_N6_api_project_runs_and_measurements(client: TestClient) -> None:
     assert p.status_code == 201, p.text
     pid = p.json()["id"]
     kinds = [s["kind"] for s in client.get(f"/api/projects/{pid}/studies").json()]
-    assert kinds == ["load_flow", "short_circuit", "protection"]
+    assert kinds == ["load_flow", "short_circuit", "protection", "coordination"]
     r = client.post(f"/api/projects/{pid}/runs", json={"study_kind": "short_circuit", "case": {}})
     assert r.status_code == 201, r.text
     assert r.json()["status"] == "success_with_warnings"

@@ -170,3 +170,34 @@ our solver in every run.
 * **N8:** for the preset, every zone disconnects in time and both pairs are partially
   selective. With a 2 km bench cable and Q2 = 100 A, both `disconnection_fails` and
   `overload_unprotected` are raised. The curves fall with current and end at t_mag.
+
+## Station-level coordination (study `coordination`)
+
+Adopted from **pandapower's protection module** (BSD-3): the standard fuse library (HV fuses
+6.3–200 A with pre-arcing and total-clearing curves; Siemens NH 16–1000 A with an average curve)
+is evaluated through pandapower's own `Fuse` and `LogSplineCharacteristic` objects
+(`vel/engine/network/devices.py`). The relay is IEC 60255-151 inverse time
+(t = TMS·k/((I/I_s)^α − 1)), with the same constants as pandapower's `OCRelay`.
+
+What the study answers, for the transformer's MV fuse, the LV main (NH fuse or relay) and Q1:
+
+| Check | Criterion |
+|---|---|
+| Inrush | MV fuse pre-arcing time at k_inrush·I_n,MV is longer than t_inrush |
+| MV back-up of B1 | MV fuse total-clearing time for a 3-phase and a phase–earth fault on B1, through Dyn: I_MV = I·U2/U1 (3-phase), I·U2/(√3·U1) (earth fault) |
+| Selectivity | every current up to the maximum fault below the downstream device is scanned: upstream time − downstream time > 0 (fuses, MCB) or > CTI (relay) |
+
+Outside a catalogue curve, the time is "none" with the reason. It is never extrapolated.
+
+Result on the assumed substation: the 40 A MV fuse survives inrush (0.168 s > 0.1 s). It does
+**not** back up an LV earth fault on B1, because it sees only 144 A, below its catalogue range.
+That is the textbook Dyn effect, and it is shown as a warning. The 1000 A NH main is not
+selective against it above about 6.6 kA.
+
+Tests: `tests/test_coordination.py` (P1–P6). They cover:
+
+* the IEC reference times at 10× pick-up;
+* the curves passing through the catalogue points and stopping at their ends;
+* the Dyn current transfer;
+* the selectivity verdict, checked against its own margin;
+* the spec form offering exactly the library's fuses.
