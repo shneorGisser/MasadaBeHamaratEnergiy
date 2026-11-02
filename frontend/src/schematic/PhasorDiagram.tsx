@@ -4,6 +4,9 @@
  * the first AC source); voltages and currents have separate scales, as on a lab sketch.
  * Counter-clockwise is leading.
  */
+import { useState } from 'react'
+import PhasorWaves from './PhasorWaves'
+
 export interface Phasor {
   label: string
   mag: number
@@ -14,6 +17,7 @@ export interface Phasor {
 const COLORS = { U: ['#1f6fb2', '#2f7f7a', '#4b6b2f', '#7a3e8f'], I: ['#a2462e', '#b07a1f', '#c0392b', '#7a5200'] }
 
 export default function PhasorDiagram({ phasors }: { phasors: Phasor[] }) {
+  const [waves, setWaves] = useState(false)
   if (!phasors.length) return null
   const size = 240
   const c = size / 2
@@ -42,7 +46,12 @@ export default function PhasorDiagram({ phasors }: { phasors: Phasor[] }) {
         <strong>דיאגרמת פאזורים</strong>
         <br />
         <span className="muted">U ו-I בקני מידה נפרדים. נגד כיוון השעון = מקדים.</span>
+        <br />
+        <button className="btn small" onClick={() => setWaves(true)} data-testid="phasor-waves-open">
+          פאזורים מסתובבים וגלים
+        </button>
       </figcaption>
+      {waves && <PhasorWaves phasors={phasors} onClose={() => setWaves(false)} />}
       <svg width="100%" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="phasor diagram" style={{ direction: 'ltr' }}>
         <defs>
           {(['U', 'I'] as const).flatMap((k) =>
