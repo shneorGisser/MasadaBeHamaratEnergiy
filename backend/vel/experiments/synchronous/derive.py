@@ -14,7 +14,7 @@ import math
 import statistics
 from typing import Any
 
-from vel.experiments.common import Param, num
+from vel.experiments.common import Param, num, with_inputs
 from vel.experiments.synchronous.spec import SyncSpec
 
 Row = dict[str, Any]
@@ -247,6 +247,20 @@ def short_circuit(
                 "consistent",
             )
         )
+    with_inputs(
+        params,
+        {
+            "E_ag/Ik3": med.get("3"),
+            "√3·E/Ik2": med.get("2"),
+            "3E/Ik1": med.get("1"),
+            "Ra": ra,
+            "2Ra": 2 * ra,
+            "3Ra": 3 * ra,
+            "Xs": xs,
+            "X2": x2,
+            "Z_base": spec.Z_base,
+        },
+    )
     return out, params, warnings
 
 
