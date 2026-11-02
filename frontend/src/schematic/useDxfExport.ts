@@ -15,6 +15,7 @@ export function circuitGeometry(c: CircuitModel, catalog: ComponentType[], route
     boxes: input.outlines.map((o) => ({ label: o.id, sub: o.type, x: o.x, y: o.y, w: o.w, h: o.h })),
     pins: input.terminals.map((t) => ({ name: t.name, x: t.p[0], y: t.p[1] })),
     wires: input.wires.map((w) => r.get(w.id) ?? [w.a, w.b]),
+    nets: input.wires.map((w) => w.net),
   }
 }
 

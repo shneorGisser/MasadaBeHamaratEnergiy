@@ -23,6 +23,8 @@ export interface Geometry {
   boxes: GeoBox[]
   pins: GeoPin[]
   wires: [number, number][][]
+  /** the net of each wire (same order as wires): junctions join only one net's conductors */
+  nets?: number[]
 }
 
 export const MM_PER_PX = 0.25
@@ -227,38 +229,52 @@ function ascii(s: string, fallback = ''): string {
 }
 
 /**
- * Junction dots: wire end points where three or more conductors meet — several segment ends at
- * one point, or a wire ending on another wire's run (a T). Terminals are not junctions.
+ * Junction dots: points where three or more conductor directions of one net meet — a T where a
+ * cable ends on another's run, several cable ends at one point, or a cable that runs along
+ * another and branches off at a corner (the router merges a net's cables onto shared runs, so
+ * the branch point is often a corner, not an end). Terminals are not junctions; two nets that
+ * only cross get no dot. Without `nets`, all wires count as one net.
  */
 export function junctions(g: Geometry, tol = 0.5): [number, number][] {
-  const segs: [[number, number], [number, number]][] = []
-  for (const w of g.wires) for (let i = 1; i < w.length; i++) segs.push([w[i - 1]!, w[i]!])
+  const segs: { a: [number, number]; b: [number, number]; net: number }[] = []
+  g.wires.forEach((w, i) => {
+    for (let k = 1; k < w.length; k++) segs.push({ a: w[k - 1]!, b: w[k]!, net: g.nets?.[i] ?? 0 })
+  })
   const isPin = (p: [number, number]) => g.pins.some((q) => Math.hypot(q.x - p[0], q.y - p[1]) < tol)
+  const dirKey = (from: [number, number], to: [number, number]) => {
+    const l = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1
+    return `${Math.round(((to[0] - from[0]) / l) * 50)},${Math.round(((to[1] - from[1]) / l) * 50)}`
+  }
   const out: [number, number][] = []
   const seen = new Set<string>()
-  for (const w of g.wires) {
-    for (const p of [w[0], w[w.length - 1]]) {
-      if (!p || isPin(p)) continue
-      let ends = 0
-      let through = false
-      for (const [a, b] of segs) {
-        const atA = Math.hypot(a[0] - p[0], a[1] - p[1]) < tol
-        const atB = Math.hypot(b[0] - p[0], b[1] - p[1]) < tol
-        if (atA || atB) ends += 1
+  g.wires.forEach((w, i) => {
+    const net = g.nets?.[i] ?? 0
+    for (const p of w) {
+      const k = `${net}:${p[0].toFixed(1)},${p[1].toFixed(1)}`
+      if (seen.has(k) || isPin(p)) continue
+      seen.add(k)
+      const dirs = new Set<string>()
+      for (const s of segs) {
+        if (s.net !== net) continue
+        const { a, b } = s
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+        if (len < tol) continue
+        if (Math.hypot(a[0] - p[0], a[1] - p[1]) < tol) dirs.add(dirKey(a, b))
+        else if (Math.hypot(b[0] - p[0], b[1] - p[1]) < tol) dirs.add(dirKey(b, a))
         else {
-          // p strictly inside an axis-parallel segment
-          const onV = Math.abs(a[0] - b[0]) < tol && Math.abs(a[0] - p[0]) < tol && (p[1] - a[1]) * (p[1] - b[1]) < 0
-          const onH = Math.abs(a[1] - b[1]) < tol && Math.abs(a[1] - p[1]) < tol && (p[0] - a[0]) * (p[0] - b[0]) < 0
-          if (onV || onH) through = true
+          // p strictly inside the segment: distance to the line and projection within it
+          const t = ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / (len * len)
+          const dx = a[0] + t * (b[0] - a[0]) - p[0]
+          const dy = a[1] + t * (b[1] - a[1]) - p[1]
+          if (t > 0 && t < 1 && Math.hypot(dx, dy) < tol) {
+            dirs.add(dirKey(p, a))
+            dirs.add(dirKey(p, b))
+          }
         }
       }
-      const k = `${p[0].toFixed(1)},${p[1].toFixed(1)}`
-      if ((ends >= 3 || through) && !seen.has(k)) {
-        seen.add(k)
-        out.push(p)
-      }
+      if (dirs.size >= 3 && !out.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < tol)) out.push(p)
     }
-  }
+  })
   return out
 }
 

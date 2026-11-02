@@ -57,6 +57,36 @@ describe('dxf', () => {
     expect(junctions(g)).toEqual([[50, 0]])
   })
 
+  it('dots a branch that leaves a shared run at a corner, but not a crossing of two nets', () => {
+    // net 0: a run along y=0 and a cable that joins it at (40,0) and runs along it to the end
+    // net 1: a vertical cable crossing the run at x=70 with a corner exactly on it
+    const g = {
+      boxes: [],
+      pins: [
+        { name: 'a', x: 0, y: 0 },
+        { name: 'b', x: 100, y: 0 },
+      ],
+      wires: [
+        [
+          [0, 0],
+          [100, 0],
+        ],
+        [
+          [40, 60],
+          [40, 0],
+          [100, 0],
+        ],
+        [
+          [70, -50],
+          [70, 0],
+          [70, 50],
+        ],
+      ] as [number, number][][],
+      nets: [0, 0, 1],
+    }
+    expect(junctions(g)).toEqual([[40, 0]])
+  })
+
   it('title block: ISO sheet chosen by size, ASCII fields, Hebrew replaced by the fallback', () => {
     const g = {
       boxes: [{ label: 'M', sub: 'motor3', x: 0, y: 0, w: 120, h: 80 }],

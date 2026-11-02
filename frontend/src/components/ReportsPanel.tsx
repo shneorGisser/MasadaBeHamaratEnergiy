@@ -2,7 +2,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client'
 import { useStudies } from '../api/hooks'
-import type { MSet, RunSummary } from '../api/types'
+import type { MSet, Run, RunSummary } from '../api/types'
+import { circuitDiagram, diagramPng } from '../schematic/diagram'
+import { useCatalog } from '../schematic/hooks'
+import type { CircuitModel } from '../schematic/model'
 import { fmtDate } from '../i18n'
 import { ErrorBox } from './ErrorBox'
 
@@ -23,6 +26,9 @@ export default function ReportsPanel({ projectId }: { projectId: string }) {
   const [discussion, setDiscussion] = useState('')
   const [pick, setPick] = useState<Record<string, { include: boolean; run: string; set: string }>>({})
   const [err, setErr] = useState<unknown>(null)
+  const [busy, setBusy] = useState(false)
+  const [figureNote, setFigureNote] = useState<string | null>(null)
+  const catalog = useCatalog()
   const [openId, setOpenId] = useState<string | null>(null)
   const shownId = openId ?? reports.data?.[0]?.id ?? null
 
@@ -35,19 +41,44 @@ export default function ReportsPanel({ projectId }: { projectId: string }) {
     return { include: p?.include ?? Boolean(r || s), run: p?.run ?? r, set: p?.set ?? s }
   }
 
+  /** The circuit of the reported run (its own snapshot, not the bench now), as a PNG figure. */
+  const figure = async (runId: string | null): Promise<string | null> => {
+    if (!runId || !catalog.data) return null
+    const run = await api.get<Run>(`/api/runs/${runId}`)
+    const c = run.input_snapshot.circuit as CircuitModel | null | undefined
+    if (!c || !Array.isArray(c.components) || c.components.length === 0) return null
+    return diagramPng(circuitDiagram(c, catalog.data))
+  }
+
   const create = async () => {
     setErr(null)
-    const sections = (studies.data ?? [])
+    setFigureNote(null)
+    setBusy(true)
+    const picked = (studies.data ?? [])
       .map((st) => ({ kind: st.kind, ...sel(st.kind) }))
       .filter((x) => x.include && (x.run || x.set))
-      .map((x) => ({ study_kind: x.kind, run_id: x.run || null, set_id: x.set || null }))
     try {
+      const failed: string[] = []
+      const sections = await Promise.all(
+        picked.map(async (x) => {
+          let circuit_png: string | null = null
+          try {
+            circuit_png = await figure(x.run || null)
+          } catch {
+            failed.push(x.kind)
+          }
+          return { study_kind: x.kind, run_id: x.run || null, set_id: x.set || null, circuit_png }
+        }),
+      )
+      if (failed.length) setFigureNote(`איור המעגל לא נוצר עבור: ${failed.join(', ')}. הדו״ח הופק בלעדיו.`)
       const r = await api.post<ReportSummary>(`/api/projects/${projectId}/reports`, { title, sections, student_discussion: discussion })
       await qc.invalidateQueries({ queryKey: ['reports', projectId] })
       void qc.invalidateQueries({ queryKey: ['guide', projectId] })
       setOpenId(r.id)
     } catch (e) {
       setErr(e)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -109,11 +140,12 @@ export default function ReportsPanel({ projectId }: { projectId: string }) {
           <textarea className="input" name="discussion" rows={5} value={discussion} onChange={(e) => setDiscussion(e.target.value)} />
         </label>
         <div className="row">
-          <button className="btn primary" onClick={() => void create()} data-testid="create-report">
-            הפק דו״ח
+          <button className="btn primary" onClick={() => void create()} disabled={busy} data-testid="create-report">
+            {busy ? 'מפיק…' : 'הפק דו״ח'}
           </button>
         </div>
         {err != null && <ErrorBox error={err} />}
+        {figureNote && <p className="badge warn" role="status">{figureNote}</p>}
       </section>
 
       <section className="card stack">

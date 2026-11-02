@@ -72,6 +72,10 @@ test('S5: full journey — guided mode, parameters, simulate, reload, measure, c
   await expect(frame.locator('h1')).toHaveText('דו״ח ניסוי 1 — בדיקת שנאי תלת-פזי')
   await expect(frame.getByText('I0 הנמדד גבוה ב-~13% מהמודל')).toBeVisible()
   await expect(frame.locator('td', { hasText: '0.4100' }).first()).toBeVisible()
+  // the circuit of the reported run, as a figure that actually decoded
+  const fig = frame.locator('figure.circuit img')
+  await expect(fig).toBeVisible()
+  expect(await fig.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(500)
 
   // a later correction must not change the published report
   const reports = await (await request.get(`/api/projects/${pid}/reports`)).json()

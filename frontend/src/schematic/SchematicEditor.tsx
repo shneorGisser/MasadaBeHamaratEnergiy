@@ -192,7 +192,7 @@ function Editor({
   const dots = useMemo(() => {
     if (!routes) return []
     const input = routeInput(fromFlow(nodes, edges), catalog)
-    return junctions({ boxes: [], pins: input.terminals.map((t) => ({ name: t.name, x: t.p[0], y: t.p[1] })), wires: input.wires.map((w) => routes.get(w.id) ?? []) })
+    return junctions({ boxes: [], pins: input.terminals.map((t) => ({ name: t.name, x: t.p[0], y: t.p[1] })), wires: input.wires.map((w) => routes.get(w.id) ?? []), nets: input.wires.map((w) => w.net) })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed with the routes
   }, [routes])
 

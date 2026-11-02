@@ -85,8 +85,8 @@ def _source_net(c: CircuitModel, comp: str, term: str) -> str | None:
             link((sw, f"i{k}"), (sw, f"o{k}"))
     for a in _of_type(c, "ammeter"):  # zero-impedance current paths
         link((a, "p"), (a, "n"))
-    for w in _of_type(c, "wattmeter"):
-        link((w, "Ip"), (w, "In"))
+    for wm in _of_type(c, "wattmeter"):
+        link((wm, "Ip"), (wm, "In"))
     seen, todo = {(comp, term)}, [(comp, term)]
     while todo:
         x = todo.pop()

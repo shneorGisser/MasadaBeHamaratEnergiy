@@ -7,6 +7,7 @@ student can rebuild the figures in the format their instructor wants)."""
 
 from __future__ import annotations
 
+import base64
 import io
 import math
 import re
@@ -356,6 +357,11 @@ def build_docx(snapshot: dict[str, Any]) -> bytes:
 
     for i, sec in enumerate(s["sections"]):
         d.heading(f"{i + 3}. {sec['title_he']} ({sec['manual_ref']})", 1)
+        if sec.get("circuit_png"):
+            d.picture(
+                base64.b64decode(sec["circuit_png"]),
+                f"איור {i + 3}.0: מעגל הניסוי (סכמת החיבור, כפי שנבנתה באפליקציה)",
+            )
         run = sec.get("run")
         if run:
             d.heading("תנאי עבודה וסימולציה", 2)

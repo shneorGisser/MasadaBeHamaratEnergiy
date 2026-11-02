@@ -25,6 +25,8 @@ class Section(BaseModel):
     study_kind: str
     run_id: str | None = None
     set_id: str | None = None
+    # the connection diagram drawn by the app (PNG, base64), embedded as a figure
+    circuit_png: str | None = Field(default=None, max_length=4_000_000)
 
 
 class ReportCreate(BaseModel):

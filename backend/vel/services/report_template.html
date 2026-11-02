@@ -55,6 +55,7 @@ figure.chart figcaption { font-size: 0.9em; color: #555; }
 {% for sec in s.sections %}
 <h2>{{ loop.index + 2 }}. {{ sec.title_he }} <span class="meta">({{ sec.manual_ref }})</span></h2>
 
+{% if sec.circuit_png %}<figure class="chart circuit"><img src="data:image/png;base64,{{ sec.circuit_png }}" alt="מעגל הניסוי"><figcaption>מעגל הניסוי (סכמת החיבור, כפי שנבנתה באפליקציה)</figcaption></figure>{% endif %}
 {% if sec.run %}
 <h3>תנאי עבודה וסימולציה <span class="src sim">סימולציה</span></h3>
 <p class="meta">ריצה {{ sec.run.id[:8] }} · {{ sec.run.label }} · סטטוס {{ sec.run.status }} · hash {{ sec.run.input_hash[:12] }}</p>

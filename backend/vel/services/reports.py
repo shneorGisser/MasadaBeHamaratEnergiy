@@ -95,6 +95,20 @@ def acknowledge(session: Session, p: Project, step_id: str) -> None:
 # --------------------------------------------------------------------------- reports
 
 
+def _checked_png(b64: str) -> str:
+    """The diagram is user-supplied: accept only a real PNG of sane size."""
+    import base64
+    import binascii
+
+    try:
+        raw = base64.b64decode(b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ApiError(422, "bad_diagram", "circuit diagram is not valid base64") from exc
+    if not raw.startswith(b"\x89PNG\r\n\x1a\n") or len(raw) > 3_000_000:
+        raise ApiError(422, "bad_diagram", "circuit diagram must be a PNG under 3 MB")
+    return b64
+
+
 def build_snapshot(
     session: Session, p: Project, sections: list[dict[str, Any]], title: str, discussion: str
 ) -> dict[str, Any]:
@@ -120,6 +134,9 @@ def build_snapshot(
             "title_he": studies[kind].title_he,
             "manual_ref": studies[kind].manual_ref,
         }
+        png = sec.get("circuit_png")
+        if png:
+            entry["circuit_png"] = _checked_png(str(png))
         if run is not None:
             entry["run"] = {
                 "id": run.id,
