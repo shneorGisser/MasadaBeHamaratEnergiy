@@ -186,9 +186,6 @@ def live_point(
     overrides: dict[str, dict[str, Any]],
     wire_currents: bool = False,
 ) -> dict[str, Any]:
-    from vel.engine.mna import ConvergenceError, SingularCircuitError
-    from vel.engine.netlist import CircuitValidationError
-    from vel.engine.simulate import MechanicalError, operating_point
 
     sd = study_def(p, kind)
     if not sd.editable_circuit:
@@ -205,12 +202,28 @@ def live_point(
         if bad:
             raise ApiError(422, "not_overridable", f"{cid}: cannot override {sorted(bad)}")
         comp.params.update(params)
+    return solve_point(p, kind, circuit, overrides, wire_currents)
+
+
+def solve_point(
+    p: Project,
+    kind: str,
+    circuit: CircuitModel,
+    overrides: dict[str, dict[str, Any]] | None = None,
+    wire_currents: bool = False,
+) -> dict[str, Any]:
+    """One steady-state solution of `circuit` with the project's spec (at its operating
+    temperature). Failures are statuses with a message, never exceptions."""
+    from vel.engine.mna import ConvergenceError, SingularCircuitError
+    from vel.engine.netlist import CircuitValidationError
+    from vel.engine.simulate import MechanicalError, operating_point
+
     spec, _ = at_operating_temperature(p.experiment_id, project_spec(p), kind)
     base = {
         "source": "simulation",
         "persisted": False,
         "model_version": module_of(p).model_version,
-        "overrides": overrides,
+        "overrides": overrides or {},
     }
     try:
         types = {c.type for c in circuit.components}
@@ -241,4 +254,46 @@ def live_point(
         # per-cable current (wire end a → end b) for the current-flow display
         "wire_currents": op.wire_currents,
         "dc": dc,
+    }
+
+
+def fault_quiz(session: Session, p: Project, kind: str, seed: int | None = None) -> dict[str, Any]:
+    """A diagnosis challenge on the stored circuit (vel.services.faults)."""
+    import random
+
+    from vel.services import faults
+
+    sd = study_def(p, kind)
+    if not sd.editable_circuit:
+        raise ApiError(409, "not_editable", "the challenge needs an editable circuit")
+    circuit = CircuitModel.model_validate(current_circuit(session, p, kind))
+    healthy = solve_point(p, kind, circuit)
+    if not str(healthy["status"]).startswith("success"):
+        raise ApiError(
+            409, "circuit_not_solvable", "the circuit itself has no solution; fix it first"
+        )
+    seed = seed if seed is not None else random.SystemRandom().randrange(1 << 30)
+    rng = random.Random(seed)
+    tried: set[str] = set()
+    while True:
+        f = faults.pick(circuit, rng)
+        if f.id in tried:
+            if len(tried) > len(faults.FAULTS):
+                f = faults.NONE
+            else:
+                continue
+        tried.add(f.id)
+        faulty_c = f.apply(circuit)
+        if faulty_c is None:
+            continue
+        observed = solve_point(p, kind, faulty_c)
+        if str(observed["status"]).startswith("success") or f.id == "none":
+            break
+    return {
+        "seed": seed,
+        "options": faults.options(circuit),
+        "answer": f.id,
+        "explanation_he": f.explain_he,
+        "expected": healthy.get("readings", {}),
+        "observed": observed.get("readings", {}),
     }

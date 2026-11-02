@@ -12,6 +12,7 @@ import { ErrorBox } from './ErrorBox'
 import MeasurementsPanel from './MeasurementsPanel'
 import RunView from './RunView'
 import WiringGuide from './WiringGuide'
+import FaultQuiz from './FaultQuiz'
 import StatusBadge from './StatusBadge'
 
 const VARIANT_LABEL: Record<string, string> = {
@@ -214,6 +215,7 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
           </details>
         )}
         {study.editable_circuit && <WiringGuide key={`wg-${study.kind}`} projectId={projectId} kind={study.kind} />}
+        {study.editable_circuit && <FaultQuiz key={`fq-${study.kind}`} projectId={projectId} kind={study.kind} />}
         {study.editable_circuit && (
           <details className="card" style={{ padding: 10 }} data-testid="lab3d-section" onToggle={(e) => e.target === e.currentTarget && setShow3d(e.currentTarget.open)}>
             <summary>שולחן מעבדה תלת-ממדי (נקודת עבודה חיה)</summary>

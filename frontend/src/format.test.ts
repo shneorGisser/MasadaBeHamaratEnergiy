@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmt, parseList } from './format'
+import { fmt, iso, parseList } from './format'
 
 describe('fmt', () => {
   it('never renders undefined values as numbers', () => {
@@ -21,5 +21,12 @@ describe('parseList', () => {
     expect(parseList('1;2 3')).toEqual([1, 2, 3])
     expect(parseList('1, x')).toBeNull()
     expect(parseList('  ')).toBeNull()
+  })
+})
+
+describe('iso', () => {
+  it('isolates Latin runs in Hebrew text', () => {
+    expect(iso('סליל הזרם הפוך (Ip ↔ In)')).toBe('סליל הזרם הפוך ⁦(Ip ↔ In)⁩')
+    expect(iso('בין שתי פאזות L1–L2 במקום')).toBe('בין שתי פאזות ⁦L1–L2⁩ במקום')
   })
 })

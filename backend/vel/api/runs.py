@@ -181,6 +181,19 @@ def live_operating_point(
     return svc.live_point(session, p, kind, body.overrides, body.wire_currents)
 
 
+class QuizBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    seed: int | None = Field(default=None, ge=0, le=2**31)
+
+
+@router.post("/projects/{project_id}/circuits/{kind}/fault-quiz")
+def fault_quiz(project_id: str, kind: str, body: QuizBody, session: SessionDep) -> dict[str, Any]:
+    """A hidden wiring fault (or none): readings of the faulty bench next to the correct one,
+    the options and the answer with its explanation. Not persisted."""
+    p = load_project(session, project_id)
+    return svc.fault_quiz(session, p, kind, body.seed)
+
+
 @router.post("/projects/{project_id}/runs", response_model=RunOut, status_code=201)
 def create_run(project_id: str, body: RunCreate, session: SessionDep) -> RunOut:
     p = load_project(session, project_id)

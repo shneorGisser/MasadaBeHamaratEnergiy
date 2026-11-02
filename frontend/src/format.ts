@@ -19,3 +19,11 @@ export function parseList(text: string): number[] | null {
   const nums = parts.map(Number)
   return nums.every((n) => Number.isFinite(n)) ? nums : null
 }
+
+const LTR_RUN = /([A-Za-z0-9(√][A-Za-z0-9_.,=+\-·/()°%Ω√²′↔–:φ ]*[A-Za-z0-9)°%Ω²′φ]|[A-Za-z0-9])/g
+
+/** Wrap Latin and number runs of a Hebrew sentence in Unicode isolates (LRI…PDI), so
+ * "(Ip ↔ In)" or "L1–L2" keep their left-to-right order inside right-to-left text. */
+export function iso(s: string): string {
+  return s.replace(LTR_RUN, (m) => `⁦${m}⁩`)
+}
