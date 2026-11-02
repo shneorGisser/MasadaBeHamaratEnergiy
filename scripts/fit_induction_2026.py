@@ -18,10 +18,13 @@ import sys
 
 import numpy as np
 from scipy.optimize import least_squares
-
 from vel.engine.simulate import operating_point, operating_point_at_slip
 from vel.experiments.induction_motor import templates as tpl
-from vel.experiments.induction_motor.spec import MotorNameplate, MotorSpec, assumed_lab_motor
+from vel.experiments.induction_motor.spec import (
+    MotorNameplate,
+    MotorSpec,
+    assumed_lab_motor,
+)
 from vel.labdata import get
 
 DS = {t.study_kind: t for t in get("induction_motor_2026").tables}

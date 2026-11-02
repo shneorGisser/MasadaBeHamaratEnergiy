@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
-
 from vel.labdata import get
 from vel.main import create_app
 
@@ -28,7 +27,9 @@ def table_rows(t: dict[str, Any]) -> list[dict[str, Any]]:
     return [dict(r) for r in t["rows"]]
 
 
-def measured(dataset: str, kind: str, label: str | None = None) -> list[dict[str, float]]:
+def measured(
+    dataset: str, kind: str, label: str | None = None
+) -> list[dict[str, float]]:
     for t in get(dataset).tables:
         if t.study_kind == kind and (label is None or t.label == label):
             keys = [k for k, _ in t.columns]
@@ -40,25 +41,40 @@ def measured(dataset: str, kind: str, label: str | None = None) -> list[dict[str
 
 
 def main() -> None:
-    out: dict[str, Any] = {"source": "vel studies via the API; measured points from vel.labdata"}
+    out: dict[str, Any] = {
+        "source": "vel studies via the API; measured points from vel.labdata"
+    }
     with TestClient(create_app(f"sqlite:///{tempfile.mkdtemp()}/v.db")) as c:
 
         def project(exp: str, preset: str | None = None) -> str:
-            pid = c.post("/api/projects", json={"name": "video", "experiment_id": exp}).json()["id"]
+            pid = c.post(
+                "/api/projects", json={"name": "video", "experiment_id": exp}
+            ).json()["id"]
             if preset:
                 spec = next(
-                    p for p in c.get(f"/api/experiments/{exp}/presets").json() if p["id"] == preset
+                    p
+                    for p in c.get(f"/api/experiments/{exp}/presets").json()
+                    if p["id"] == preset
                 )["spec"]
-                assert c.patch(f"/api/projects/{pid}", json={"spec": spec}).status_code == 200
+                assert (
+                    c.patch(f"/api/projects/{pid}", json={"spec": spec}).status_code
+                    == 200
+                )
             return pid
 
         def run(pid: str, kind: str, case: dict[str, Any]) -> dict[str, Any]:
-            r = c.post(f"/api/projects/{pid}/runs", json={"study_kind": kind, "case": case}).json()
+            r = c.post(
+                f"/api/projects/{pid}/runs", json={"study_kind": kind, "case": case}
+            ).json()
             assert r["status"].startswith("success"), r
             return dict(r["result"])
 
         def params(res: dict[str, Any]) -> dict[str, float]:
-            return {p["key"]: p["value"] for p in res["parameters"] if p.get("value") is not None}
+            return {
+                p["key"]: p["value"]
+                for p in res["parameters"]
+                if p.get("value") is not None
+            }
 
         # ---------------------------------------------------- induction motor (experiment 2)
         pid = project("induction_motor", "ap3030_sheet_2026")
@@ -67,7 +83,11 @@ def main() -> None:
         res = run(
             pid,
             "load",
-            {"M_targets": [m["M"] for m in meas], "U_line": 380.0, "torque_speed_curve": True},
+            {
+                "M_targets": [m["M"] for m in meas],
+                "U_line": 380.0,
+                "torque_speed_curve": True,
+            },
         )
         out["induction"] = {
             "nameplate": spec["nameplate"],
@@ -82,12 +102,16 @@ def main() -> None:
         # ---------------------------------------------------- synchronous machine (experiment 3)
         pid = project("synchronous")
         spec = c.get(f"/api/projects/{pid}").json()["spec"]
-        occ = run(pid, "open_circuit", {"If_values": [round(0.1 * k, 2) for k in range(0, 26)]})
-        scc = run(pid, "short_circuit", {"If_values": [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]})
+        occ = run(
+            pid, "open_circuit", {"If_values": [round(0.1 * k, 2) for k in range(26)]}
+        )
+        scc = run(
+            pid, "short_circuit", {"If_values": [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]}
+        )
         pts = [
             {"P": p, "If": round(i, 2)}
             for p in (0.0, 100.0, 200.0)
-            for i in [1.0 + 0.3 * k for k in range(0, 18)]
+            for i in [1.0 + 0.3 * k for k in range(18)]
         ]
         vc = run(pid, "v_curves", {"U_line": None, "points": pts})
         out["synchronous"] = {
@@ -101,10 +125,14 @@ def main() -> None:
         }
 
         # ---------------------------------------------------- transformer (experiment 1)
-        pid = project("transformer3ph")
+        pid = project(
+            "transformer3ph", "report_2025"
+        )  # the transformer the 2025 table was measured on
         spec = c.get(f"/api/projects/{pid}").json()["spec"]
         nl = run(pid, "no_load", {"U_line_values": [40.0 * k for k in range(2, 13)]})
-        sc = run(pid, "short_circuit", {"I_targets_pu": [0.1 * k for k in range(1, 12)]})
+        sc = run(
+            pid, "short_circuit", {"I_targets_pu": [0.1 * k for k in range(1, 11)]}
+        )
         out["transformer"] = {
             "nameplate": spec["nameplate"],
             "ecm": spec["ecm"],

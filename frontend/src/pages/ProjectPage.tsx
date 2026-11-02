@@ -9,6 +9,7 @@ import StudiesPanel from '../components/StudiesPanel'
 import ScriptPanel from '../components/ScriptPanel'
 import SpecForm from '../components/SpecForm'
 import { ShareProject } from '../components/Sharing'
+import { VIDEOS } from '../videos'
 import { t } from '../i18n'
 
 function ProjectMetaForm({ project }: { project: Project }) {
@@ -77,6 +78,16 @@ export default function ProjectPage() {
       </div>
       <ProjectMetaForm key={p.id} project={p} />
       <ShareProject projectId={p.id} />
+      {VIDEOS.some((v) => v.experiments.includes(p.experiment_id)) && (
+        <nav className="row small" aria-label="סרטוני הסבר לניסוי" data-testid="project-videos">
+          <span className="muted">סרטוני הסבר:</span>
+          {VIDEOS.filter((v) => v.experiments.includes(p.experiment_id)).map((v) => (
+            <Link key={v.id} to={`/videos#${v.id}`}>
+              {v.title}
+            </Link>
+          ))}
+        </nav>
+      )}
       <nav className="tabs" aria-label="project sections">
         <NavLink end to={`/projects/${p.id}`} className="tab">
           {t('tabs.studies')}

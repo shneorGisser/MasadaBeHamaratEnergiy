@@ -5,6 +5,7 @@ import { t } from './i18n'
 import ProjectPage from './pages/ProjectPage'
 import ProjectsPage from './pages/ProjectsPage'
 import PowerElectronicsPage from './pages/PowerElectronicsPage'
+import VideosPage from './pages/VideosPage'
 import { FeedbackAdminPage, SharedProjectPage, WorkspaceAdoptPage } from './pages/SharingPages'
 import { FeedbackButton } from './components/Sharing'
 
@@ -40,6 +41,9 @@ export default function App() {
           <Link to="/power-electronics" data-testid="nav-pe">
             ספסל אלקטרוניקת הספק
           </Link>
+          <Link to="/videos" data-testid="nav-videos">
+            סרטוני הסבר
+          </Link>
         </nav>
         <ServerLamp />
       </header>
@@ -48,6 +52,7 @@ export default function App() {
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/projects/:projectId/*" element={<ProjectPage />} />
           <Route path="/power-electronics" element={<PowerElectronicsPage />} />
+          <Route path="/videos" element={<VideosPage />} />
           <Route path="/s/:token" element={<SharedProjectPage />} />
           <Route path="/w" element={<WorkspaceAdoptPage />} />
           <Route path="/feedback" element={<FeedbackAdminPage />} />

@@ -17,3 +17,6 @@ coverage/
 backend/build/
 backend/dist/
 *.egg-info/
+
+# manim render cache
+videos/media/
