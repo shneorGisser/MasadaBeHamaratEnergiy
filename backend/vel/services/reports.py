@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from vel.errors import ApiError
 from vel.orm import MeasurementSet, Project, Report, SimulationRun
 from vel.services import measurements as ms
+from vel.services.substitute import worked
 
 OK = ("success", "success_with_warnings")
 
@@ -201,6 +202,7 @@ def _pct(v: Any) -> str:
 _ENV = Environment(autoescape=select_autoescape(default=True, default_for_string=True))
 _ENV.filters["f"] = _fmt
 _ENV.filters["pct"] = _pct
+_ENV.filters["worked"] = worked
 
 TEMPLATE = _ENV.from_string(
     (Path(__file__).parent / "report_template.html").read_text(encoding="utf-8")

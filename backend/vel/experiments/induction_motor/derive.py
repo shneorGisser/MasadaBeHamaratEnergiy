@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from vel.experiments.common import Param, num
+from vel.experiments.common import Param, num, with_inputs
 from vel.experiments.induction_motor.spec import MotorSpec
 from vel.experiments.wound_rotor.spec import WoundSpec
 
@@ -131,6 +131,8 @@ def no_load(
                 note="רגרסיה ליניארית ב-U². מדויקת רק כשהמהירות כמעט קבועה בכל הנקודות",
             )
         )
+    r1 = r1_star(spec)
+    with_inputs(params, {"U1": u, "I0": i0, "P0": p0, "Y0": y0, "g0": g0, "R1": r1})
     return out, params, {"row": k, "U1L": u}, warnings
 
 
@@ -191,6 +193,18 @@ def locked_rotor(
             note="מניח עכבה קבועה; ברוויה של שיני הרוטור הזרם האמיתי גבוה יותר",
         ),
     ]
+    with_inputs(
+        params,
+        {
+            "Uk": u,
+            "Ik": i,
+            "Pk": p,
+            "Zk": zk,
+            "rk": rk,
+            "R1": r1_star(spec),
+            "Un": spec.nameplate.U_n,
+        },
+    )
     return out, params, {"row": k, "I_k": i}, warnings
 
 

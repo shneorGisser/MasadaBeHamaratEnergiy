@@ -24,6 +24,9 @@ test('S1: no-load simulation → results → reload → reproduce → spec chang
   await expect(table.locator('tbody tr').nth(5)).toContainText('380.0')
   await expect(table.locator('tbody tr').nth(5)).toContainText('0.3623')
   await expect(view.locator('[data-param="R_fe"]')).toContainText('2397.6')
+  // the computation written out: formula → numbers → result
+  await expect(view.getByTestId('subst-g_m')).toContainText(/= [\d.]+ \/ 380\.0² = /)
+  await view.locator('[data-param="g_m"]').screenshot({ path: 'test-results/s1-substitution.png' })
   await expect(view.getByTestId('run-warnings')).toContainText('1.1·Un')
   await expect(view.locator('.chart canvas').first()).toBeVisible()
   await page.screenshot({ path: 'test-results/s1-no-load.png', fullPage: true })

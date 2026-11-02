@@ -20,6 +20,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 
 from vel.services.report_charts import FOLDED, LONG_TABLE, section_charts
+from vel.services.substitute import worked
 
 FONT = "David"
 SIZE = Pt(11)
@@ -409,7 +410,7 @@ def build_docx(snapshot: dict[str, Any]) -> bytes:
                                 if p["value"] is not None
                                 else f"לא מוגדר — {p.get('undefined_reason')}"
                             ),
-                            p.get("formula", ""),
+                            worked(p),
                             METHOD_HE.get(p.get("method", ""), p.get("method", "")),
                         ]
                         for p in res["parameters"]

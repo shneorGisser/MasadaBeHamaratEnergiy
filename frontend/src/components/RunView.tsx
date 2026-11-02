@@ -9,6 +9,7 @@ import { axisLabel, curveSeries, curveTable } from './curves'
 import { ErrorBox } from './ErrorBox'
 import SingleLine from './SingleLine'
 import StatusBadge from './StatusBadge'
+import { substitute } from './substitute'
 
 const LONG_TABLE = 60 // time series (transients) are shown as curves; the table starts folded
 const FOLDED_ROWS = 15
@@ -84,7 +85,17 @@ function ParamTable({ params, method }: { params: Param[]; method: Param['method
                 )}
                 {p.value === null && p.undefined_reason && <div className="small" style={{ color: 'var(--err)' }}>{p.undefined_reason}</div>}
               </td>
-              <td className="formula">{p.formula}</td>
+              <td className="formula">
+                {p.formula}
+                {(() => {
+                  const sub = substitute(p.formula, p.inputs)
+                  return sub && p.value !== null ? (
+                    <div className="subst" data-testid={`subst-${p.key}`}>
+                      = {sub} = {fmt(p.value, 4)} {p.unit}
+                    </div>
+                  ) : null
+                })()}
+              </td>
             </tr>
           ))}
         </tbody>

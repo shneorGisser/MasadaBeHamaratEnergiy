@@ -179,6 +179,8 @@ export interface Param {
   method: 'consistent' | 'manual' | 'analytic'
   undefined_reason: string | null
   note: string
+  /** values substituted into the formula (older runs: absent) */
+  inputs?: Record<string, number>
 }
 
 export interface Curve {

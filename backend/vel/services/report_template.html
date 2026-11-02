@@ -83,7 +83,7 @@ figure.chart figcaption { font-size: 0.9em; color: #555; }
   {% for p in sec.run.result.parameters %}
   <tr><td>{{ p.label_he }}</td>
       <td class="num">{% if p.value is none %}לא מוגדר — {{ p.undefined_reason }}{% else %}{{ p.value|f(5) }} {{ p.unit }}{% endif %}</td>
-      <td class="formula">{{ p.formula }}</td>
+      <td class="formula" style="white-space: pre-line">{{ p|worked }}</td>
       <td>{{ {'consistent': 'עקבי', 'manual': 'נוסחת החוברת', 'analytic': 'פאזורים (סימולציה בלבד)'}[p.method] }}</td></tr>
   {% endfor %}
 </table>

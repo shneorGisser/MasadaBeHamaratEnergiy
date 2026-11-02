@@ -9,6 +9,8 @@ comparison, guide, reports).
 from __future__ import annotations
 
 import copy
+import math
+import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
@@ -58,9 +60,35 @@ class Param:
     method: str  # consistent | manual | analytic
     undefined_reason: str | None = None
     note: str = ""
+    # the values substituted into `formula` (symbol → value), shown as "formula → numbers →
+    # result" so a student can redo the computation by hand; empty when not recorded
+    inputs: dict[str, float] = field(default_factory=dict)
 
     def to_json(self) -> dict[str, Any]:
         return asdict(self)
+
+
+_SYM = r"(?<![A-Za-z0-9_]){}(?![A-Za-z0-9_])"
+
+
+def with_inputs(
+    params: list[Param],
+    symbols: dict[str, float | None],
+    override: dict[str, dict[str, float | None]] | None = None,
+) -> list[Param]:
+    """Attach to each parameter the symbols its formula uses (whole-token match). `override`
+    gives per-parameter values where a symbol means something else in that formula (the
+    manual's Y_m inside its own b_m, say)."""
+    for p in params:
+        table = {**symbols, **(override or {}).get(p.key, {})}
+        p.inputs = {
+            k: float(v)
+            for k, v in table.items()
+            if v is not None
+            and math.isfinite(v)
+            and re.search(_SYM.format(re.escape(k)), p.formula)
+        }
+    return params
 
 
 @dataclass(frozen=True)

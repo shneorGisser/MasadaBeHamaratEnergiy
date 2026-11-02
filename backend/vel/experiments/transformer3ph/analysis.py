@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from vel.experiments.common import Param
+from vel.experiments.common import Param, with_inputs
 
 __all__ = ["Param"]
 
@@ -105,7 +105,23 @@ def no_load_parameters(
         ),
         Param("b_m_manual", "b_m לפי החוברת", bm_man, "S", "√(Y_m² − g_m²)", "manual", why_m),
     ]
-    return out
+    return with_inputs(
+        out,
+        {
+            "U_L": U_L,
+            "I0": I0,
+            "P0": P0,
+            "U1ph": U_ph1,
+            "U2ph": U_ph2,
+            "U1L": U_L,
+            "U2L": U_L2,
+            "V1": U_L,
+            "Y_m": Y,
+            "g_m": g,
+            "b_m": b,
+        },
+        {"b_m_manual": {"Y_m": Ym_man}},
+    )
 
 
 def short_circuit_parameters(
@@ -123,7 +139,7 @@ def short_circuit_parameters(
     x_man, why_man = _sqrt_diff(Z_man**2, r_man**2)
     # scale to rated current (linear series branch) for u_k%
     U_k_rated = U_k * I1n / I_k
-    return [
+    out = [
         Param(
             "cos_phik",
             "גורם הספק בקצר cos φk",
@@ -157,6 +173,20 @@ def short_circuit_parameters(
             note="r_k/Z_k = √3·cos φk; שלילי מתחת לשורש כאשר cos φk > 0.577",
         ),
     ]
+    return with_inputs(
+        out,
+        {
+            "U_k": U_k,
+            "I_k": I_k,
+            "P_k": P_k,
+            "I_1": I_k,
+            "Z_k": Z,
+            "r_k": r,
+            "U_1n": U1n,
+            "U_k(I_n)": U_k_rated,
+        },
+        {"x_k_manual": {"Z_k": Z_man, "r_k": r_man}},
+    )
 
 
 def efficiency_table(
