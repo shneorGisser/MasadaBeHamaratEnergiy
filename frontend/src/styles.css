@@ -316,3 +316,9 @@ button.tab { background: none; border-top: 0; border-inline: 0; font: inherit; c
 .thermal-bar { height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
 .thermal-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2e7d4f, #e0a83c 70%, #b3261e); }
 .thermal.hot strong { color: var(--err); }
+
+/* ---- measurement coach ---- */
+.coach { border: 1px solid #ecd09e; background: var(--warn-soft); border-radius: var(--radius); padding: 10px 12px; }
+.coach-item.info { color: var(--ink-2); }
+td.mcell.coach-warn input { outline: 2px solid var(--warn); outline-offset: -1px; }
+td.mcell.coach-info input { outline: 2px dashed var(--sim); outline-offset: -1px; }

@@ -18,12 +18,14 @@ function Cell({
   col,
   view,
   onSaved,
+  hint,
 }: {
   setId: string
   row: number
   col: MColumn
   view: MSetView
   onSaved: (v: MSetView) => void
+  hint?: CoachHint
 }) {
   const cell = view.cells[`${row}:${col.key}`]
   const [text, setText] = useState(cell ? String(cell.entered_value) : '')
@@ -62,7 +64,12 @@ function Cell({
   }
 
   return (
-    <td className="mcell" data-testid={`cell-${row}-${col.key}`}>
+    <td
+      className={`mcell${hint ? ` coach-${hint.severity}` : ''}`}
+      data-testid={`cell-${row}-${col.key}`}
+      data-coach={hint?.kind}
+      title={hint?.message}
+    >
       <div className="row" style={{ gap: 2, flexWrap: 'nowrap' }}>
         <input
           className={`input num${err ? ' invalid' : ''}${!cell ? ' missing' : ''}`}
@@ -100,7 +107,8 @@ function Cell({
   )
 }
 
-function MeasurementTable({ view, onSaved }: { view: MSetView; onSaved: (v: MSetView) => void }) {
+function MeasurementTable({ view, onSaved, hints }: { view: MSetView; onSaved: (v: MSetView) => void; hints: CoachHint[] }) {
+  const byCell = new Map(hints.map((h) => [`${h.row}:${h.quantity}`, h]))
   const d = view.definition
   const rows = Array.from({ length: view.set.n_rows }, (_, i) => i)
   const addRow = async () => onSaved(await api.patch<MSetView>(`/api/measurement-sets/${view.set.id}`, { n_rows: view.set.n_rows + 1 }))
@@ -124,7 +132,15 @@ function MeasurementTable({ view, onSaved }: { view: MSetView; onSaved: (v: MSet
               <tr key={r}>
                 <td className="small">{d.row_labels[r] ?? r + 1}</td>
                 {d.columns.map((c) => (
-                  <Cell key={`${view.set.id}-${r}-${c.key}`} setId={view.set.id} row={r} col={c} view={view} onSaved={onSaved} />
+                  <Cell
+                    key={`${view.set.id}-${r}-${c.key}-${view.cells[`${r}:${c.key}`]?.versions ?? 0}`}
+                    setId={view.set.id}
+                    row={r}
+                    col={c}
+                    view={view}
+                    onSaved={onSaved}
+                    hint={byCell.get(`${r}:${c.key}`)}
+                  />
                 ))}
               </tr>
             ))}
@@ -143,6 +159,63 @@ function MeasurementTable({ view, onSaved }: { view: MSetView; onSaved: (v: MSet
         <span className="muted">תיקון ערך יוצר רשומה חדשה; הערך המקורי נשמר בהיסטוריה.</span>
       </div>
     </div>
+  )
+}
+
+interface CoachHint {
+  row: number
+  quantity: string
+  kind: 'factor' | 'trend' | 'deviation'
+  severity: 'warn' | 'info'
+  message: string
+  measured: number
+  expected: number
+  suggested?: number
+  whole_column?: boolean
+}
+
+interface CoachResult {
+  status: string
+  hints: CoachHint[]
+  message?: string
+  provenance?: string
+}
+
+/** Questions about the readings, refreshed after every entry (services/coach.py). */
+function Coach({ view, coach, onSaved }: { view: MSetView; coach: CoachResult | undefined; onSaved: (v: MSetView) => void }) {
+  const [busy, setBusy] = useState(false)
+  if (!coach || coach.status !== 'ok' || coach.hints.length === 0) return null
+  const unitOf = (q: string) => view.definition.columns.find((c) => c.key === q)?.unit ?? ''
+  const apply = async (h: CoachHint) => {
+    if (h.suggested === undefined) return
+    setBusy(true)
+    try {
+      const v = Number(h.suggested.toPrecision(4))
+      onSaved(await api.post<MSetView>(`/api/measurement-sets/${view.set.id}/entries`, { row_index: h.row, quantity: h.quantity, value: v, unit: unitOf(h.quantity) }))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="coach stack" aria-live="polite" data-testid="coach">
+      <strong>שאלות על הקריאות, לפני שמפרקים את המעגל</strong>
+      <ul className="stack" style={{ gap: 6, margin: 0, paddingInlineStart: 18 }}>
+        {coach.hints.map((h) => (
+          <li key={`${h.row}:${h.quantity}`} className={`coach-item ${h.severity}`} data-testid={`coach-${h.row}-${h.quantity}`}>
+            {h.message}{' '}
+            {h.suggested !== undefined && !h.whole_column && (
+              <button className="btn small" disabled={busy} onClick={() => void apply(h)} data-testid={`coach-apply-${h.row}-${h.quantity}`}>
+                להזין <bdi dir="ltr">{Number(h.suggested.toPrecision(4))}</bdi> במקום
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <span className="muted small">
+        ההשוואה היא מול המודל בהגדרה הנוכחית{coach.provenance === 'assumed' ? ' (ערכים מוערכים, לא נתוני שלט)' : ''}. גם המודל יכול לטעות; ערך שתוקן נשמר
+        כתיקון, והמקורי נשאר בהיסטוריה.
+      </span>
+    </section>
   )
 }
 
@@ -548,6 +621,14 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
   const [simErr, setSimErr] = useState<unknown>(null)
   const [simBusy, setSimBusy] = useState(false)
 
+  // the key carries the number of entries: a save changes it, so a coach request still in
+  // flight for the previous table can never be shown for the new one
+  const coach = useQuery({
+    queryKey: ['coach', activeSetId, view.data?.history.length ?? 0],
+    enabled: Boolean(activeSetId && view.data),
+    queryFn: () => api.get<CoachResult>(`/api/measurement-sets/${activeSetId}/coach`),
+    retry: false,
+  })
   const onSaved = (v: MSetView) => {
     qc.setQueryData(mKeys.set(v.set.id), v)
     void qc.invalidateQueries({ queryKey: ['cmp'] })
@@ -596,7 +677,8 @@ export default function MeasurementsPanel({ projectId, study }: { projectId: str
           </div>
         )}
         {view.data && <ConditionsEditor key={`c-${view.data.set.id}`} view={view.data} onSaved={onSaved} />}
-        {view.data && <MeasurementTable key={view.data.set.id} view={view.data} onSaved={onSaved} />}
+        {view.data && <Coach view={view.data} coach={coach.isPlaceholderData ? undefined : coach.data} onSaved={onSaved} />}
+        {view.data && <MeasurementTable key={view.data.set.id} view={view.data} onSaved={onSaved} hints={coach.data?.hints ?? []} />}
       </section>
 
       {view.data && (view.data.analysis.parameters.length > 0 || view.data.derived_columns.length > 0 || view.data.analysis.warnings.length > 0) && (

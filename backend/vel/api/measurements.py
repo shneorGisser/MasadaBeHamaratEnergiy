@@ -145,6 +145,15 @@ def simulate_at_measured_points(set_id: str, session: SessionDep) -> RunOut:
     return _full(runs_svc.create_run(session, p, s.study_kind, case, label))
 
 
+@router.get("/measurement-sets/{set_id}/coach")
+def coach(set_id: str, session: SessionDep) -> dict[str, Any]:
+    """Questions about suspicious readings, from a simulation at the set's points that is NOT
+    saved (services/coach.py)."""
+    from vel.services.coach import coach as run
+
+    return run(session, ms.load_set(session, set_id))
+
+
 class CalibrateBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # each knob: spec paths scaled together ("ecm.R1"); None = the study's defaults
