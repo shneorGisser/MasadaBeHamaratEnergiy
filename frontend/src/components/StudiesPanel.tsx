@@ -215,7 +215,7 @@ function StudyWorkspace({ projectId, study }: { projectId: string; study: Study 
         )}
         {study.editable_circuit && <WiringGuide key={`wg-${study.kind}`} projectId={projectId} kind={study.kind} />}
         {study.editable_circuit && (
-          <details className="card" style={{ padding: 10 }} data-testid="lab3d-section" onToggle={(e) => setShow3d((e.target as HTMLDetailsElement).open)}>
+          <details className="card" style={{ padding: 10 }} data-testid="lab3d-section" onToggle={(e) => e.target === e.currentTarget && setShow3d(e.currentTarget.open)}>
             <summary>שולחן מעבדה תלת-ממדי (נקודת עבודה חיה)</summary>
             <div style={{ marginTop: 10 }}>{show3d && <LabBench3D projectId={projectId} kind={study.kind} />}</div>
           </details>

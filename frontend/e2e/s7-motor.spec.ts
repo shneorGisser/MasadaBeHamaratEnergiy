@@ -51,6 +51,14 @@ test('D2: induction motor — load study with torque–speed curve, live brake o
   await page.waitForTimeout(400)
   await page.getByTestId('lab3d').locator('.lab-canvas').screenshot({ path: 'test-results/d2-trace-measure.png' })
   await trace.getByText('כל הכבלים').click()
+  // x-ray: field speed from f and p, slip from the solver's speed
+  const rf = page.getByTestId('rotating-field')
+  await rf.locator('summary').click()
+  const slip = (ref.readings.M.n as number) / 1500
+  await expect(rf.getByTestId('rf-slip')).toHaveText((1 - slip).toPrecision(3))
+  await page.waitForTimeout(1200)
+  await rf.screenshot({ path: 'test-results/d2-rotating-field.png' })
+  await rf.locator('summary').click()
   await page.getByTestId('brake').focus()
   for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowRight')
   await page.waitForTimeout(800)

@@ -150,7 +150,7 @@ export function WorkspaceLink() {
   if (!ws.data?.token) return null
   const link = `${window.location.origin}/w#${ws.data.token}`
   return (
-    <details className="card" data-testid="workspace-box" onToggle={(e) => setShow(e.currentTarget.open)}>
+    <details className="card" data-testid="workspace-box" onToggle={(e) => e.target === e.currentTarget && setShow(e.currentTarget.open)}>
       <summary>המשך ממכשיר אחר</summary>
       <p className="muted small">
         הפרויקטים שלך שמורים בדפדפן הזה בלבד, בלי שם משתמש וסיסמה. כדי לעבוד עליהם ממכשיר אחר, פתח שם את הקישור הזה. מי שמחזיק

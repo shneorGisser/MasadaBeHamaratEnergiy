@@ -6,6 +6,7 @@ import { api } from '../api/client'
 import { useProject } from '../api/hooks'
 import { ErrorBox } from '../components/ErrorBox'
 import PowerFlow, { type Nameplate } from '../components/PowerFlow'
+import RotatingField from './RotatingField'
 import StatusBadge from '../components/StatusBadge'
 import { fmt } from '../format'
 import { useCircuit } from '../schematic/hooks'
@@ -409,6 +410,13 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
           internals={live.internals}
           motorId={motor.id}
           nameplate={(project.data?.spec as { nameplate?: Nameplate } | undefined)?.nameplate ?? null}
+        />
+      )}
+      {motor && (
+        <RotatingField
+          poles={Number((project.data?.spec as { nameplate?: { poles?: number } } | undefined)?.nameplate?.poles ?? 4)}
+          f={Number(source?.params.f ?? 50)}
+          n={typeof live?.readings?.[motor.id]?.n === 'number' ? (live.readings[motor.id]!.n as number) : null}
         />
       )}
       {traceOptions.length > 0 && (

@@ -69,7 +69,7 @@ export default function WiringGuide({ projectId, kind }: { projectId: string; ki
   }
 
   return (
-    <details className="card" style={{ padding: 10 }} data-testid="wiring-guide" onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+    <details className="card" style={{ padding: 10 }} data-testid="wiring-guide" onToggle={(e) => e.target === e.currentTarget && setOpen(e.currentTarget.open)}>
       <summary>מדריך חיבור — איזה כבל, מאיפה ולאן{g ? ` (${n} כבלים)` : ''}</summary>
       {q.isError && <ErrorBox error={q.error} />}
       {g && step && (
