@@ -31,7 +31,42 @@ const LAYERS: [string, number][] = [
   ['TERMINALS', 1],
   ['WIRES', 5],
   ['TEXT', 3],
+  ['FRAME', 7],
 ]
+
+/**
+ * Drawing sheet: an ISO 5457 frame (20 mm binding margin on the left, 10 mm elsewhere) on the
+ * smallest ISO A sheet, landscape, that holds the schematic at 1:1 (mm), with an ISO 7200-style
+ * title block (180 mm wide) in the bottom-right corner. Fields are ASCII (see dxfText); a
+ * non-ASCII value (a Hebrew project name) is replaced by `fallback` rather than by '?'s.
+ */
+export interface TitleBlock {
+  title: string
+  drawing: string
+  project: string
+  fallback?: string
+  date: string
+  rows?: [string, string][]
+}
+
+const SHEETS: [string, number, number][] = [
+  ['A4', 297, 210],
+  ['A3', 420, 297],
+  ['A2', 594, 420],
+  ['A1', 841, 594],
+  ['A0', 1189, 841],
+]
+const TB_W = 180
+const TB_ROW = 7
+
+export function pickSheet(wMm: number, hMm: number, rows: number): { name: string; w: number; h: number } {
+  const tbH = TB_ROW * (rows + 4)
+  for (const [name, w, h] of SHEETS) {
+    if (wMm + 20 + 10 + 20 <= w && hMm + 20 + tbH + 20 <= h) return { name, w, h }
+  }
+  const [name, w, h] = SHEETS[SHEETS.length - 1]!
+  return { name: `${name} (drawing larger than the sheet)`, w, h }
+}
 const ASCII: Record<string, string> = { 'Ω': 'Ohm', 'µ': 'u', '°': '%%d', '·': '.', '–': '-', '—': '-' }
 
 /**
@@ -45,7 +80,7 @@ export function dxfText(s: string): string {
 
 const num = (v: number) => (Math.abs(v) < 1e-9 ? '0' : v.toFixed(3))
 
-export function toDxf(g: Geometry): string {
+export function toDxf(g: Geometry, sheet?: TitleBlock): string {
   const out: string[] = []
   const pair = (code: number, value: string | number) => out.push(String(code), String(value))
   const X = (x: number) => num(x * MM_PER_PX)
@@ -132,9 +167,63 @@ export function toDxf(g: Geometry): string {
     pair(30, 0)
     pair(40, num(0.5))
   }
+  if (sheet) frame(g, sheet, line, text)
   pair(0, 'ENDSEC')
   pair(0, 'EOF')
   return out.join('\r\n') + '\r\n'
+}
+
+type LineFn = (layer: string, a: [number, number], b: [number, number]) => void
+type TextFn = (s: string, x: number, y: number, h: number, centre?: boolean) => void
+
+/** Frame and title block, in the geometry's pixel space (the writers convert to mm). */
+function frame(g: Geometry, tb: TitleBlock, line: LineFn, text: TextFn): void {
+  const xs = [...g.boxes.flatMap((b) => [b.x, b.x + b.w]), ...g.pins.map((p) => p.x), ...g.wires.flat().map((p) => p[0])]
+  const ys = [...g.boxes.flatMap((b) => [b.y, b.y + b.h]), ...g.pins.map((p) => p.y), ...g.wires.flat().map((p) => p[1])]
+  if (!xs.length) return
+  const k = 1 / MM_PER_PX // mm → px
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+  const rows: [string, string][] = [
+    ['TITLE', ascii(tb.title, tb.fallback)],
+    ['DRAWING', ascii(tb.drawing, tb.fallback)],
+    ['PROJECT', ascii(tb.project, tb.fallback)],
+    ['DATE', tb.date],
+    ...(tb.rows ?? []).map(([a, b]): [string, string] => [ascii(a), ascii(b)]),
+  ]
+  const sh = pickSheet((x1 - x0) * MM_PER_PX, (y1 - y0) * MM_PER_PX, rows.length)
+  rows.push(['SCALE / SHEET', `1:1  ${sh.name}`], ['DRAWN BY', ''], ['CHECKED', ''])
+  // sheet in px: drawing centred in the area above the title block
+  const W = sh.w * k
+  const H = sh.h * k
+  const tbH = TB_ROW * rows.length * k
+  const left = x0 - (W - 30 * k - (x1 - x0)) / 2 - 20 * k
+  const top = y0 - (H - 20 * k - tbH - (y1 - y0)) / 2 - 10 * k
+  const rect = (ax: number, ay: number, bx: number, by: number) => {
+    line('FRAME', [ax, ay], [bx, ay])
+    line('FRAME', [bx, ay], [bx, by])
+    line('FRAME', [bx, by], [ax, by])
+    line('FRAME', [ax, by], [ax, ay])
+  }
+  rect(left, top, left + W, top + H) // trimmed sheet edge
+  const fl = left + 20 * k
+  const fr = left + W - 10 * k
+  const ft = top + 10 * k
+  const fb = top + H - 10 * k
+  rect(fl, ft, fr, fb) // drawing frame
+  const tl = fr - TB_W * k
+  const tt = fb - tbH
+  rect(tl, tt, fr, fb)
+  rows.forEach(([key, value], i) => {
+    const y = tt + i * TB_ROW * k
+    if (i) line('FRAME', [tl, y], [fr, y])
+    text(key, tl + 2 * k, y + 5 * k, 2.2, false)
+    text(value, tl + 42 * k, y + 5 * k, 3, false)
+  })
+  line('FRAME', [tl + 40 * k, tt], [tl + 40 * k, fb])
+}
+
+function ascii(s: string, fallback = ''): string {
+  return [...s].every((c) => (c.codePointAt(0) ?? 999) < 128 || c in ASCII) ? s : fallback
 }
 
 /**

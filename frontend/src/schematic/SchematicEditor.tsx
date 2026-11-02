@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSelection } from '../selection'
 import { api } from '../api/client'
+import { useProject } from '../api/hooks'
 import { ErrorBox } from '../components/ErrorBox'
 import ComponentNode from './ComponentNode'
 import CurrentEdge, { type CurrentData } from './CurrentEdge'
@@ -142,6 +143,7 @@ function Editor({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initial.edges)
   const [dirty, setDirty] = useState(false)
   const exportDxf = useDxfExport()
+  const project = useProject(projectId)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<unknown>(null)
   const [wiringCheck, setWiringCheck] = useState<{ matches: boolean; variant: string; messages: string[] } | null>(null)
@@ -345,7 +347,15 @@ function Editor({
         <button className="btn primary" onClick={() => void save()} disabled={!dirty || saving} data-testid="save-circuit">
           שמור מעגל
         </button>
-        <button className="btn" onClick={() => exportDxf(`circuit-${kind}.dxf`, fromFlow(nodes, edges), catalog, routes)} data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
+        <button className="btn" onClick={() =>
+            exportDxf(`circuit-${kind}.dxf`, fromFlow(nodes, edges), catalog, routes, {
+              title: 'VIRTUAL ENERGY LAB - JCT',
+              drawing: `${project.data?.experiment_id ?? ''} / ${kind}`,
+              project: project.data?.name ?? '',
+              fallback: `project ${projectId.slice(0, 8)}`,
+              date: new Date().toISOString().slice(0, 10),
+            })
+          } data-testid="export-dxf" title="AutoCAD R12 — נפתח בכל תוכנת CAD">
           ייצוא DXF
         </button>
         <button className="btn" onClick={() => void runCheck()} disabled={dirty} data-testid="check-wiring" title={dirty ? 'שמרו את המעגל קודם' : 'משווה צמתים חשמליים, לא את צורת הכבלים'}>

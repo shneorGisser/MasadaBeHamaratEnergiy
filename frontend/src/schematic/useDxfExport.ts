@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { toDxf, type Geometry } from './dxf'
+import { toDxf, type Geometry, type TitleBlock } from './dxf'
 import type { CircuitModel, ComponentType } from './model'
 import { route, routeInput, type Pt } from './router'
 
@@ -19,9 +19,9 @@ export function circuitGeometry(c: CircuitModel, catalog: ComponentType[], route
 }
 
 export function useDxfExport() {
-  return useCallback((fileName: string, c: CircuitModel, catalog: ComponentType[], routes?: Map<string, Pt[]> | null) => {
+  return useCallback((fileName: string, c: CircuitModel, catalog: ComponentType[], routes?: Map<string, Pt[]> | null, sheet?: TitleBlock) => {
     const geo = circuitGeometry(c, catalog, routes)
-    const blob = new Blob([toDxf(geo)], { type: 'application/dxf' })
+    const blob = new Blob([toDxf(geo, sheet)], { type: 'application/dxf' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = fileName

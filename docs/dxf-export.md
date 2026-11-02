@@ -51,3 +51,20 @@ The geometry is taken from React Flow, not from a separate model:
   a terminal circle, which checks that the wires are attached.
 * **Inspection:** the exported file was opened with ezdxf. The audit found 0 errors, and the
   file was rendered to PNG and checked by eye.
+
+## Sheet and title block
+
+The export is placed on the smallest landscape ISO A sheet (A4 to A0) that holds it at 1:1. The
+frame follows ISO 5457: a 20 mm binding margin on the left, 10 mm on the other sides. In the
+bottom-right corner is an ISO 7200-style title block, 180 mm wide, with these fields:
+- title;
+- drawing (experiment / study);
+- project;
+- date;
+- scale and sheet;
+- empty "drawn by" and "checked" fields for the students' names.
+
+Everything is on its own `FRAME` layer. The fields are ASCII, like the rest of the R12 text. A
+Hebrew project name is replaced by "project <id>" rather than turned into question marks.
+Checked by rendering the exported file with ezdxf: the frame, the title block and the
+schematic land where they should.

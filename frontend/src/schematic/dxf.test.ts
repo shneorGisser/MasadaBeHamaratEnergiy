@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dxfText, junctions, pathPoints, toDxf } from './dxf'
+import { dxfText, junctions, pathPoints, pickSheet, toDxf } from './dxf'
 
 describe('dxf', () => {
   it('writes a well-formed R12 file with the four layers and flipped y in mm', () => {
@@ -55,5 +55,22 @@ describe('dxf', () => {
       ],
     }
     expect(junctions(g)).toEqual([[50, 0]])
+  })
+
+  it('title block: ISO sheet chosen by size, ASCII fields, Hebrew replaced by the fallback', () => {
+    const g = {
+      boxes: [{ label: 'M', sub: 'motor3', x: 0, y: 0, w: 120, h: 80 }],
+      pins: [],
+      wires: [],
+    }
+    const s = toDxf(g, { title: 'VIRTUAL ENERGY LAB', drawing: 'induction_motor / load', project: 'קבוצה 3', fallback: 'project 1a2b3c4d', date: '2026-11-02' })
+    expect(s).toContain('\r\n2\r\nFRAME\r\n')
+    expect(s).toContain('project 1a2b3c4d')
+    expect(s).not.toContain('?')
+    expect(s).toContain('1:1  A4')
+    // three rectangles (sheet, frame, title block) + row lines + one column line + the box
+    expect((s.match(/\r\n8\r\nFRAME\r\n/g) ?? []).length).toBeGreaterThan(12)
+    expect(pickSheet(300, 100, 7).name).toBe('A3')
+    expect(pickSheet(2000, 2000, 7).name).toMatch(/A0 \(drawing larger/)
   })
 })
