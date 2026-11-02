@@ -20,6 +20,7 @@ import { ErrorBox } from '../components/ErrorBox'
 import ComponentNode from './ComponentNode'
 import CurrentEdge, { type CurrentData } from './CurrentEdge'
 import PhasorDiagram, { type Phasor } from './PhasorDiagram'
+import QuickWire from './QuickWire'
 import { useCatalog, useCircuit } from './hooks'
 import { useDxfExport } from './useDxfExport'
 import { route, routeInput, type Pt } from './router'
@@ -232,6 +233,19 @@ function Editor({
     [setEdges],
   )
 
+  // Ctrl+K (⌘K): wiring from the keyboard
+  const [quickWire, setQuickWire] = useState(false)
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setQuickWire(true)
+      }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [])
+
   const addComponent = (t: ComponentType) => {
     const comp = newComponent(t, nodes.map((n) => n.id))
     select(comp.id)
@@ -340,6 +354,9 @@ function Editor({
         <button className="btn" onClick={flipSelected} disabled={!nodes.some((n) => n.selected)} data-testid="flip-selected" title="היפוך אופקי: ההדקים עוברים לצד השני (שרטוט בלבד)">
           הפוך ↔
         </button>
+        <button className="btn" onClick={() => setQuickWire(true)} data-testid="quick-wire-open" title="חיבור הדקים בהקלדה, בלי גרירה">
+          חיבור מהמקלדת (Ctrl+K)
+        </button>
         <button className="btn danger" onClick={deleteSelected} disabled={!nodes.some((n) => n.selected) && !edges.some((e) => e.selected)} data-testid="delete-selected">
           מחק נבחר
         </button>
@@ -347,6 +364,7 @@ function Editor({
         {saved && !dirty && <span className="badge ok">המעגל נשמר</span>}
         <span className="muted small grow">חיבור = גרירה מהדק להדק. קרבה במסך אינה חיבור חשמלי.</span>
       </div>
+      {quickWire && <QuickWire nodes={nodes} edges={edges} onConnect={onConnect} onClose={() => setQuickWire(false)} />}
       <div className="row small" data-testid="flow-controls">
         <label className="row" style={{ gap: 4 }}>
           <input type="checkbox" checked={flowOn} onChange={(e) => setFlowOn(e.target.checked)} data-testid="show-current" />

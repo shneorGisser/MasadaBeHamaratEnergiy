@@ -69,6 +69,31 @@ test('S2: editing topology changes the simulation; removing an instrument fails 
   )
   expect(wired).toBe(true)
 
+  // the same kind of connection from the keyboard: Ctrl+K, two terminals, Enter
+  await page.keyboard.press('Control+k')
+  const qw = page.getByTestId('quick-wire')
+  await qw.locator('input[name="qw-from"]').fill('A1.n')
+  await qw.locator('input[name="qw-to"]').fill('w2.ip')
+  await qw.locator('input[name="qw-to"]').press('Enter')
+  await expect(qw.getByTestId('qw-announce')).toHaveText('חובר: A1.n אל W2.Ip')
+  await qw.locator('input[name="qw-from"]').fill('nonsense')
+  await qw.locator('input[name="qw-to"]').fill('A1.p')
+  await qw.getByTestId('qw-connect').click()
+  await expect(qw.getByRole('alert')).toContainText('אין הדק')
+  await qw.locator('input[name="qw-to"]').press('Escape')
+  await expect(qw).toHaveCount(0)
+  await expect(page.getByTestId('dirty')).toBeVisible()
+  await page.getByTestId('save-circuit').click()
+  await expect(page.getByText('המעגל נשמר')).toBeVisible()
+  const typed = await (await request.get(`/api/projects/${pid}/circuits/load`)).json()
+  expect(
+    typed.circuit.wires.some(
+      (w: { a: { component: string; terminal: string }; b: { component: string; terminal: string } }) =>
+        [w.a, w.b].some((e) => e.component === 'A1' && e.terminal === 'n') &&
+        [w.a, w.b].some((e) => e.component === 'W2' && e.terminal === 'Ip'),
+    ),
+  ).toBe(true)
+
   // restore the manual's circuit and run successfully again
   await page.getByRole('button', { name: /טען מעגל לפי החוברת/ }).first().click()
   await expect(page.getByTestId('node-A2')).toBeVisible()
