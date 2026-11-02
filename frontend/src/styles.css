@@ -322,3 +322,7 @@ button.tab { background: none; border-top: 0; border-inline: 0; font: inherit; c
 .coach-item.info { color: var(--ink-2); }
 td.mcell.coach-warn input { outline: 2px solid var(--warn); outline-offset: -1px; }
 td.mcell.coach-info input { outline: 2px dashed var(--sim); outline-offset: -1px; }
+
+/* chart legend: line style / marker shape next to the colour (dual encoding) */
+.chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--ink-2); }
+.chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
