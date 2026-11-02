@@ -44,6 +44,13 @@ test('D2: induction motor — load study with torque–speed curve, live brake o
   await expect(flow.locator('tr[data-key="P_cu2"]')).toContainText('W')
   await expect(page.getByTestId('thermal-estimate')).toBeVisible()
   await flow.screenshot({ path: 'test-results/d2-power-flow.png' })
+  // path tracer: only the voltage leads stay solid
+  const trace = page.getByTestId('trace')
+  await trace.getByText('חיבורי מדידת מתח').click()
+  await expect(trace.getByRole('radio', { name: 'חיבורי מדידת מתח' })).toBeChecked()
+  await page.waitForTimeout(400)
+  await page.getByTestId('lab3d').locator('.lab-canvas').screenshot({ path: 'test-results/d2-trace-measure.png' })
+  await trace.getByText('כל הכבלים').click()
   await page.getByTestId('brake').focus()
   for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowRight')
   await page.waitForTimeout(800)

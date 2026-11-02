@@ -18,11 +18,14 @@ export default function BananaCable({
   b,
   color,
   highlight,
+  dim = false,
 }: {
   a: [number, number, number]
   b: [number, number, number]
   color: string
   highlight: boolean
+  /** faded: another path is being traced */
+  dim?: boolean
 }) {
   const curve = useMemo(() => {
     const pa = new Vector3(a[0], a[1] + PLUG_L, a[2])
@@ -42,13 +45,21 @@ export default function BananaCable({
     <group>
       <mesh castShadow>
         <tubeGeometry args={[curve, 48, radius, 8, false]} />
-        <meshStandardMaterial color={highlight ? '#e74c3c' : color} roughness={0.55} emissive={emissive} emissiveIntensity={highlight ? 0.5 : 0} />
+        <meshStandardMaterial
+          color={highlight ? '#e74c3c' : color}
+          roughness={0.55}
+          emissive={emissive}
+          emissiveIntensity={highlight ? 0.5 : 0}
+          transparent
+          opacity={dim ? 0.12 : 1}
+          depthWrite={!dim}
+        />
       </mesh>
       {[a, b].map((p, i) => (
         <group key={i} position={[p[0], p[1] + PLUG_L / 2, p[2]]}>
           <mesh>
             <cylinderGeometry args={[PLUG_R, PLUG_R * 0.85, PLUG_L, 12]} />
-            <meshStandardMaterial color={highlight ? '#e74c3c' : color} roughness={0.4} />
+            <meshStandardMaterial color={highlight ? '#e74c3c' : color} roughness={0.4} transparent opacity={dim ? 0.12 : 1} depthWrite={!dim} />
           </mesh>
           <mesh position={[0, -PLUG_L / 2 - 0.012, 0]}>
             <cylinderGeometry args={[0.007, 0.007, 0.024, 8]} />

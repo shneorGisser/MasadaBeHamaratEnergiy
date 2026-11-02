@@ -23,6 +23,7 @@ function Scene({
   switches,
   variacFrac,
   colours,
+  dimmed,
 }: {
   circuit: CircuitModel
   live: LivePoint | null
@@ -30,6 +31,8 @@ function Scene({
   variacFrac: number
   /** IEC 60445 colour of each cable, from the wiring guide */
   colours: Record<string, string>
+  /** cables faded by the path tracer */
+  dimmed: Set<string>
 }) {
   const selected = useSelection((s) => s.selected)
   const select = useSelection((s) => s.select)
@@ -92,6 +95,7 @@ function Scene({
           b={terminalPos(w.b.component, w.b.terminal)}
           color={colours[w.id] ?? '#5d6d7e'}
           highlight={w.id === wire}
+          dim={dimmed.has(w.id)}
         />
       ))}
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.1} />
@@ -105,10 +109,36 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
   // cable colours from the wiring guide (same query as the guide itself; IEC 60445 supply colours)
   const wiringQ = useQuery({
     queryKey: ['circuit', projectId, kind, 'wiring'],
-    queryFn: () => api.get<{ steps: { wire_id: string; colour: string }[] }>(`/api/projects/${projectId}/circuits/${kind}/wiring`),
+    queryFn: () =>
+      api.get<{ steps: { wire_id: string; colour: string; colour_he: string; kind: 'power' | 'measure' }[] }>(
+        `/api/projects/${projectId}/circuits/${kind}/wiring`,
+      ),
     retry: false,
   })
   const colours = useMemo(() => Object.fromEntries((wiringQ.data?.steps ?? []).map((s) => [s.wire_id, s.colour])), [wiringQ.data])
+  // path tracer: fade every cable that is not on the chosen path (current paths, voltage leads,
+  // or one supply conductor by its IEC colour) — against the "spaghetti" of a full bench
+  const [trace, setTrace] = useState('all')
+  const traceOptions = useMemo(() => {
+    const steps = wiringQ.data?.steps ?? []
+    const opts: { id: string; label: string; wires: string[] }[] = []
+    const power = steps.filter((s) => s.kind === 'power').map((s) => s.wire_id)
+    const measure = steps.filter((s) => s.kind === 'measure').map((s) => s.wire_id)
+    if (power.length && measure.length) {
+      opts.push({ id: 'power', label: 'מעגלי זרם', wires: power })
+      opts.push({ id: 'measure', label: 'חיבורי מדידת מתח', wires: measure })
+    }
+    const byColour = new Map<string, string[]>()
+    for (const s of steps) if (s.colour_he !== 'כל צבע') byColour.set(s.colour_he, [...(byColour.get(s.colour_he) ?? []), s.wire_id])
+    for (const [c, ws] of byColour) opts.push({ id: `c:${c}`, label: `כבלי ${c}`, wires: ws })
+    return opts
+  }, [wiringQ.data])
+  const dimmed = useMemo(() => {
+    const opt = traceOptions.find((o) => o.id === trace)
+    if (!opt || !circuit) return new Set<string>()
+    const keep = new Set(opt.wires)
+    return new Set(circuit.wires.map((w) => w.id).filter((id) => !keep.has(id)))
+  }, [trace, traceOptions, circuit])
   const source = circuit?.components.find((c) => c.type === 'source3')
   const nominal = Number(source?.params.U_line ?? 380)
   const [uLine, setULine] = useState<number | null>(null)
@@ -381,9 +411,20 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
           nameplate={(project.data?.spec as { nameplate?: Nameplate } | undefined)?.nameplate ?? null}
         />
       )}
+      {traceOptions.length > 0 && (
+        <div className="row small" role="radiogroup" aria-label="מעקב אחרי מסלול" data-testid="trace">
+          <span className="muted">מעקב אחרי מסלול:</span>
+          {[{ id: 'all', label: 'כל הכבלים' }, ...traceOptions].map((o) => (
+            <label key={o.id} className={`chip${trace === o.id ? ' on' : ''}`}>
+              <input type="radio" name="trace" value={o.id} checked={trace === o.id} onChange={() => setTrace(o.id)} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      )}
       <div className="lab-canvas" dir="ltr">
         <Canvas camera={{ position: [0, 6.5, 7.5], fov: 38 }} dpr={[1, 1.5]} frameloop="demand">
-          <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} colours={colours} />
+          <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} colours={colours} dimmed={dimmed} />
         </Canvas>
       </div>
       <p className="muted small">
