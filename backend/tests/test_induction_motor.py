@@ -311,3 +311,20 @@ def test_ap3030_preset_reproduces_the_2026_sheet() -> None:
         op = operating_point(tpl.load_test(float(u), 50, "D", float(m)), s)  # type: ignore[arg-type]
         assert abs(op.readings["M"]["n"] - n) < 20  # type: ignore[operator]
         assert abs(op.readings["A"]["I"] - i1) < 0.04  # type: ignore[operator]
+
+
+@pytest.mark.parametrize("m_load", [0.0, 1.0, 2.0])
+def test_power_balance_closes_at_the_terminals(m_load: float) -> None:
+    """The Sankey on the 3D bench draws the solver's internals: they must add up to the
+    wattmeter reading (3 × one-phase P) and to the shaft power."""
+    from vel.engine.simulate import operating_point
+    from vel.experiments.induction_motor import templates as tpl
+    from vel.experiments.induction_motor.spec import ap3030_sheet_2026
+
+    op = operating_point(tpl.load_test(380.0, 50, "D", m_load), ap3030_sheet_2026())
+    tot, mech = op.internals["M.total"], op.internals["M.mech"]
+    p_in = tot["P_cu1"] + tot["P_fe"] + tot["P_ag"]
+    assert p_in == pytest.approx(3 * op.readings["W"]["P"], rel=1e-6)  # type: ignore[operator]
+    out = tot["P_cu1"] + tot["P_fe"] + tot["P_cu2"] + mech["P_fw"] + mech["P2"]
+    assert out == pytest.approx(p_in, rel=1e-9)
+    assert tot["P_cu2"] == pytest.approx(mech["s"] * tot["P_ag"], rel=1e-12)

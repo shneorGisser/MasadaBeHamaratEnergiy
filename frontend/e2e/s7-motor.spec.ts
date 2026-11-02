@@ -38,6 +38,16 @@ test('D2: induction motor — load study with torque–speed curve, live brake o
   ).json()
   await expect(page.getByTestId('reading-M')).toContainText(`${ref.readings.M.n.toPrecision(4)} rpm · 0 N·m`)
   await page.screenshot({ path: 'test-results/d2-motor-3d.png', fullPage: false })
+  // power balance of the live point: Sankey + table + temperature estimate
+  const flow = page.getByTestId('power-flow')
+  await expect(flow).toBeVisible()
+  await expect(flow.locator('tr[data-key="P_cu2"]')).toContainText('W')
+  await expect(page.getByTestId('thermal-estimate')).toBeVisible()
+  await flow.screenshot({ path: 'test-results/d2-power-flow.png' })
+  await page.getByTestId('brake').focus()
+  for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowRight')
+  await page.waitForTimeout(800)
+  await flow.screenshot({ path: 'test-results/d2-power-flow-loaded.png' })
   await page.getByTestId('brake').focus()
   await page.keyboard.press('End') // 3·M_n > pull-out torque
   await expect(page.getByTestId('live-warning-stalled')).toBeVisible()

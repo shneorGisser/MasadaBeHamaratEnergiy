@@ -308,3 +308,11 @@ button.tab { background: none; border-top: 0; border-inline: 0; font: inherit; c
 .transcript .cue:hover { background: var(--surface-2); }
 .transcript .cue:focus-visible { outline: 2px solid var(--accent); }
 .transcript .cue.on { background: var(--accent-soft); }
+
+/* ---- power balance (Sankey) and temperature estimate ---- */
+.sankey { width: 100%; max-width: 760px; height: auto; direction: ltr; }
+.sankey-label { font-size: 12px; fill: var(--ink-2); font-family: inherit; }
+.sankey-value { font-size: 12px; fill: var(--ink); font-family: var(--mono); }
+.thermal-bar { height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.thermal-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2e7d4f, #e0a83c 70%, #b3261e); }
+.thermal.hot strong { color: var(--err); }

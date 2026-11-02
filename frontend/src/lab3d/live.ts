@@ -9,6 +9,8 @@ export interface LivePoint {
   persisted: false
   source: 'simulation'
   readings?: Record<string, Record<string, number | null>>
+  /** solver internals: '<machine>.total' (losses), '<machine>.mech' (s, P_mech, P_fw, P2 …) */
+  internals?: Record<string, Record<string, number>>
   warnings?: { code: string; message: string }[]
   error?: { message: string }
 }

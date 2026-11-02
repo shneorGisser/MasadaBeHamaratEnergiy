@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { useProject } from '../api/hooks'
 import { ErrorBox } from '../components/ErrorBox'
+import PowerFlow, { type Nameplate } from '../components/PowerFlow'
 import StatusBadge from '../components/StatusBadge'
 import { fmt } from '../format'
 import { useCircuit } from '../schematic/hooks'
@@ -373,6 +374,13 @@ export default function LabBench3D({ projectId, kind }: { projectId: string; kin
             {w.message}
           </div>
         ))}
+      {motor && live?.internals && (
+        <PowerFlow
+          internals={live.internals}
+          motorId={motor.id}
+          nameplate={(project.data?.spec as { nameplate?: Nameplate } | undefined)?.nameplate ?? null}
+        />
+      )}
       <div className="lab-canvas" dir="ltr">
         <Canvas camera={{ position: [0, 6.5, 7.5], fov: 38 }} dpr={[1, 1.5]} frameloop="demand">
           <Scene circuit={circuit} live={live} switches={switches} variacFrac={u / uMax} colours={colours} />
